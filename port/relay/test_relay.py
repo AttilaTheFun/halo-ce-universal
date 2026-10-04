@@ -50,6 +50,15 @@ class Broker:
                 assert size < 65536
                 body = await reader.readexactly(size)
                 if kind == 0x10:
+                    # This fixture implements MQTT 3.1.1. Native signalling
+                    # now tries MQTT 5 first: negotiate the supported version
+                    # instead of accepting 5 and misreading its properties as
+                    # part of the subscription topic.
+                    assert body[:6] == b'\x00\x04MQTT'
+                    if body[6] != 4:
+                        writer.write(b'\x20\x02\x00\x01')
+                        await writer.drain()
+                        break
                     writer.write(b'\x20\x02\x00\x00')
                 elif kind == 0x82:
                     topic_size = int.from_bytes(body[2:4], 'big')
