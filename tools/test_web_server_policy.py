@@ -49,6 +49,7 @@ struct countdown_timer { long remaining; };
 #define network_event(...) ((void)0)
 #define error(...) ((void)0)
 #define ustrncpy wcsncpy
+struct game_variant_options { int unused; };
 struct game_variant { struct { int teams; } universal_variant; };
 struct network_player { int valid, machine_index, team_index; };
 struct network_game_server_client_machine { int machine_index; };
@@ -56,11 +57,15 @@ struct network_game_server {
     int state;
     struct { int paused, active, adjusted_time_this_tick;
         unsigned long last_countdown_message_time; struct countdown_timer timer; } countdown_state;
-    struct { struct game_variant variant; struct { char name[256]; int version; } map;
+    struct { struct game_variant variant; struct game_variant_options variant_options; struct { char name[256]; int version; } map;
         wchar_t name[32]; int minimum_players, maximum_players, maximum_teams, player_count;
         struct network_player players[16]; } game;
     struct network_game_server_client_machine client_machines[16];
 };
+static void network_game_server_port_settings_apply(struct network_game_server *server) { (void)server; }
+static void network_game_server_variant_options(const struct game_variant *variant, struct game_variant_options *options) {
+    (void)variant; memset(options, 0, sizeof(*options));
+}
 static int distributed, splitscreen, opened;
 unsigned long system_milliseconds(void) { return 1000; }
 boolean network_game_should_accept_remote_connections(void) { return TRUE; }

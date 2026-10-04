@@ -33,6 +33,10 @@ continue to come from the user's image.
 - Eight applicable `tools/test_linux_port.py` checks pass, including menu XML
   and setting validation. Three Linux ABI/link/listing checks require a Linux
   toolchain/sysroot and do not run successfully on this macOS host.
+- Browser host policy, solo-host/end-game, migration-manager, connection-idle,
+  player-name and pending-rejoin harnesses also pass. A regression caught the
+  solo-host early return bypassing main's new time limit; the updated predicate
+  keeps solo hosts open only while respecting the configured time limit.
 - Device signature and app bundle exclusions checked. No new Mac notarization
   or MacBook delivery was performed for this revision.
 - Sustained iOS matches, split-screen co-op, every new in-game setting and

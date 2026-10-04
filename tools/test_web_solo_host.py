@@ -44,6 +44,11 @@ static struct network_game_server { int unused; } server;
 static struct { struct { boolean teams; long lives; } universal_variant; } global_variant;
 static struct { int postgame_state; float postgame_timer; } game_engine_globals;
 static void *player_data;
+#define TICKS_PER_SECOND 30
+static struct { long time_limit; } variant_options;
+static long game_ticks;
+#define game_variant_options_get() (&variant_options)
+static long game_time_get(void) { return game_ticks; }
 static void data_iterator_new(struct data_iterator *iterator, void *data) {
     (void)data; iterator->next = 0; iterator->datum_index = NONE;
 }
@@ -72,11 +77,15 @@ static void reset(void) {
     hosting = distributed = TRUE; player_count = 1;
     players[0] = (struct player_datum){ FALSE, 10, 0 };
     explicit_sounds = widget_closes = 0;
+    variant_options.time_limit = game_ticks = 0;
 }
 
 int main(void) {
     reset();
     assert(!game_engine_should_end_game()); /* initial solo host */
+    variant_options.time_limit = 1; game_ticks = 60 * TICKS_PER_SECOND;
+    assert(game_engine_should_end_game()); /* configured time limit still ends a solo match */
+    reset();
     players[1] = (struct player_datum){ FALSE, 11, 1 }; player_count = 2;
     assert(!game_engine_should_end_game()); /* opponent present */
     players[1].quit_out_of_game = TRUE;

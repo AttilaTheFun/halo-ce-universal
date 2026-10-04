@@ -5101,21 +5101,22 @@ boolean game_engine_should_end_game(
 	void)
 {
 	boolean should_end_game = FALSE;
+	boolean keep_solo_host = FALSE;
 
 #if defined(HALO_WEB) || defined(HALO_IOS_BROWSER)
 	/* A browser Slayer host starts alone and stays open for late joiners.
 	Departed players retain their score datums, so the legacy last-team
 	check would end that match when its first opponent leaves. Score and
-	other explicit end conditions still end the game through their own paths. */
+	explicit end conditions and configured time limits still end the game. */
 	if (game_engine && global_network_game_server_get() && network_game_distributed() &&
 		game_engine->type == game_engine_slayer && !global_variant.universal_variant.teams &&
 		global_variant.universal_variant.lives == 0)
 	{
-		return FALSE;
+		keep_solo_host = TRUE;
 	}
 #endif
 
-	if (game_engine && !multiple_teams_alive())
+	if (game_engine && !keep_solo_host && !multiple_teams_alive())
 		should_end_game = TRUE;
 	/* port: the gametype's time limit (game_variant_options) */
 	if (game_engine && game_variant_options_get()->time_limit > 0 &&
