@@ -125,6 +125,9 @@ xcrun devicectl device process launch --device DEVICE_UDID com.yourname.haloce
 ```
 
 Downloaded unsigned IPAs must first be signed with your own Apple account.
+Use [`tools/ios_resign.sh`](../../tools/ios_resign.sh) with your local signing
+identity and device provisioning profile; see the [re-signing and installation
+guide](RESIGNING.md) for the complete setup and commands.
 For packaged-IPA signing instructions, see the official
 [AltStore Classic setup guide](https://faq.altstore.io/) or
 [Sideloadly FAQ](https://sideloadly.io/faq). These signing tools have not been
