@@ -197,6 +197,9 @@ symbols in this file:
 #include "game/game_engine.h"
 #include "game/players.h"
 #include "networking/network_client_manager.h"
+#if defined(HALO_WEB) || defined(HALO_IOS_BROWSER)
+#include "network_migration.h"
+#endif
 #include "networking/network_client_message_handler.h"
 #include "networking/network_game_manager.h"
 #include "networking/network_messages.h"
@@ -227,16 +230,6 @@ enum
 {
 	_message_type_error = 1,
 	_message_type_data = 2,
-};
-
-enum network_game_client_state
-{
-	_network_game_client_state_searching,
-	_network_game_client_state_joining,
-	_network_game_client_state_pregame,
-	_network_game_client_state_ingame,
-	_network_game_client_state_postgame,
-	NUMBER_OF_NETWORK_GAME_CLIENT_STATES,
 };
 
 enum network_game_packet_class
@@ -449,6 +442,18 @@ static boolean network_game_client_handle_message_server_graceful_game_exit_post
 
 /* ---------- globals */
 
+/* A reconnect at the same address can receive gameplay packets queued for
+the previous connection. Until acceptance and loading finish, the new settings
+snapshot supplies membership and there is no local simulation to advance. */
+static boolean network_game_client_ignores_early_ingame_messages(
+	struct network_game_client *client)
+{
+	short state = network_game_client_get_state(client, NULL);
+
+	return network_game_distributed() &&
+		(state == _network_game_client_state_joining || state == _network_game_client_state_pregame);
+}
+
 /* ---------- public code */
 
 boolean network_game_client_handle_message(
@@ -475,6 +480,10 @@ boolean network_game_client_handle_message(
 		0x2F,
 		client && message && (message_size == GET_MESSAGE_SIZE(*message)) && source_address);
 
+#if defined(HALO_WEB) || defined(HALO_IOS_BROWSER)
+	if (GET_MESSAGE_TYPE(*message) == 2 && network_game_client_handle_migration(client, message, message_size, source_address))
+		return TRUE;
+#endif
 	message_type = (byte)GET_MESSAGE_TYPE(*message);
 	if (GET_MESSAGE_FLAGS(*message))
 	{
@@ -927,9 +936,12 @@ static boolean network_game_client_receive_game_settings_piece(
 {
 	boolean result = TRUE;
 
-	if (piece->total_size != sizeof(network_game_client_settings_staging) ||
+	/* Protocol 11 exists with and without the 28-byte PC rule extension.
+       Assemble either complete record, then expand the older layout. */
+    if ((piece->total_size != sizeof(network_game_client_settings_staging) &&
+         piece->total_size != sizeof(network_game_client_settings_staging) - sizeof(struct game_variant_options)) ||
 		piece->length > sizeof(piece->data) ||
-		piece->offset + piece->length > sizeof(network_game_client_settings_staging))
+		piece->offset + piece->length > piece->total_size)
 	{
 		network_event("got a message_server_game_settings_update piece for a different game layout");
 		network_game_client_settings_staging_size = 0;
@@ -956,6 +968,14 @@ static boolean network_game_client_receive_game_settings_piece(
 			network_game_client_settings_staging_size += piece->length;
 			if (network_game_client_settings_staging_size == piece->total_size)
 			{
+                if(piece->total_size != sizeof(network_game_client_settings_staging)) {
+                    byte *bytes=(byte *)&network_game_client_settings_staging;
+                    csmemmove(bytes+HALO_PORT_NETWORK_GAME_LOCAL_DATA_OFFSET,
+                        bytes+HALO_PORT_NETWORK_GAME_VARIANT_OPTIONS_OFFSET,
+                        sizeof(network_game_client_settings_staging.local_data));
+                    game_variant_options_default(&network_game_client_settings_staging.variant,
+                        &network_game_client_settings_staging.variant_options);
+                }
 				network_game_client_settings_staging_size = 0;
 				result = network_game_client_game_settings_updated(client, &network_game_client_settings_staging);
 				if (!result)
@@ -1284,6 +1304,11 @@ static boolean network_game_client_handle_message_server_game_update(
 				network_event("failed to decode a message_server_game_update packet");
 			}
 		}
+		else if (network_game_client_ignores_early_ingame_messages(client))
+		{
+			network_event("ignoring a message_server_game_update message before loading the game");
+			result = TRUE;
+		}
 		else
 		{
 			network_event("failed to handle a message_server_game_update message; we are not in game");
@@ -1337,6 +1362,11 @@ static boolean network_game_client_handle_message_server_add_player_ingame(
 				network_event("failed to decode a message_server_add_player_ingame packet");
 			}
 		}
+		else if (network_game_client_ignores_early_ingame_messages(client))
+		{
+			network_event("ignoring a message_server_add_player_ingame message before loading the game");
+			result = TRUE;
+		}
 		else
 		{
 			network_event("failed to handle a message_server_add_player_ingame message; we are not in game");
@@ -1388,6 +1418,11 @@ static boolean network_game_client_handle_message_server_remove_player_ingame(
 			{
 				network_event("failed to decode a message_server_remove_player_ingame packet");
 			}
+		}
+		else if (network_game_client_ignores_early_ingame_messages(client))
+		{
+			network_event("ignoring a message_server_remove_player_ingame message before loading the game");
+			result = TRUE;
 		}
 		else
 		{

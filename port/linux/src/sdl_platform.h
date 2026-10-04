@@ -59,7 +59,7 @@ struct platform_keystroke
 BOOL platform_sdl_initialize(void);
 /* creates the window and makes its OpenGL context current on this thread */
 BOOL platform_video_initialize(unsigned long width, unsigned long height);
-#ifndef HALO_ANDROID
+#ifndef HALO_ILP32
 BOOL platform_screen_mode(long *width, long *height);
 #endif
 void platform_video_drawable_size(int *width, int *height);
@@ -76,7 +76,7 @@ void platform_mouse_capture(BOOL capture);
 void platform_pump_events(void);
 /* a snapshot of the input state; consume_motion resets the mouse deltas */
 void platform_input_read(struct platform_input_state *state, BOOL consume_motion);
-#ifndef HALO_ANDROID
+#if !defined(HALO_ILP32) || defined(HALO_IOS)
 /* the pointer in the menus (d3d8_gl.c, halo_ui_pointer_update) */
 struct platform_ui_pointer
 {

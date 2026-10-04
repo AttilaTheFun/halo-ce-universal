@@ -276,6 +276,11 @@ symbols in this file:
 #include "scenario/scenario.h"
 #include "structures/structure_bsp_definitions.h"
 
+#ifdef HALO_WEB
+/* called without a prototype in scope; a WebAssembly call must match the
+definition's signature */
+short unit_get_local_player_index(long unit_index);
+#endif
 /* port: an unarmed player's melee's length, in ticks (a weapon's is about
 this: its first person melee animation, sped up a quarter) */
 #define UNARMED_MELEE_TICKS 16

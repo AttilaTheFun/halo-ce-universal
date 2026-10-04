@@ -83,7 +83,7 @@ static void file_add(const char *path, const unsigned char *data, unsigned long 
 
 static unsigned char *file_read(const char *path, unsigned long *size)
 {
-#ifdef HALO_ANDROID
+#ifdef HALO_ILP32
 	FILE *file = fopen(path, "rb");
 	unsigned char *data = NULL;
 	long length;
@@ -149,7 +149,7 @@ static void files_gather(void)
 			file_add(embedded->path, (const unsigned char *)embedded->data, embedded->size, 0);
 		}
 	}
-#ifndef HALO_ANDROID
+#ifndef HALO_ILP32
 	{
 		/* (the folder's own and its folders': SDL's * does not cross a /) */
 		static const char *const patterns[] = { "*.xml", "*/*.xml" };
@@ -355,7 +355,9 @@ static int for_this_platform(struct reader *reader, const XML_Char **attributes)
 				reader_error(reader, "platform=\"%s\" is not \"desktop\" or \"android\"", platform);
 				return 1;
 			}
-#ifdef HALO_ANDROID
+#ifdef HALO_IOS
+			return !strcmp(platform, getenv("HALO_DESKTOP_INPUT") ? "desktop" : "android");
+#elif defined(HALO_ANDROID)
 			return !strcmp(platform, "android");
 #else
 			return !strcmp(platform, "desktop");

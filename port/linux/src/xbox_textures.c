@@ -21,7 +21,7 @@ memory_watch.c detects that by write-protecting the pages.
 #include "port_config.h"
 
 #include <stdio.h>
-#ifdef HALO_ANDROID
+#ifdef HALO_ILP32
 #define GL_BGRA GL_RGBA
 #endif
 #include <stdlib.h>
@@ -398,7 +398,7 @@ static void decode_level(const struct xgpu_texture_description *description, uns
 	}
 }
 
-#ifdef HALO_ANDROID
+#ifdef HALO_ILP32
 /* ---------- DXT decoding, for ES drivers without S3TC (Mali) */
 
 static unsigned long color565(unsigned long value)
@@ -538,7 +538,7 @@ static GLenum compressed_format(unsigned char kind)
 /* debug.texture_dump_directory writes level 0 of every upload as a TGA, read back from GL */
 static void texture_dump(GLenum target, const struct xgpu_texture_description *description)
 {
-#ifdef HALO_ANDROID
+#ifdef HALO_ILP32
 	/* ES cannot read textures back */
 	(void)target;
 	(void)description;
@@ -586,13 +586,19 @@ static void upload(GLuint texture, GLenum target, const struct xgpu_texture_desc
 	unsigned long *converted;
 	unsigned long face, level;
 
-#ifdef HALO_ANDROID
+#ifdef HALO_ILP32
 	decode_compressed = description->compressed && !xgpu_capabilities.s3tc;
+#endif
+#ifdef HALO_WEB
+	/* WebGL takes S3TC for 2D textures only, and the top level's sides in
+	multiples of four */
+	if (description->compressed && (target == GL_TEXTURE_3D || (description->width & 3) || (description->height & 3)))
+		decode_compressed = TRUE;
 #endif
 	converted = description->compressed && !decode_compressed ? NULL : malloc(largest * sizeof(unsigned long));
 	glBindTexture(target, texture);
 	xgpu_gl_state_invalidate();
-#ifdef HALO_ANDROID
+#if defined(HALO_ANDROID) && !defined(HALO_WEB)
 	/* converted texels are BGRA in memory (32-bit ARGB words); ES takes
 	RGBA */
 	glTexParameteri(target, GL_TEXTURE_SWIZZLE_R, converted ? GL_BLUE : GL_RED);
@@ -623,13 +629,27 @@ static void upload(GLuint texture, GLenum target, const struct xgpu_texture_desc
 			}
 			else
 			{
-#ifdef HALO_ANDROID
+#ifdef HALO_ILP32
 				if (decode_compressed)
 					dxt_decode_level(information.kind, source, (unsigned long)width, (unsigned long)height,
 						(unsigned long)depth, converted);
 				else
 #endif
 				decode_level(description, level, source, palette, converted);
+#if defined(HALO_WEB) || defined(HALO_IOS)
+				/* Normalize decoded BGRA on the CPU for WebGL and both iOS
+				   drivers, avoiding driver-dependent texture swizzling. */
+				{
+					unsigned long texel, count = (unsigned long)width * (unsigned long)height * (unsigned long)depth;
+
+					for (texel = 0; texel < count; texel++)
+					{
+						unsigned long value = converted[texel];
+
+						converted[texel] = (value & 0xff00ff00UL) | ((value & 0xffUL) << 16) | ((value >> 16) & 0xffUL);
+					}
+				}
+#endif
 				if (target == GL_TEXTURE_3D)
 					glTexImage3D(image_target, (GLint)level, GL_RGBA8, width, height, depth, 0, GL_BGRA, GL_UNSIGNED_BYTE, converted);
 				else
@@ -678,6 +698,9 @@ static struct
 	unsigned long drop_serial;
 } recent_textures[RECENT_TEXTURE_COUNT];
 static unsigned long texture_drop_serial = 1;
+#ifdef HALO_WEB
+#define WEB_CHECKED_TEXTURE_BYTES 0x20000
+#endif
 static unsigned long texture_frame = 0;
 
 static unsigned long bucket_index(DWORD data, DWORD format_word, DWORD size_word)
@@ -760,7 +783,16 @@ GLuint xgpu_texture_get(const DWORD *resource, const D3DCOLOR *palette, GLenum *
 	if (!palettized && recent_textures[recent].entry && recent_textures[recent].data == data &&
 		recent_textures[recent].format_word == format_word && recent_textures[recent].size_word == size_word &&
 		recent_textures[recent].watch_serial == watch_serial &&
-		recent_textures[recent].drop_serial == texture_drop_serial)
+		recent_textures[recent].drop_serial == texture_drop_serial
+#ifdef HALO_WEB
+		/* without page protection a write is only seen by hashing
+		(port/web/src/web_memory_watch.c): small textures, which the game
+		rewrites between draws (the text renderer's character cache), are
+		checked at every lookup; large ones change through file reads, which
+		announce themselves */
+		&& recent_textures[recent].entry->size > WEB_CHECKED_TEXTURE_BYTES
+#endif
+		)
 	{
 		entry = recent_textures[recent].entry;
 		entry->last_used_frame = texture_frame;

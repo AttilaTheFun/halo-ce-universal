@@ -393,9 +393,16 @@ void _rasterizer_dynamic_vertices_unlock(
 	long dynamic_vertex_buffer_index);
 void _rasterizer_dynamic_vertices_delete(
 	long dynamic_vertex_buffer_index);
+#ifdef HALO_WEB
+/* the definition's parameter types: a WebAssembly call must match them */
+void *_rasterizer_decal_vertices_lock(
+	long cache_index,
+	long cache_size);
+#else
 void *_rasterizer_decal_vertices_lock(
 	short cache_index,
 	unsigned long cache_size);
+#endif
 long _rasterizer_decal_vertices_new(
 	long size);
 void _rasterizer_decal_vertices_delete(
@@ -559,8 +566,14 @@ void _rasterizer_environment_fog_screen_wind_get_vector(
 	short wind_index,
 	real animation_time,
 	real_vector3d *wind_vector);
+#ifdef HALO_WEB
+/* the definition's parameter types: a WebAssembly call must match them */
+void _rasterizer_environment_fog_screen_begin(
+	short pass);
+#else
 void _rasterizer_environment_fog_screen_begin(
 	boolean render_fog);
+#endif
 void _rasterizer_screen_flash(
 	void);
 /* ---------- globals */
@@ -686,12 +699,12 @@ struct rasterizer_debug_options rasterizer_debug_options =
 	{ 0 }, /* pad8A[2] */
 };
 /* No PDB name survives for this target-owned BSS symbol. */
-#ifndef HALO_ANDROID /* Mach-O section names differ; the default is .bss anyway */
+#ifndef HALO_ILP32 /* Mach-O section names differ; the default is .bss anyway */
 #pragma bss_seg(".bss")
 #endif
 static long bss_004662ec;
 real_argb_color *global_rasterizer_model_ambient_reflection_tint;
-#ifndef HALO_ANDROID
+#ifndef HALO_ILP32
 #pragma bss_seg()
 #endif
 

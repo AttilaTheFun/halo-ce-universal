@@ -1347,7 +1347,13 @@ static void network_pregame_status_screen_update(
 			short seconds_to_game_start = network_game_client_get_seconds_to_game_start(
 				global_network_game_client_get());
 			boolean waiting_for_machines = (global_network_game_server_get() &&
-				game->machine_count < 2);
+				game->machine_count <
+#if defined(HALO_WEB) || defined(HALO_IOS_BROWSER)
+				(network_game_distributed() ? 1 : 2)
+#else
+				2
+#endif
+			);
 
 			ustrncpy(countdown_text->parameters.text_box.text, L"-:--", 15);
 			status_text->visible = TRUE;
@@ -2007,6 +2013,9 @@ static void set_textbox_to_build_number(
 	   the function is unattested. January corroborates: .bss +0x28, referenced only here. */
 	static wchar_t build_number_string[64];
 
+#ifndef HALO_IOS
+	/* The iOS menu leaves this developer build label blank. Save and map
+	   version checks still use their original build numbers. */
 	if (!build_number_string[0])
 	{
 		ascii_to_wide(
@@ -2014,6 +2023,7 @@ static void set_textbox_to_build_number(
 			build_number_string,
 			sizeof(build_number_string));
 	}
+#endif
 
 	if (!widget->parameters.text_box.text)
 	{
@@ -2908,7 +2918,19 @@ static void multiplayer_game_directions(
 	{
 		boolean waiting_for_machines = !network_game_is_splitscreen_local() &&
 			game &&
-			game->machine_count < 2;
+			game->machine_count <
+#if defined(HALO_WEB) || defined(HALO_IOS_BROWSER)
+				(network_game_distributed() ? 1 : 2)
+#else
+				2
+#endif
+			;
+		{
+			widget->parameters.text_box.string_list_index =
+				_multiplayer_game_text_string_waiting_for_machine;
+			widget->visible = TRUE;
+			return;
+		}
 
 		if (!waiting_for_machines &&
 			network_game_is_splitscreen_local() &&
