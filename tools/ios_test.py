@@ -2,6 +2,7 @@
 """Run native ILP32, memory-tracking and SDL audio handoff regressions."""
 import shlex
 import subprocess
+from ios_build import prepare_gl_headers
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +48,8 @@ run('xcrun', 'clang', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
 run(BUILD/'room-bridge')
 
 # Private compiled-shader cache: bounds, cross-launch reload and concurrency.
+# The standalone suite also runs before any full app build on fresh CI runners.
+prepare_gl_headers()
 run('xcrun', 'clang', '-fobjc-arc', '-Wno-incompatible-pointer-types',
     '-Ibuild/ios/gl_include', '-Iport/ios/host', '-Iport/runtime/include',
     '-framework', 'Foundation', '-framework', 'Metal',

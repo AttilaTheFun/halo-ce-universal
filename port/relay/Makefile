@@ -1,7 +1,7 @@
 CC ?= cc
 OUTPUT ?= halo-relay-worker
 ROOT := ../..
-CFLAGS := -m32 -std=gnu11 -O2 -g -Wall -Wextra -Wno-unused-function -Wno-unused-variable -pthread -D_GNU_SOURCE -DHALO_RELAY -I. -I../linux/src -I../third_party/kcp -I../third_party/monocypher -I../linux/include
+CFLAGS := -m32 -std=gnu11 -O2 -g -Wall -Wextra -Wno-unused-function -Wno-unused-variable -pthread -D_GNU_SOURCE -DHALO_RELAY -I. -I../linux/src -I../third_party/kcp -I../third_party/monocypher -iquote ../linux/include
 SOURCES := relay_worker.c relay_shim.c ../linux/src/p2p.c ../linux/src/p2p_signal.c ../linux/src/p2p_crypto.c ../linux/src/p2p_lobby.c ../third_party/monocypher/monocypher.c ../third_party/monocypher/monocypher-ed25519.c ../linux/src/posix_net.c ../third_party/kcp/ikcp.c
 .PHONY: all test clean
 all: $(OUTPUT)

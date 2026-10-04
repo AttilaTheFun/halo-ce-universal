@@ -30,6 +30,16 @@ def run(*args):
     subprocess.run([str(a) for a in args], cwd=ROOT, check=True)
 
 
+def prepare_gl_headers():
+    """Pinned Khronos headers, shared by clean builds and standalone probes."""
+    include=ROOT/'build/ios/gl_include'
+    for name,(registry,revision,source) in HEADERS.items():
+        target=include/name;target.parent.mkdir(parents=True,exist_ok=True)
+        url=f'https://raw.githubusercontent.com/KhronosGroup/{registry}/{revision}/{source}'
+        data=urllib.request.urlopen(url,timeout=30).read()
+        if not target.exists() or target.read_bytes()!=data:target.write_bytes(data)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
@@ -57,12 +67,7 @@ def main():
     if args.jobs < 1:
         parser.error('--jobs must be positive')
     ios_angle.prepare()
-    include=ROOT/'build/ios/gl_include'
-    for name,(registry,revision,source) in HEADERS.items():
-        target=include/name;target.parent.mkdir(parents=True,exist_ok=True)
-        url=f'https://raw.githubusercontent.com/KhronosGroup/{registry}/{revision}/{source}'
-        data=urllib.request.urlopen(url,timeout=30).read()
-        if not target.exists() or target.read_bytes()!=data:target.write_bytes(data)
+    prepare_gl_headers()
     run(sys.executable,'configure.py','--ios','--pgo=off','--lto=off','--ios-llvm',args.llvm,'--ios-lld',args.lld)
     run('ninja','ios_guest','-j',args.jobs)
     run(sys.executable,'tools/ios_bridges.py')

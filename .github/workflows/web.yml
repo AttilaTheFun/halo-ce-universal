@@ -53,6 +53,8 @@ jobs:
           node --test tools/test_web_quick_play.mjs
           node --test tools/test_web_touch_controls.mjs
           node tools/test_source_cache.mjs
+          clang -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -Ibuild/web/third_party/SDL3/include tools/test_web_scancodes.c port/web/src/web_scancodes.c -o build/test_web_scancodes
+          build/test_web_scancodes
           clang -std=c11 -pthread -fsanitize=address,undefined -g -Iport/linux/src tools/test_web_net.c -o build/test_web_net
           build/test_web_net
           clang -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g -Itools -Isource tools/test_quick_play.c -o build/test_quick_play
