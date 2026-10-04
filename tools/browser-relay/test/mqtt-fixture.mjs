@@ -31,7 +31,16 @@ export function broker() {
           if (pending.length < index + size) return;
           const kind = pending[0], body = pending.subarray(index, index + size);
           pending = pending.subarray(index + size);
-          if (kind === 0x10) socket.write(Buffer.from([0x20, 0x02, 0, 0]));
+          if (kind === 0x10) {
+            assert.deepEqual(body.subarray(0, 6), Buffer.from([0, 4, 77, 81, 84, 84]));
+            // Native signalling tries MQTT 5 first. Request its 3.1.1
+            // fallback rather than accepting properties we cannot parse.
+            if (body[6] !== 4) {
+              socket.end(Buffer.from([0x20, 0x02, 0, 1]));
+              return;
+            }
+            socket.write(Buffer.from([0x20, 0x02, 0, 0]));
+          }
           else if (kind === 0x82) {
             const topic = body.subarray(4, 4 + body.readUInt16BE(2)).toString('hex');
             if (!topics.has(topic)) topics.set(topic, new Set());
