@@ -99,7 +99,7 @@ worn stick's drift */
 #define STICK_AIMING_DEFLECTION 8000
 
 /* (input.mouse_vertical_sensitivity, read with it) */
-static float vertical_sensitivity = 1.0f;
+static float vertical_sensitivity = 0.1f;
 
 static float mouse_sensitivity(void)
 {
@@ -111,7 +111,7 @@ static float mouse_sensitivity(void)
 		read_at = config_changes();
 		sensitivity = (float)config_real("input.mouse_sensitivity");
 		if (sensitivity <= 0.0f)
-			sensitivity = 1.0f;
+			sensitivity = 0.1f;
 		vertical_sensitivity = (float)config_real("input.mouse_vertical_sensitivity");
 		if (vertical_sensitivity <= 0.0f)
 			vertical_sensitivity = sensitivity;

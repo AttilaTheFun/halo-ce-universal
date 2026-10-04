@@ -147,8 +147,9 @@ static const struct config_setting config_settings[] =
 		"The volume of every other sound (effects and speech), 0.0 to 1.0 (of\n"
 		"audio.volume)." },
 
-	{ "input.mouse_sensitivity", _config_real, "1.0", "HALO_MOUSE_SENSITIVITY", _environment_value, _platform_desktop,
-		"How far the view turns for the mouse's movement." },
+	{ "input.mouse_sensitivity", _config_real, "0.1", "HALO_MOUSE_SENSITIVITY", _environment_value, _platform_desktop,
+		"Mouse turn multiplier. The menu shows 1-100 (value squared / 4000);\n"
+		"the default 0.1 is 20/100." },
 	{ "input.invert_mouse", _config_boolean, "false", "HALO_MOUSE_INVERT", _environment_set_is_true, _platform_desktop,
 		"Moving the mouse forward looks down." },
 	{ "input.mouse_aim_assist", _config_boolean, "false", "HALO_MOUSE_AIM_ASSIST", _environment_value, _platform_desktop,

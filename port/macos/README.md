@@ -13,6 +13,12 @@ settings and pause menus. Apple-specific graphics options remain in the
 separate Settings window. OpenGL ES remains an iOS fallback; this Mac
 package currently ships the Metal backend only.
 
+Mouse sensitivity in the in-game profile settings runs from 1 to 100,
+with a new-install/defaults value of 20. The scale has finer adjustment at
+the low end: 20 uses a 0.10 turn multiplier, below the old menu's 0.25 minimum.
+Vertical sensitivity defaults to SAME. Existing saved values are retained;
+select 20 (or Defaults) and confirm OK to apply the lower setting after updating.
+
 First launch uses a Finder file picker to import a user-owned original Xbox
 PAL or NTSC-US ISO/XISO. A retained private image and map cache are published
 only after readback SHA-256 verification and map validation. See
