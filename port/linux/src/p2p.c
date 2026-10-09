@@ -1351,6 +1351,25 @@ static int stun_settled(void)
 	return 1;
 }
 
+/* the p2p thread was stopped for longer than a peer lasts: the system
+suspended the game (iOS, in the background). The NAT's mapping of the
+tunnel may have lapsed, so this machine's public address is asked again
+before an offer names it, and the brokers' connections, which the system
+may have taken, are made anew rather than at their silence timeout */
+static void network_resumed(unsigned long stopped)
+{
+	int index;
+
+	for (index = 0; index < p2p.stun_count; index++)
+	{
+		p2p.stun[index].has_mapped = 0;
+		p2p.stun[index].attempts = 0;
+	}
+	p2p_signal_reconnect();
+	platform_log("Internet play: the game was stopped for %lu seconds; its public address is asked again and "
+		"the brokers reconnected", stopped / 1000);
+}
+
 /* ---------- stand-ins for peers' ports */
 
 static void close_socket(int *socket)
@@ -2847,6 +2866,7 @@ static void *p2p_thread(void *unused)
 		streams; otherwise the thread can sleep longer */
 		int wait = LOOP_INTERVAL * 5;
 		int index, asked;
+		unsigned long waited;
 
 		/* what to wait for */
 		read_owners[read_count] = _owner_tunnel;
@@ -2907,12 +2927,20 @@ static void *p2p_thread(void *unused)
 		memcpy(asked_write, write, sizeof(*write) * (size_t)write_count);
 
 		pthread_mutex_unlock(&p2p_lock);
+		waited = p2p_now();
 		if (posix_socket_select(read, &read_count, write, &write_count, NULL, &error_count, 0,
 			wait * 1000, 0) < 0)
 		{
 			read_count = write_count = 0;
 		}
 		pthread_mutex_lock(&p2p_lock);
+		/* stopped far past the wait: none of the readiness of the brokers'
+		old sockets is taken */
+		if (elapsed(waited, (unsigned long)wait + PEER_TIMEOUT))
+		{
+			network_resumed(p2p_now() - waited);
+			read_count = write_count = 0;
+		}
 
 		/* what is ready (the lists now hold only ready sockets, in the order
 		asked, so each one's owner is found going along both); a socket

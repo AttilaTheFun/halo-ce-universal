@@ -128,6 +128,10 @@ void p2p_signal_join(const unsigned char *host_hash, const unsigned char *token)
 void p2p_signal_stop_joining(void);
 /* whether any broker is connected */
 int p2p_signal_connected(void);
+/* every broker's connection made anew at once: after the p2p thread was
+stopped (iOS takes a suspended game's sockets), the old ones carry nothing,
+and would be noticed only at their silence timeout */
+void p2p_signal_reconnect(void);
 /* the server browser's topics: the own slot and the queries (a listed
 game), and every slot (browsing) */
 void p2p_signal_lobby_topics(int listed, int browsing);

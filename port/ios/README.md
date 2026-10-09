@@ -229,7 +229,16 @@ Only listings with this build's network version (`HALO_PORT_NETWORK_VERSION`,
 currently 24) are shown, so hosts must run a current upstream build. A
 matching map from the user's imported image is required; discovery does not
 guarantee reachability. Keep the app in the foreground while connecting and
-playing.
+playing: internet play drops a peer it has not heard from in 20 seconds, so
+a game under way does not survive a longer stay in the background.
+
+iOS reclaims a suspended app's sockets. After the app returns, the host
+(`host/posix_net.c`) recreates each reclaimed UDP socket in place, at the same
+descriptor and port, with its options. Internet play notices that its thread
+was stopped longer than a peer lasts, asks STUN for the public address again
+and reconnects the MQTT brokers at once (`p2p.c`, `p2p_signal.c`), so the
+server browser can join without restarting the app. TCP sockets are not
+recreated: a connection open during the suspension is lost.
 
 This integrates main through `f479e349`, including the in-game server browser,
 online co-op campaign, online split screen (ADD PLAYER in the lobby, one
