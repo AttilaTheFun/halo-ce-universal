@@ -56,12 +56,12 @@ int host_gl_has_extension(const char *name)
 	return 0;
 }
 
-unsigned int host_gl_read_buffer_word(unsigned int buffer, unsigned int offset)
+void host_gl_read_buffer(unsigned int buffer, unsigned int offset, unsigned int size, void *data)
 {
 	/* only for atomic counters, which WebGL 2 does not have */
 	(void)buffer;
 	(void)offset;
-	return 0;
+	memset(data, 0, size);
 }
 
 void host_gl_buffer_write(unsigned int target, unsigned int offset, unsigned int size, const void *data)

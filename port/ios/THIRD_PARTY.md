@@ -7,7 +7,7 @@ The inherited project license is [CC0 1.0](../../LICENSE.md).
 
 The app includes SDL 3.4.16 (zlib license), portions of musl 1.2.5 (see its
 COPYRIGHT for the MIT license and component notices), KCP (MIT), and tomlc17
-(MIT), and Expat (MIT; its COPYING is bundled in Licenses/Expat). The native XISO parser adapts upstream extraction code following
+(MIT), Opus 1.5.2 (BSD 3-clause; voice chat's codec; Licenses/Opus.txt), zlib (zlib license; inflates maps and images; Licenses/zlib.txt), and Expat (MIT; its COPYING is bundled in Licenses/Expat). The native XISO parser adapts upstream extraction code following
 extract-xiso (modified BSD; see `port/third_party/extract-xiso/LICENSE.TXT`).
 This product includes software developed by in <in@fishtank.com>. Their complete notices are copied into the built app's `Licenses`
 directory. Khronos headers retain the notices supplied by their registries.
@@ -38,3 +38,7 @@ native graphics calls; it is not a browser or a WASM runtime.
 - Monocypher 4.0.3, vendored from upstream `c04765d7`, implements the signed
   public-server listings. See `port/third_party/monocypher/LICENCE.md`; that
   license is included in both app bundles under Licenses/Monocypher.
+- Lucide's `volume-2` and `volume-x` icons (ISC) are rendered into the voice
+  chat speaker images in the embedded menus. See
+  `port/assets/icons/lucide/LICENSE`; that license is included in both app
+  bundles as Licenses/Lucide.txt.

@@ -26,7 +26,9 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # what each port's build leaves, and what goes into dist/
 OUTPUTS = {
-    "linux": ["build/linux/halo"],
+    # (and the SDL3 the portable build brings, tools/linux_build.py, with its
+    # zlib license, as the release carries the other libraries')
+    "linux": ["build/linux/halo", "build/linux/libSDL3.so.0", "build/linux/SDL3-LICENSE.txt"],
     "windows": ["build/windows/halo.exe", "build/windows/SDL3.dll"],
     "android": [],  # the APK, below
 }
@@ -81,6 +83,19 @@ def main() -> int:
     for output in outputs:
         shutil.copy2(ROOT / output, dist)
         print(f"{output} -> {dist.relative_to(ROOT)}", flush=True)
+    if args.platform == "windows":
+        # the symbols of halo.exe and SDL3.dll, apart (players do not need
+        # them): the workflow uploads them to Sentry, which turns the crash
+        # reports' minidumps into function names and lines
+        # (port/windows/src/win32_crash.c), and tools/symbolize_crash.py
+        # reads debug.txt's crash lines with them
+        symbols = ROOT / "dist" / f"halo-windows-{args.config}-symbols"
+        if symbols.exists():
+            shutil.rmtree(symbols)
+        symbols.mkdir(parents=True)
+        for pdb in [ROOT / "build/windows/halo.pdb", *sorted((ROOT / "build/windows/third_party").glob("SDL3-*/lib/x86/SDL3.pdb"))]:
+            shutil.copy2(pdb, symbols)
+            print(f"{pdb.relative_to(ROOT)} -> {symbols.relative_to(ROOT)}", flush=True)
     # the disc image readers (port/linux/src/xiso.c, and the Android app's
     # XisoExtractor.java) follow extract-xiso, whose license asks binaries
     # to carry its notice
@@ -98,6 +113,16 @@ def main() -> int:
     # the menus' XML parser (port/third_party/expat), in every build, whose
     # MIT license asks copies to carry its notice
     shutil.copy2(ROOT / "port/third_party/expat/COPYING", dist / "expat-COPYING.txt")
+    # voice chat's codec (port/third_party/opus), in every build, whose BSD
+    # license asks binaries to carry its notice
+    shutil.copy2(ROOT / "port/third_party/opus/COPYING", dist / "opus-COPYING.txt")
+    # voice chat's speaker icons (port/assets/icons/lucide, drawn into the
+    # menus' bitmaps), whose ISC license asks copies to carry its notice
+    shutil.copy2(ROOT / "port/assets/icons/lucide/LICENSE", dist / "lucide-LICENSE.txt")
+    # internet play's MQTT brokers, a file beside the game (network.brokers_file;
+    # Android's APK has its own copy)
+    if args.platform != "android":
+        shutil.copy2(ROOT / "port/assets/network/brokers.txt", dist / "brokers.txt")
     return 0
 
 

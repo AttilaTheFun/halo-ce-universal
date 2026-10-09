@@ -58,7 +58,7 @@ run(BUILD/'shader-cache-probe')
 
 # Actual Darwin TCP/UDP via the native/game ABI, alongside the WebRTC transport.
 run('xcrun','clang','-O1','-g','-DHALO_IOS=1','-fsanitize=address,undefined',
-    '-Iport/linux/src','-Iport/ios/network','-Iport/web/src',
+    '-Iport/linux/src','-Iport/ios/network','-Iport/web/src','-Iport/runtime/include',
     'port/ios/tests/native_net_probe.c','port/ios/host/posix_net.c',
     'port/ios/network/host_net.c','port/ios/network/host_web_net.c',
     'port/ios/network/room_bridge.c','-o',BUILD/'native-net-probe')

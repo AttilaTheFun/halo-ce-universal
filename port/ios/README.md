@@ -225,33 +225,59 @@ servers using upstream's in-game PC-style menus. Use the controller or the
 on-screen controls on iOS; macOS also supports mouse and keyboard. Select a
 server, inspect its game details, then join. The list shows maps, game types,
 player counts and connection status, with Refresh and Back buttons.
-Only network-version-11 signed listings are shown. A matching map from the
-user's imported image is required; discovery does not guarantee reachability.
-Keep the app in the foreground while connecting and playing.
+Only listings with this build's network version (`HALO_PORT_NETWORK_VERSION`,
+currently 24) are shown, so hosts must run a current upstream build. A
+matching map from the user's imported image is required; discovery does not
+guarantee reachability. Keep the app in the foreground while connecting and
+playing: internet play drops a peer it has not heard from in 20 seconds, so
+a game under way does not survive a longer stay in the background.
 
-This integrates main through `193cbf59`, including the in-game server browser,
-focused-row outline, name validation, updated controls/settings and gameplay
-fixes. Discovery uses Ed25519 signatures, MQTT brokers and invite joining.
-Connections use the shared STUN, UDP tunnel and KCP implementation; automatic
-router port forwarding is not implemented on Apple. The old UIKit/AppKit list
-remains a diagnostic fallback for Xbox menus and automated native-join tests.
-PR #69's optional HTTP list and sorting enhancements are not included.
+iOS reclaims a suspended app's sockets. After the app returns, the host
+(`host/posix_net.c`) recreates each reclaimed UDP socket in place, at the same
+descriptor and port, with its options. Internet play notices that its thread
+was stopped longer than a peer lasts, asks STUN for the public address again
+and reconnects the MQTT brokers at once (`p2p.c`, `p2p_signal.c`), so the
+server browser can join without restarting the app. TCP sockets are not
+recreated: a connection open during the suspension is lost.
+
+This integrates main through `f479e349`, including the in-game server browser,
+online co-op campaign, online split screen (ADD PLAYER in the lobby, one
+extra controller per player), password-protected lobbies, vote kick, voice
+chat and upstream's renderer, audio and hardening changes. Discovery uses
+Ed25519 signatures, MQTT brokers (the bundled `brokers.txt`, copied beside
+`config.toml` at launch) and invite joining. Connections use the shared STUN,
+UDP tunnel and KCP implementation; automatic router port forwarding is not
+implemented on Apple. The old UIKit/AppKit list remains a diagnostic fallback
+for Xbox menus and automated native-join tests.
+
+Voice chat uses SDL's default input and output: the Apple guest does not
+enumerate SDL audio devices. iOS hides the device rows; the Mac app, which
+takes the desktop settings rows, lists only SYSTEM DEFAULT in them, and its
+desktop display rows (mode, resolution, window size, scaling) do nothing: the
+ILP32 platform layer compiles that window code out. iOS asks for microphone
+access the first time voice opens the microphone (open mic, or push-to-talk on
+a hardware keyboard's V); there is no touch or controller push-to-talk button.
+Halo Custom Edition maps are not available on Apple: their fixed tag-cache
+window lies outside the arena's mappable Xbox window, so the reservation fails
+and only Xbox maps load.
 
 Upstream commit `c9ee319a` added 28 bytes of PC game rules to the settings
-record without increasing network version 11. The relevant rule logic and
-record layout are included. Receiving older settings records supplies the
-original default rules. In browser-room mode, Apple emits the older settings
-layout; mixed-version checkpoint/migration compatibility has not been revalidated.
+record (network version 11). The relevant rule logic and record layout are
+included. Receiving older settings records supplies the original default
+rules. In browser-room mode, Apple emits the older settings layout;
+mixed-version checkpoint/migration compatibility has not been revalidated.
+The browser-only migration checkpoint message is numbered 83, past upstream's
+message kinds, so native hosts and clients keep upstream's numbering.
 
 ## Browser multiplayer (experimental)
 
 This integration is based on [PR #12](https://github.com/cybersecurity/halo-ce-universal/pull/12)
 at `eaa82e6803f3d3e67c91d7f2fa2b15ee04e195f5`. Prefer a web client built
-from this branch. Network version **11** alone is insufficient to prove
-compatibility: upstream changed its game-settings layout within that version.
-The public web demos checked on 2026-10-04 use network version **6** and cannot
-join this app. Previous pinned-build crossplay/migration results predate the
-native-server update and are historical evidence, not validation of this build.
+from this branch: rooms carry the native protocol, now network version
+**24**. The public web demos checked on 2026-10-04 use network version **6**
+and cannot join this app. Previous pinned-build crossplay/migration results
+predate the upstream merge and are historical evidence, not validation of
+this build.
 Both players need matching original Xbox maps. Protocol compatibility does not
 establish compatibility between different game-data releases.
 

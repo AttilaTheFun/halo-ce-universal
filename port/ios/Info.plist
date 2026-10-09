@@ -22,6 +22,8 @@
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Connect to other Halo players on your local network.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Talk to other players with voice chat. The microphone is used only in online games, when you hold push-to-talk or turn on open mic.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

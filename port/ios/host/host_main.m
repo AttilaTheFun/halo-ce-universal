@@ -74,6 +74,15 @@ int main(int argc,char **argv) {
 #if !HALO_MACOS
         UIApplication.sharedApplication.idleTimerDisabled=YES;
 #endif
+        /* internet play's MQTT brokers (network.brokers_file): the app's list,
+           written beside config.toml at each start, as an update replaces the
+           file beside its game */
+        {
+            NSString *brokers=[NSBundle.mainBundle pathForResource:@"brokers" ofType:@"txt"];
+            NSData *list=brokers?[NSData dataWithContentsOfFile:brokers]:nil;
+            if(list)[list writeToFile:[documents stringByAppendingPathComponent:@"brokers.txt"] atomically:YES];
+            else host_logf(HOST_LOG_ERROR,"brokers.txt is missing from the app bundle");
+        }
         host_ios_prepare_assets(data_root);
         NSString *gameData=halo_game_store_current(documents);
         if(!gameData)host_fatal("Private game image is unavailable.");

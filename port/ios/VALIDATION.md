@@ -1,9 +1,99 @@
 # iOS/browser integration validation
 
-This record applies to `apple/ios-web-multiplayer`, based on PR #12 at
+This record applies to `apple/ios-upstream-merge` (from
+`apple/ios-web-multiplayer`), based on PR #12 at
 `eaa82e6803f3d3e67c91d7f2fa2b15ee04e195f5` and the iOS fork at
-`3f2c14101d3ae1c7f0c0a11993a43407fadbeb46`. Updated 2026-10-04.
+`3f2c14101d3ae1c7f0c0a11993a43407fadbeb46`. Updated 2026-10-09.
 Reports of gameplay on the original iOS fork are not validation of this merge.
+
+## Background resume and internet joins — 2026-10-09
+
+Symptom: on the iPad, server browser joins failed with "could not reach"
+after the app had been in the background. A fresh launch joined.
+
+Cause, from the device console (`xcrun devicectl device process launch
+--console`): iOS defuncts a suspended app's sockets. The internet play
+tunnel's UDP socket read `ENOTCONN` (Winsock 10057) after the background,
+and so did the game's own server browser socket (UDP 5151), so a host's
+reply through a working tunnel never reached the game. The broker TCP
+connections were dead too, and they reconnected only after their retry and
+silence timers, past the browser's 30-second join limit.
+
+Fix:
+
+- `port/ios/host/posix_net.c` records each UDP socket's protocol, options and
+  bound address (with the port the system chose). A socket that fails with
+  `ENOTCONN`/`EPIPE` and peeks `ENOTCONN` is recreated in place with `dup2`,
+  then given the same options and bound to the same port. Each revival is
+  logged to `ios-runtime.log`.
+- `p2p.c`: if `select` returns `PEER_TIMEOUT` past its wait, the p2p thread was
+  suspended. It asks STUN for the public address again and calls the new
+  `p2p_signal_reconnect()`, which reconnects every broker at once.
+
+Observed on iPad Pro 11" (4th gen): join a public v24 server, leave, background
+and lock the device for about 4 minutes, return, then join the same server.
+This failed three times before the fix (a tunnel-only reopen and a broker
+reconnect each fixed one layer). With both changes it succeeded: the console
+showed sockets 17 and 18 recreated on their ports (the tunnel's 58275 and
+5151), the same STUN mapping, and a connected host after a 307-second stop.
+The native network probe passes when built with `tools/ios_test.py`'s flags.
+
+Not verified: hosting after a resume, a game under way across a background
+shorter than 20 seconds, and other platforms' behavior after a long
+`select` gap (the STUN and broker refresh is shared code).
+
+## Upstream merge — main `f479e349`, 2026-10-09
+
+Merged 390 upstream commits (online co-op, online split screen, voice chat,
+Custom Edition maps, renderer/audio work, hardening; network version 11 → 24).
+Apple-specific integration in the merge:
+
+- The browser-only `_distributed_message_migration_checkpoint` moved from
+  after `batch` (where it shifted upstream's `notice`, `client_identity` and
+  `pings` numbers by one) to 83, past upstream's kinds.
+- The ILP32 guests keep the 128 MB contiguous window and the Xbox's texture
+  and sound caches: upstream's 512 MB desktop window would overlap the guest
+  image at `0x88000000`. Upstream's new ES-only `HALO_ANDROID` renderer and
+  post-processing guards now use `HALO_ILP32`.
+- Guest runtime: 8-byte `memcmp`, callback-less SDL audio streams for voice
+  capture, `host_gl_read_buffer`; Opus and zlib compiled into the guest.
+  `NSMicrophoneUsageDescription` added; `brokers.txt` bundled; Lucide's ISC
+  notice (voice speaker icons) bundled with Opus's and zlib's.
+- Web build: zlib, Opus and the port's game headers wired into
+  `tools/web_build.py` as on the other ports; `posix_trace_marker.c` excluded;
+  `memory_watch_begin_frame` and the SDL audio stream calls voice chat links
+  against added to the web layer (the page records no audio); texture swizzle
+  state skipped on WebGL 2, which has none.
+- Scoreboards: the voice speaker is placed after the browser builds'
+  " (HOST)" mark, and the split-screen score's ping column falls back to the
+  host's measurement outside browser rooms.
+- Regression harnesses that extract production functions were updated for
+  upstream's code: the render-target cache and multisampled framebuffers
+  (`web-memory.test.cjs`), the host's vehicle carry in the client tick, and
+  upstream's solo-host lobby gate (`server_alone`: one player may start any
+  game) in `test_web_server_policy.py`.
+
+Observed:
+
+- Apple guest, signed iPad app (Release, team build), unsigned IPA, simulator
+  app and macOS app built. `tools/ios_test.py`, the 132
+  `tools/tests/*.test.cjs` checks, the web workflow's nine Python harnesses
+  and its four C regressions pass. Eight applicable `tools/test_linux_port.py`
+  checks pass; the same three Linux-toolchain checks fail on macOS as before.
+  `tools/harness` and `port/relay` tests need Linux and were not run.
+- `ninja web` with Emscripten 6.0.10 links; the page loads its capability
+  checks and room UI (game data import and play not exercised).
+  `tools/ci_build.py android debug` builds the APK on this Mac. Linux and
+  Windows builds were not run here.
+- iPad Pro 11" (4th gen, M2): the user's NTSC-US image imported from a loose
+  Documents copy; 216 guest imports resolved, Metal (ANGLE) renderer, main
+  menu with music. A network co-op host on `a10` (`debug.network_test =
+  "host:a10:coop"`) loaded, the cutscene skip vote passed, and gameplay
+  rendered with the touch controls (device screenshot inspected). The final
+  build reopened to the main menu.
+- Not verified: joining a v24 public server, online split screen with
+  multiple controllers, voice chat capture on device, browser rooms, and
+  launching the macOS app.
 
 ## Main refresh — 0.1.9 (13), 2026-10-04
 

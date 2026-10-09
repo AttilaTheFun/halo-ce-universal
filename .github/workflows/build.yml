@@ -8,8 +8,8 @@ name: Build
 # - one job per platform builds both configurations, so its set-up (tools,
 #   downloads, caches) is paid once;
 # - compiles go through ccache, whose cache carries over from run to run, so
-#   a commit only recompiles what it changed; downloads (SDL, musl, Gradle)
-#   are cached too;
+#   a commit only recompiles what it changed; downloads (SDL, musl, Gradle,
+#   the Linux build's system root) are cached too;
 # - a newer push to the same branch cancels a run still going;
 # - pushes that only change documentation do not build;
 # - Windows, whose minutes cost twice Linux's, builds only Windows;
@@ -41,7 +41,11 @@ env:
 jobs:
   linux:
     # Arch Linux has what the build needs as packages: clang 22 (for the
-    # profile-guided optimisation in pgo/) and 32-bit SDL 3.
+    # profile-guided optimisation in pgo/), and CMake, pkg-config and
+    # wayland-scanner for the SDL 3 that the portable build brings. The build
+    # links against Debian 11's 32-bit glibc (tools/linux_sysroot.py), not
+    # Arch's, so that it starts on SteamOS and older distributions; Arch's
+    # 32-bit glibc is for the tests.
     runs-on: ubuntu-24.04
     container: archlinux:latest
     timeout-minutes: 40
@@ -50,7 +54,7 @@ jobs:
         run: |
           printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
           pacman -Syu --noconfirm --needed git zstd python python-pytest ninja ccache \
-            clang lld gcc lib32-glibc lib32-gcc-libs lib32-sdl3
+            clang lld gcc lib32-glibc lib32-gcc-libs cmake pkgconf wayland
 
       - uses: actions/checkout@v4
 
@@ -60,6 +64,12 @@ jobs:
           key: ccache-linux-${{ github.sha }}
           restore-keys: ccache-linux-
 
+      # the system root and SDL's source, which the build downloads
+      - uses: actions/cache@v4
+        with:
+          path: build/linux/third_party
+          key: linux-third-party-${{ hashFiles('tools/linux_sysroot.py') }}
+
       - name: Debug
         run: python tools/ci_build.py linux debug
 
@@ -67,7 +77,9 @@ jobs:
         run: python tools/ci_build.py linux release
 
       - name: Test
-        run: python -m pytest -q tools/test_linux_port.py
+        run: |
+          python -m pytest -q tools/test_linux_port.py tools/test_host_watch_hash.py tools/harness
+          python tools/test_light_storage.py
 
       - name: Compile cache
         run: ccache --show-stats
@@ -110,7 +122,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: build/android/third_party
-          key: android-third-party-${{ hashFiles('tools/android_build.py') }}
+          key: android-third-party-${{ hashFiles('tools/android_build.py', 'port/android/patches/**') }}
 
       - uses: actions/cache@v4
         with:
@@ -200,6 +212,9 @@ jobs:
       - name: Release
         run: python tools/ci_build.py windows release
 
+      - name: Test light storage
+        run: python tools/test_light_storage.py
+
       - name: Compile cache
         run: ccache --show-stats
 
@@ -215,8 +230,22 @@ jobs:
           path: dist/halo-windows-release
           retention-days: 3
 
+      # the PDBs, for crash reports' backtraces (tools/ci_build.py)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: halo-windows-debug-symbols
+          path: dist/halo-windows-debug-symbols
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: halo-windows-release-symbols
+          path: dist/halo-windows-release-symbols
+          retention-days: 3
+
   release:
-    # The six builds as a release, tagged build-<run number> and marked latest
+    # The six builds (and the Windows builds' PDBs) as a release, tagged
+    # build-<run number> and marked latest
     # (every file keeps its name from release to release, for the README's
     # latest/download links); then all but the newest five build-* releases
     # go, tags and all. Only for main, and only when every platform built.
@@ -260,6 +289,36 @@ jobs:
           gh release create "$tag" release/*.zip --target "$GITHUB_SHA" --latest \
             --title "Build $GITHUB_RUN_NUMBER (${GITHUB_SHA:0:7})" --notes-file notes.md
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # The Windows builds' executables and PDBs to Sentry, which turns the
+      # crash reports of these builds (port/windows/src/win32_crash.c) into
+      # backtraces with function names and lines. Needs the SENTRY_AUTH_TOKEN
+      # secret: an organization auth token of the Sentry organization, which
+      # names the organization and its region itself. The SENTRY_PROJECT
+      # variable can name the project (its slug), else the id in the DSN of
+      # win32_crash.c; SENTRY_ORG and SENTRY_URL (https://de.sentry.io) are
+      # for a personal token instead. A failed upload does not stop the
+      # release.
+      - name: Upload Windows symbols to Sentry
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || '4512207917744208' }}
+          ORG: ${{ vars.SENTRY_ORG }}
+          URL: ${{ vars.SENTRY_URL }}
+          SENTRY_CLI_VERSION: 2.46.0
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::warning::no SENTRY_AUTH_TOKEN secret: crash reports of this build will have no function names"
+            exit 0
+          fi
+          if [ -n "$ORG" ]; then export SENTRY_ORG="$ORG"; fi
+          if [ -n "$URL" ]; then export SENTRY_URL="$URL"; fi
+          curl -fsSL -o sentry-cli "https://github.com/getsentry/sentry-cli/releases/download/$SENTRY_CLI_VERSION/sentry-cli-Linux-x86_64"
+          chmod +x sentry-cli
+          ./sentry-cli debug-files upload --wait \
+            artifacts/halo-windows-release artifacts/halo-windows-release-symbols \
+            artifacts/halo-windows-debug artifacts/halo-windows-debug-symbols
 
       - name: Keep the last five
         run: |

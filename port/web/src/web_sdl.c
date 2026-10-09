@@ -687,3 +687,28 @@ bool SDL_ResumeAudioStreamDevice(SDL_AudioStream *stream)
 	audio_stream.resumed = 1;
 	return true;
 }
+
+/* The page has no microphone stream: voice chat's capture asks for a stream
+without a callback, which SDL_OpenAudioDeviceStream refuses, so no stream is
+ever read from. */
+int SDL_GetAudioStreamData(SDL_AudioStream *stream, void *buffer, int length)
+{
+	(void)stream;
+	(void)buffer;
+	(void)length;
+	set_error("the browser records no audio");
+	return -1;
+}
+
+int SDL_GetAudioStreamAvailable(SDL_AudioStream *stream)
+{
+	(void)stream;
+	return 0;
+}
+
+/* The one playback stream lasts as long as the page (the output device
+check that reopens it is a desktop one, sdl_platform.c). */
+void SDL_DestroyAudioStream(SDL_AudioStream *stream)
+{
+	(void)stream;
+}

@@ -89,3 +89,8 @@ set_source_files_properties("${ROOT}/port/third_party/monocypher/LICENCE.md" PRO
 
 target_sources(HaloCE PRIVATE "${ROOT}/port/third_party/expat/COPYING")
 set_source_files_properties("${ROOT}/port/third_party/expat/COPYING" PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Licenses/Expat)
+
+# internet play's MQTT brokers; the app copies the list beside config.toml
+# at each start (host_main.m)
+target_sources(HaloCE PRIVATE "${ROOT}/port/assets/network/brokers.txt")
+set_source_files_properties("${ROOT}/port/assets/network/brokers.txt" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)

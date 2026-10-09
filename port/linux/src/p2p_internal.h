@@ -128,6 +128,10 @@ void p2p_signal_join(const unsigned char *host_hash, const unsigned char *token)
 void p2p_signal_stop_joining(void);
 /* whether any broker is connected */
 int p2p_signal_connected(void);
+/* every broker's connection made anew at once: after the p2p thread was
+stopped (iOS takes a suspended game's sockets), the old ones carry nothing,
+and would be noticed only at their silence timeout */
+void p2p_signal_reconnect(void);
 /* the server browser's topics: the own slot and the queries (a listed
 game), and every slot (browsing) */
 void p2p_signal_lobby_topics(int listed, int browsing);
@@ -198,6 +202,26 @@ int p2p_ed25519_verify(const unsigned char *public_key, const void *message, int
 	const unsigned char *signature);
 /* the X25519 public key of an Ed25519 one; 0 if it has a small order */
 int p2p_ed25519_to_x25519(const unsigned char *public_key, unsigned char *x25519_public);
+
+enum
+{
+	/* a password-protected listing's token, sealed (p2p_seal_token): its
+	nonce (24), its tag (16), then the token sealed */
+	P2P_PASSWORD_KEY_SIZE = 32,
+	P2P_SEALED_TOKEN_SIZE = 24 + 16 + 16,
+};
+
+/* the key of a password (Argon2id: P2P_PASSWORD_KEY_SIZE bytes), for the
+host whose Ed25519 key salt is (P2P_KEY_SIZE bytes): it takes a few
+milliseconds, so that guessing passwords at a listing takes long */
+void p2p_password_key(const char *password, const unsigned char *salt, unsigned char *key);
+/* a token (P2P_TOKEN_SIZE bytes) sealed with a password's key, bound to the
+host's Ed25519 key (P2P_SEALED_TOKEN_SIZE bytes); and opened: 0 if the key
+is not the one it was sealed with (a wrong password), or it was altered */
+void p2p_seal_token(const unsigned char *key, const unsigned char *signing_key, const unsigned char *token,
+	unsigned char *sealed);
+int p2p_unseal_token(const unsigned char *key, const unsigned char *signing_key, const unsigned char *sealed,
+	unsigned char *token);
 
 /* ---------- p2p_lobby.c: public games' listings */
 

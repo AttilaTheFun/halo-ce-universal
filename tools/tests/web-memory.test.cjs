@@ -62,10 +62,10 @@ test('the upload recorder stops allocating backing stores after warming its reus
 
 test('browser resolution changes reuse color/depth textures and their framebuffers', () => {
   const source = fs.readFileSync(path.join(root, 'port/linux/src/d3d8_gl.c'), 'utf8');
-  const target = source.slice(source.indexOf('static struct render_target_entry *render_target_get('),
+  const target = source.slice(source.indexOf('/* the secondary render target, the size of the Xbox\'s'),
     source.indexOf('\nstruct xgpu_render_target *xgpu_render_target_find'));
-  const start = source.indexOf('static GLuint framebuffer_get(GLuint color, GLuint depth)\n{');
-  const framebuffer = source.slice(start, source.indexOf('\n/* the pixels per unit', start));
+  const start = source.indexOf('/* the framebuffer of these textures, or with renderbuffers');
+  const framebuffer = source.slice(start, source.indexOf('\n/* ---------- multisampling', start));
   const program = `
 #include <assert.h>
 #include <stdlib.h>
@@ -84,12 +84,17 @@ test('browser resolution changes reuse color/depth textures and their framebuffe
 #define GL_FRAMEBUFFER 10
 #define GL_DEPTH_STENCIL_ATTACHMENT 11
 #define GL_FRAMEBUFFER_COMPLETE 12
+#define GL_RENDERBUFFER 13
+#define TRUE 1
+#define FALSE 0
 typedef unsigned int GLuint, GLenum;
+typedef unsigned long DWORD;
 typedef int GLint, GLsizei, BOOL;
-typedef struct { unsigned long Data, width, height; BOOL depth; } D3DSurface;
+typedef struct { DWORD Data, Format, Size; unsigned long width, height; BOOL depth; } D3DSurface;
 struct xgpu_render_target { unsigned long data, width, height, gl_width, gl_height; BOOL depth; float scale[2]; GLuint texture; };
-struct render_target_entry { struct render_target_entry *next, *next_in_bucket; struct xgpu_render_target target; unsigned long last_rendered; };
-struct framebuffer_entry { struct framebuffer_entry *next; GLuint color, depth, framebuffer; };
+struct render_target_entry { struct render_target_entry *next, *next_in_bucket; struct xgpu_render_target target; unsigned long last_rendered; BOOL screen_buffer; };
+static struct { D3DSurface depth_buffer, back_buffer; } device;
+struct framebuffer_entry { struct framebuffer_entry *next; GLuint color, depth, framebuffer; BOOL renderbuffers; };
 static struct render_target_entry *render_targets, *buckets[16];
 static struct framebuffer_entry *framebuffers;
 static float screen_scale[2] = {1, 1};
@@ -97,6 +102,8 @@ static unsigned textures, fbos, uploads;
 static struct render_target_entry **render_target_bucket(unsigned long data) { return &buckets[data % 16]; }
 static long halo_screen_width(void) { return 640; }
 static void surface_dimensions(const D3DSurface *s, unsigned long *w, unsigned long *h, BOOL *d) { *w=s->width; *h=s->height; *d=s->depth; }
+static BOOL surface_is_shadow_map(const D3DSurface *s) { (void)s; return 0; }
+static long halo_shadow_map_scale(void) { return 1; }
 static void glGenTextures(int n, GLuint *id) { assert(n==1); *id=++textures; }
 static void glBindTexture(GLenum t, GLuint id) { (void)t; (void)id; }
 static void glTexParameteri(GLenum t, GLenum p, GLint v) { (void)t; (void)p; (void)v; }
@@ -107,13 +114,14 @@ static void xgpu_gl_state_invalidate(void) {}
 static void glGenFramebuffers(int n, GLuint *id) { assert(n==1); *id=++fbos; }
 static void glBindFramebuffer(GLenum t, GLuint id) { (void)t; (void)id; }
 static void glFramebufferTexture2D(GLenum t, GLenum a, GLenum tt, GLuint id, GLint l) { (void)t; (void)a; (void)tt; (void)id; (void)l; }
+static void glFramebufferRenderbuffer(GLenum t, GLenum a, GLenum rt, GLuint id) { (void)t; (void)a; (void)rt; (void)id; assert(0); }
 static void glDrawBuffers(int n, const GLenum *buffer) { assert(n==1); (void)buffer; }
 static GLenum glCheckFramebufferStatus(GLenum t) { (void)t; return GL_FRAMEBUFFER_COMPLETE; }
-static void platform_log(const char *fmt, GLuint c, GLuint d) { (void)fmt; (void)c; (void)d; assert(0); }
+static void platform_log(const char *fmt, ...) { (void)fmt; assert(0); }
 ${target}
 ${framebuffer}
 int main(void) {
-  D3DSurface color={16,640,480,0}, depth={32,640,480,1}, small={48,128,128,0};
+  D3DSurface color={16,0,0,640,480,0}, depth={32,0,0,640,480,1}, small={48,0,0,128,128,0};
   struct render_target_entry *c=render_target_get(&color), *d=render_target_get(&depth), *s=render_target_get(&small);
   GLuint framebuffer=framebuffer_get(c->target.texture,d->target.texture);
   assert(render_target_get(NULL)==NULL);
