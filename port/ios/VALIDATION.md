@@ -1,9 +1,43 @@
 # iOS/browser integration validation
 
-This record applies to `apple/ios-web-multiplayer`, based on PR #12 at
+This record applies to `apple/ios-upstream-merge` (from
+`apple/ios-web-multiplayer`), based on PR #12 at
 `eaa82e6803f3d3e67c91d7f2fa2b15ee04e195f5` and the iOS fork at
-`3f2c14101d3ae1c7f0c0a11993a43407fadbeb46`. Updated 2026-10-04.
+`3f2c14101d3ae1c7f0c0a11993a43407fadbeb46`. Updated 2026-10-09.
 Reports of gameplay on the original iOS fork are not validation of this merge.
+
+## Upstream merge — main `f479e349`, 2026-10-09
+
+Merged 390 upstream commits (online co-op, online split screen, voice chat,
+Custom Edition maps, renderer/audio work, hardening; network version 11 → 24).
+Apple-specific integration in the merge:
+
+- The browser-only `_distributed_message_migration_checkpoint` moved from
+  after `batch` (where it shifted upstream's `notice`, `client_identity` and
+  `pings` numbers by one) to 83, past upstream's kinds.
+- The ILP32 guests keep the 128 MB contiguous window and the Xbox's texture
+  and sound caches: upstream's 512 MB desktop window would overlap the guest
+  image at `0x88000000`. Upstream's new ES-only `HALO_ANDROID` renderer and
+  post-processing guards now use `HALO_ILP32`.
+- Guest runtime: 8-byte `memcmp`, callback-less SDL audio streams for voice
+  capture, `host_gl_read_buffer`; Opus and zlib compiled into the guest.
+  `NSMicrophoneUsageDescription` added; `brokers.txt` bundled.
+
+Observed:
+
+- Apple guest, signed iPad app (Release, team build) and simulator app built.
+  `tools/ios_test.py` passes. Eight applicable `tools/test_linux_port.py`
+  checks pass; the same three Linux-toolchain checks fail on macOS as before.
+  `tools/harness` needs an i686 Linux toolchain and was not run.
+- iPad Pro 11" (4th gen, M2): the user's NTSC-US image imported from a loose
+  Documents copy; 216 guest imports resolved, Metal (ANGLE) renderer, main
+  menu with music. A network co-op host on `a10` (`debug.network_test =
+  "host:a10:coop"`) loaded, the cutscene skip vote passed, and gameplay
+  rendered with the touch controls (device screenshot inspected).
+- Not verified: joining a v24 public server, online split screen with
+  multiple controllers, voice chat capture on device, browser rooms, the web
+  build (no Emscripten on this host). The macOS app built but was not
+  launched.
 
 ## Main refresh — 0.1.9 (13), 2026-10-04
 

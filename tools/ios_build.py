@@ -82,6 +82,8 @@ def main():
         ('port/third_party/kcp/LICENSE', 'kcp.txt'),
         ('port/third_party/extract-xiso/LICENSE.TXT', 'extract-xiso.txt'),
         ('port/third_party/tomlc17/LICENSE', 'tomlc17.txt'),
+        ('port/third_party/opus/COPYING', 'Opus.txt'),
+        ('port/third_party/zlib/LICENSE', 'zlib.txt'),
     ):
         shutil.copyfile(ROOT/source, notices/name)
     if args.guest_only:

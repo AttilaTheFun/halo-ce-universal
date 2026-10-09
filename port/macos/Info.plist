@@ -24,6 +24,8 @@
 	<string>13.0</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Talk to other players with voice chat. The microphone is used only in online games, when you hold push-to-talk or turn on open mic.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Connect to other players on your local network.</string>
 </dict>

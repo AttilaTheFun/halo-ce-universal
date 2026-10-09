@@ -641,26 +641,26 @@ VOID WINAPI Sleep(DWORD milliseconds)
 
 /* ---------- time */
 
-DWORD WINAPI GetTickCount(void)
+/* The game's clocks count from when it started, as the Xbox's count from
+power-on. Its code keeps times in signed 32-bit variables, which a host up
+for more than 24.8 days (2^31 ms since boot) overflows: a hosted game then
+timed out its own clients. They start at 10 s, about where an Xbox's clock
+is by the time the game runs. */
+static unsigned long long platform_clock_nanoseconds(void)
 {
+	static unsigned long long start;
 	struct timespec now;
+	unsigned long long value, expected = 0;
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
-#ifdef HALO_WEB
-	/* a browser's monotonic clock counts from 1970: count from the start,
-	as an Xbox counts from its boot (the network code compares tick counts
-	as signed longs, which a count past 2^31 turns negative) */
-	{
-		static unsigned long long start;
-		unsigned long long milliseconds = (unsigned long long)now.tv_sec * 1000ULL +
-			(unsigned long long)now.tv_nsec / 1000000ULL;
+	value = (unsigned long long)now.tv_sec * 1000000000ULL + (unsigned long long)now.tv_nsec;
+	__atomic_compare_exchange_n(&start, &expected, value - 10000000000ULL, 0, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+	return value - __atomic_load_n(&start, __ATOMIC_RELAXED);
+}
 
-		if (!start)
-			start = milliseconds;
-		return (DWORD)(milliseconds - start + 60000ULL);
-	}
-#endif
-	return (DWORD)((unsigned long long)now.tv_sec * 1000ULL + (unsigned long long)now.tv_nsec / 1000000ULL);
+DWORD WINAPI GetTickCount(void)
+{
+	return (DWORD)(platform_clock_nanoseconds() / 1000000ULL);
 }
 
 /* The Xbox performance counter runs at the 733 MHz CPU clock. Report a
@@ -670,21 +670,7 @@ arithmetic in the game stays in range, fine enough for frame timing. */
 
 BOOL WINAPI QueryPerformanceCounter(LARGE_INTEGER *count)
 {
-	struct timespec now;
-
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	count->QuadPart = (LONGLONG)((unsigned long long)now.tv_sec * PLATFORM_PERFORMANCE_FREQUENCY +
-		(unsigned long long)now.tv_nsec / (1000000000ULL / PLATFORM_PERFORMANCE_FREQUENCY));
-#ifdef HALO_WEB
-	/* (from the start, as GetTickCount) */
-	{
-		static LONGLONG start;
-
-		if (!start)
-			start = count->QuadPart - 60 * (LONGLONG)PLATFORM_PERFORMANCE_FREQUENCY;
-		count->QuadPart -= start;
-	}
-#endif
+	count->QuadPart = (LONGLONG)(platform_clock_nanoseconds() / (1000000000ULL / PLATFORM_PERFORMANCE_FREQUENCY));
 	return TRUE;
 }
 

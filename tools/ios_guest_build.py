@@ -10,10 +10,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-from .linux_build import MUSL_MATH_DIR, musl_math_sources, game_sources, game_defines_and_includes, LINUX_PROFILE, XDK_INCLUDE, compile_launcher, pgo_mode, pgo_profile, profile_use_flags, xdk_headers
+from .linux_build import MUSL_MATH_DIR, musl_math_sources, game_sources, game_defines_and_includes, LINUX_PROFILE, XDK_INCLUDE, compile_launcher, opus_cflags, opus_sources, pgo_mode, pgo_profile, profile_use_flags, xdk_headers
 from .ninja_syntax import Writer
 from .embed_assets import hud_assets_build
-from .linux_build import EXPAT_DIR, EXPAT_SOURCES
+from .linux_build import EXPAT_DIR, EXPAT_SOURCES, ZLIB_DEFINES, ZLIB_DIR, ZLIB_SOURCES
 
 PORT_DIR = Path("port/runtime")
 LINUX_DIR = Path("port/linux")
@@ -100,6 +100,8 @@ MUSL_EXCLUDE = {
     "env/__reset_tls.c", "malloc/oldmalloc", "thread/pthread_create.c",
     # unused, and its compiler barrier is an inline assembly statement
     "string/explicit_bzero.c",
+    # eight bytes at a time (guest_string.c)
+    "string/memcmp.c",
 }
 # game files that call variadic functions without a prototype in scope, which
 # only works under x86's calling convention (tools/guest_abi_check.py)
@@ -338,7 +340,11 @@ def generate_ios_guest_build(n: Writer, sln: Any) -> None:
     game_cflags = " ".join([
         guest_abi, guest_code, " ".join(game_flags), profile_flags,
         f"-include {prefix_header}", f"-include {semantics_header}",
-        f"-I{LINUX_DIR}/include", game_defines_and_includes(config), *libc_includes, f"-idirafter {XDK_INCLUDE}",
+        f"-I{LINUX_DIR}/include",
+        # the headers of the port's own game units (port/linux/game), for the
+        # game sources that call them
+        f"-iquote {Path(config['game_sources'])}",
+        game_defines_and_includes(config), *libc_includes, f"-idirafter {XDK_INCLUDE}",
     ])
     for source in game_sources(config):
         cflags = game_cflags
@@ -353,7 +359,8 @@ def generate_ios_guest_build(n: Writer, sln: Any) -> None:
         guest_abi, guest_code, "-std=gnu11", "-D_GNU_SOURCE", "-DHALO_LINUX_PLATFORM_LAYER", "-w", profile_flags,
         f"-include {prefix_header}", f"-include {platform_semantics_header}",
         f"-I{LINUX_DIR}/src", f"-I{LINUX_DIR}/include", f"-I{PORT_DIR}/guest/runtime",
-        f"-I{PORT_DIR}/include", f"-I{TOML_DIR}", f"-I{EXPAT_DIR}", f"-I{KCP_DIR}", "-Iport/third_party/monocypher", "-Isource -Isource/cseries",
+        f"-I{PORT_DIR}/include", f"-I{TOML_DIR}", f"-I{EXPAT_DIR}", f"-I{KCP_DIR}", "-Iport/third_party/monocypher",
+        f"-I{ZLIB_DIR}", "-Isource -Isource/cseries",
         f"-I{SDL_DIR}/include", f"-I{gl_include}", *libc_includes, f"-idirafter {XDK_INCLUDE}",
     ])
     guest_host_only = {"memory_watch.c"}  # replaced by guest_memory_watch.c
@@ -380,6 +387,15 @@ def generate_ios_guest_build(n: Writer, sln: Any) -> None:
     objects.append(guest_object(KCP_DIR / "ikcp.c", platform_cflags))
     for name in ("monocypher.c", "monocypher-ed25519.c"):
         objects.append(guest_object(Path("port/third_party/monocypher") / name, platform_cflags))
+    # voice chat's codec (port/third_party/opus), with the guest's ABI and C library
+    for source in opus_sources():
+        objects.append(guest_object(source, " ".join([opus_cflags(guest_abi), *libc_includes])))
+    # the port's zlib (port/third_party/zlib), as the Android guest builds it
+    # (not the CPU's CRC32 instructions, which the guest's assembly step is not
+    # told it may use)
+    for name in ZLIB_SOURCES:
+        objects.append(guest_object(ZLIB_DIR / name, " ".join([platform_cflags, *ZLIB_DEFINES,
+                                                               "-U__ARM_FEATURE_CRC32"])))
     runtime_internal_cflags = " ".join([
         guest_abi, "-std=c99", "-ffreestanding", "-fno-common", "-D_XOPEN_SOURCE=700", "-D_GNU_SOURCE",
         f"-I{PORT_DIR}/guest/runtime", f"-I{PORT_DIR}/include",

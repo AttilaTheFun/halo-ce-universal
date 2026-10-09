@@ -39,3 +39,10 @@ void memory_watch_forget(void *address, unsigned long size)
 {
 	host_memory_watch_forget((unsigned int)address, size);
 }
+
+/* A new frame starts. Write tracking here catches page faults at once (and
+the texture cache tracks dirty 16 KB pages itself), so there is nothing to
+re-arm; only page-hash tracking (Android under ARM translation) needs this. */
+void memory_watch_begin_frame(void)
+{
+}

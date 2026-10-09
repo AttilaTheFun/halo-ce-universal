@@ -12,12 +12,14 @@ void host_gl_get_string(uint32_t name,int index,char *buffer,uint32_t size) {
     if(size)SDL_strlcpy(buffer,text?(const char *)text:"",size);
 }
 int host_gl_has_extension(const char *name) {return halo_graphics_has_extension(name);}
-uint32_t host_gl_read_buffer_word(uint32_t buffer,uint32_t offset) {
+/* copies size bytes of a buffer object (the snapshots of the visibility tests' counters, d3d8_gl.c) */
+void host_gl_read_buffer(uint32_t buffer,uint32_t offset,uint32_t size,void *data) {
     GL_FUNCTION(void,glBindBuffer,(GLenum,GLuint));GL_FUNCTION(void *,glMapBufferRange,(GLenum,GLintptr,GLsizeiptr,GLbitfield));
     GL_FUNCTION(GLboolean,glUnmapBuffer,(GLenum));GL_FUNCTION(void,glGetIntegerv,(GLenum,GLint *));
-    GLint previous;uint32_t value=0;glGetIntegerv(GL_COPY_READ_BUFFER_BINDING,&previous);glBindBuffer(GL_COPY_READ_BUFFER,buffer);
-    void *p=glMapBufferRange(GL_COPY_READ_BUFFER,offset,4,GL_MAP_READ_BIT);if(p){memcpy(&value,p,4);glUnmapBuffer(GL_COPY_READ_BUFFER);}
-    glBindBuffer(GL_COPY_READ_BUFFER,previous);return value;
+    GLint previous=0;glGetIntegerv(GL_COPY_READ_BUFFER_BINDING,&previous);glBindBuffer(GL_COPY_READ_BUFFER,buffer);
+    void *p=glMapBufferRange(GL_COPY_READ_BUFFER,offset,size,GL_MAP_READ_BIT);
+    if(p){memcpy(data,p,size);glUnmapBuffer(GL_COPY_READ_BUFFER);}else memset(data,0,size);
+    glBindBuffer(GL_COPY_READ_BUFFER,previous);
 }
 static GLsync fences[8];
 void host_gl_fence_frame(uint32_t slot) {
