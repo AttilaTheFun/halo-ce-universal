@@ -28,15 +28,46 @@ int config_boolean(const char *name)
 }
 long config_integer(const char *name) { (void)name; return 0; }
 double config_real(const char *name) { (void)name; return 0; }
+/* p2p_signal.c reads its brokers from network.brokers_file
+   (port/assets/network/brokers.txt). The relay has no config folder: it names
+   an absolute path and config_file_read() answers it from memory. */
+#define RELAY_BROKERS_FILE "/halo-relay/brokers.txt"
+static const char relay_brokers[] =
+    "opence.milenko.org:1883\n"
+    "broker.emqx.io:1883\n"
+    "broker.hivemq.com:1883\n"
+    "test.mosquitto.org:1883\n";
+
+void config_folder(char *path, size_t size)
+{
+    if (size) path[0] = 0;
+}
+
+char *config_file_read(const char *path, size_t *size)
+{
+    const char *list = relay_brokers;
+    size_t length;
+    char *copy;
+
+    if (strcmp(path, RELAY_BROKERS_FILE)) return NULL;
+#ifdef HALO_RELAY_TEST
+    {
+        const char *test_broker = getenv("HALO_RELAY_TEST_BROKER");
+        if (test_broker) list = test_broker;
+    }
+#endif
+    length = strlen(list);
+    copy = malloc(length + 1);
+    if (!copy) return NULL;
+    memcpy(copy, list, length + 1);
+    if (size) *size = length;
+    return copy;
+}
+
 const char *config_string(const char *name)
 {
-    if (!strcmp(name, "network.signalling_brokers")) {
-#ifdef HALO_RELAY_TEST
-        const char *test_broker = getenv("HALO_RELAY_TEST_BROKER");
-        if (test_broker) return test_broker;
-#endif
-        return "broker.emqx.io:1883,broker.hivemq.com:1883,test.mosquitto.org:1883";
-    }
+    if (!strcmp(name, "network.brokers_file"))
+        return RELAY_BROKERS_FILE;
     if (!strcmp(name, "network.stun_servers")) {
 #ifdef HALO_RELAY_TEST
         return "";
