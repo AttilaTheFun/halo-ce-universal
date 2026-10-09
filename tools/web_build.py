@@ -29,7 +29,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .linux_build import MUSL_MATH_DIR, XDK_INCLUDE, compile_launcher, game_defines_and_includes, game_sources, musl_math_sources, xdk_headers
+from .linux_build import (MUSL_MATH_DIR, XDK_INCLUDE, ZLIB_DEFINES, ZLIB_DIR, ZLIB_SOURCES, compile_launcher,
+                          game_defines_and_includes, game_sources, musl_math_sources, opus_cflags, opus_sources,
+                          xdk_headers)
 from .ninja_syntax import Writer
 from .embed_assets import hud_assets_build
 from .linux_build import EXPAT_DIR, EXPAT_SOURCES
@@ -127,6 +129,7 @@ PLATFORM_EXCLUDE = {
     "posix_upnp.c",
     "updater.c",
     "xiso.c",           # the page extracts the maps (port/web/site/xiso.js)
+    "posix_trace_marker.c",  # Linux's GPU driver trace_marker refusal
 }
 
 LINK_FLAGS = [
@@ -242,6 +245,9 @@ def generate_web_build(n: Writer, sln: Any) -> None:
         abi, code, " ".join(GAME_FLAGS),
         f"-include {prefix_header}", f"-include {semantics_header}",
         f"-I{PORT_DIR}/include", f"-I{LINUX_DIR}/include",
+        # the headers of the port's own game units (port/linux/game), for the
+        # game sources that call them
+        f"-iquote {Path(config['game_sources'])}",
         game_defines_and_includes(config), f"-idirafter {XDK_INCLUDE}",
     ])
     for source in game_sources(config):
@@ -262,7 +268,8 @@ def generate_web_build(n: Writer, sln: Any) -> None:
         abi, code, "-std=gnu11", "-D_GNU_SOURCE", "-DHALO_LINUX_PLATFORM_LAYER", "-w",
         f"-include {prefix_header}", f"-include {platform_semantics_header}",
         f"-I{PORT_DIR}/include", f"-I{PORT_DIR}/src", f"-I{LINUX_DIR}/src", f"-I{LINUX_DIR}/include",
-        f"-I{TOML_DIR}", f"-I{EXPAT_DIR}", f"-I{KCP_DIR}", "-Iport/third_party/monocypher", "-Isource -Isource/cseries",
+        f"-I{TOML_DIR}", f"-I{EXPAT_DIR}", f"-I{KCP_DIR}", "-Iport/third_party/monocypher", f"-I{ZLIB_DIR}",
+        "-Isource -Isource/cseries",
         f"-I{SDL_DIR}/include", f"-idirafter {XDK_INCLUDE}",
     ])
     # posix_*.c talk to the C library only, with its own ABI (as on Linux)
@@ -285,6 +292,12 @@ def generate_web_build(n: Writer, sln: Any) -> None:
         add_object(EXPAT_DIR / name, platform_cflags)
     for name in ("monocypher.c", "monocypher-ed25519.c"):
         add_object(Path("port/third_party/monocypher") / name, " ".join([abi, "-std=gnu11", "-w"]))
+    # voice chat's codec (port/third_party/opus)
+    for source in opus_sources():
+        add_object(source, opus_cflags(abi))
+    # the port's zlib (maps, the menus' and the HUD's PNGs)
+    for name in ZLIB_SOURCES:
+        add_object(ZLIB_DIR / name, " ".join([abi, "-std=gnu11", "-w", *ZLIB_DEFINES]))
     musl_math_cflags = " ".join([
         abi, "-std=gnu11", "-w", f"-I{MUSL_MATH_DIR}/include", f"-include {MUSL_MATH_DIR}/include/libm.h",
     ])

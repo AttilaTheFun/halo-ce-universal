@@ -2411,6 +2411,10 @@ static void game_engine_rasterize_scoreboard(
 		struct player_datum *player;
 		wchar_t *status_string;
 		real_argb_color *row_color;
+		wchar_t const *name;
+#if defined(HALO_WEB) || defined(HALO_IOS_BROWSER)
+		wchar_t host_name[NUMBEROF(player->name) + 8];
+#endif
 
 		if (row >= rows || position >= list_counts[list])
 			continue;
@@ -2443,26 +2447,24 @@ static void game_engine_rasterize_scoreboard(
 			else
 				usprintf(ping_string, L"%ld", ping);
 		}
+		name = player->name;
 #if defined(HALO_WEB) || defined(HALO_IOS_BROWSER)
-		usnprintf(
-			row_string,
-			NUMBEROF(row_string),
-			L"\t%s\t%s%s\t%s\t%s",
-			campaign ? L"" : get_place_string(entry),
-			player->name,
-			entry->player_index == game_engine_score_host_player() ? L" (HOST)" : L"",
-			status_string,
-			ping_string);
-#else
+		/* (the host's name marked: the voice speaker goes after the mark) */
+		if (entry->player_index == game_engine_score_host_player())
+		{
+			usnprintf(host_name, NUMBEROF(host_name), L"%s (HOST)", player->name);
+			host_name[NUMBEROF(host_name) - 1] = 0;
+			name = host_name;
+		}
+#endif
 		usnprintf(
 			row_string,
 			NUMBEROF(row_string),
 			L"\t%s\t%s\t%s\t%s",
 			campaign ? L"" : get_place_string(entry),
-			player->name,
+			name,
 			status_string,
 			ping_string);
-#endif
 		row_string[NUMBEROF(row_string) - 1] = 0;
 		row_color = has_teams ? &team_colors[PIN(player->team_index, 0, 1)] : &color;
 		/* port: a player talking (or muted) in voice chat, its speaker just
@@ -2489,8 +2491,8 @@ static void game_engine_rasterize_scoreboard(
 			text.y0 = (short)(top + (2 + row) * line_height);
 			text.y1 = (short)(text.y0 + line_height);
 			draw_string_set_draw_mode(font_index, NONE, 0, 0, row_color);
-			draw_unicode_string_compute_bounds(&text, player->name, &ink, &cursor);
-			middle = (short)(top + (draw_unicode_string_capital_middle(&text, player->name) - top) * SCOREBOARD_SCALE);
+			draw_unicode_string_compute_bounds(&text, name, &ink, &cursor);
+			middle = (short)(top + (draw_unicode_string_capital_middle(&text, name) - top) * SCOREBOARD_SCALE);
 			scoreboard_rectangle(&icon, bounds.x0, top, line_height, text.x0, SCOREBOARD_NAME_WIDTH, 2 + row, 1);
 			size = (short)((icon.y1 - icon.y0) * 2 / 3);
 			name_end = (short)(bounds.x0 + (MAX(ink.x1, text.x0) - bounds.x0) * SCOREBOARD_SCALE);
@@ -2748,6 +2750,16 @@ static void game_engine_rasterize_in_game_score(
 			{
 				wchar_t ping_string[16];
 				int ping = game_engine_score_host_ping(entry_player_index);
+
+				/* (outside a browser room, which has no ping table: the
+				host's measurement, as the full scoreboard shows) */
+				if (ping < 0)
+				{
+					long measured = distributed_player_ping((short)DATUM_INDEX_TO_ABSOLUTE_INDEX(entry_player_index));
+
+					if (measured != NONE)
+						ping = (int)measured;
+				}
 				if (ping >= 0)
 					usnprintf(ping_string, NUMBEROF(ping_string), L"%d", ping);
 				else

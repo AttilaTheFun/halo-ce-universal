@@ -38,3 +38,7 @@ native graphics calls; it is not a browser or a WASM runtime.
 - Monocypher 4.0.3, vendored from upstream `c04765d7`, implements the signed
   public-server listings. See `port/third_party/monocypher/LICENCE.md`; that
   license is included in both app bundles under Licenses/Monocypher.
+- Lucide's `volume-2` and `volume-x` icons (ISC) are rendered into the voice
+  chat speaker images in the embedded menus. See
+  `port/assets/icons/lucide/LICENSE`; that license is included in both app
+  bundles as Licenses/Lucide.txt.

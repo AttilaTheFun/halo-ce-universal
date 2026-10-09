@@ -241,12 +241,16 @@ UDP tunnel and KCP implementation; automatic router port forwarding is not
 implemented on Apple. The old UIKit/AppKit list remains a diagnostic fallback
 for Xbox menus and automated native-join tests.
 
-Voice chat uses SDL's default input and output; device selection rows are
-desktop-only. iOS asks for microphone access the first time voice opens the
-microphone (open mic, or push-to-talk on a hardware keyboard's V); there is no
-touch or controller push-to-talk button. Halo Custom Edition maps are not
-available on Apple: their fixed tag-cache window lies outside the arena's
-mappable Xbox window, so the reservation fails and only Xbox maps load.
+Voice chat uses SDL's default input and output: the Apple guest does not
+enumerate SDL audio devices. iOS hides the device rows; the Mac app, which
+takes the desktop settings rows, lists only SYSTEM DEFAULT in them, and its
+desktop display rows (mode, resolution, window size, scaling) do nothing: the
+ILP32 platform layer compiles that window code out. iOS asks for microphone
+access the first time voice opens the microphone (open mic, or push-to-talk on
+a hardware keyboard's V); there is no touch or controller push-to-talk button.
+Halo Custom Edition maps are not available on Apple: their fixed tag-cache
+window lies outside the arena's mappable Xbox window, so the reservation fails
+and only Xbox maps load.
 
 Upstream commit `c9ee319a` added 28 bytes of PC game rules to the settings
 record (network version 11). The relevant rule logic and record layout are

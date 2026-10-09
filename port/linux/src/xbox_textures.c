@@ -725,7 +725,10 @@ static void upload(GLuint texture, GLenum target, const struct xgpu_texture_desc
 	glBindTexture(target, texture);
 	xgpu_gl_state_invalidate();
 	/* the channel of the texels each channel is sampled from, set on every
-	upload: a texture object can be reused for other texels */
+	upload: a texture object can be reused for other texels. WebGL 2 has no
+	texture swizzle (INVALID_ENUM): the web build converts texels to RGBA on
+	the CPU and samples Halo PC's channel orders as they are stored */
+#ifndef HALO_WEB
 	{
 		GLint channels[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 
@@ -751,6 +754,7 @@ static void upload(GLuint texture, GLenum target, const struct xgpu_texture_desc
 		glTexParameteri(target, GL_TEXTURE_SWIZZLE_B, channels[2]);
 		glTexParameteri(target, GL_TEXTURE_SWIZZLE_A, channels[3]);
 	}
+#endif
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, (GLint)description->levels - 1);

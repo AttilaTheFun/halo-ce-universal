@@ -135,3 +135,9 @@ void memory_watch_forget(void *address, unsigned long size)
 		page_generation[page] = __sync_add_and_fetch(&current_generation, 1);
 	}
 }
+
+/* (pages are hashed again whenever their generation is asked for, not once
+a frame: nothing to do as a frame starts) */
+void memory_watch_begin_frame(void)
+{
+}

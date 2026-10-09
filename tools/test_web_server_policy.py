@@ -89,11 +89,12 @@ boolean network_game_server_client_machine_is_joined_to_game(
     struct network_game_server *server, struct network_game_server_client_machine *machine)
 { (void)server; return machine->machine_index >= 0; }
 static void network_game_server_countdown_started(struct network_game_server *server) { (void)server; }
+static int cache_files_map_version(const char *name) { (void)name; return 0; }
 '''
 
 gates = "\n".join(function(name) for name in (
     "server_needs_more_teams", "server_has_a_player_on_each_machine",
-    "server_has_enough_machines", "server_ok_to_countdown",
+    "server_has_enough_machines", "server_alone", "server_ok_to_countdown",
     "network_game_server_setup_game_from_playlist", "network_game_server_update_countdown",
 ))
 
@@ -103,25 +104,26 @@ int main(void) {
         struct network_game_server server = {0};
         for (int i = 0; i < 16; i++) server.client_machines[i].machine_index = -1;
         assert(network_game_server_setup_game_from_playlist(&server));
-        int solo = 0;
+        int web = 0;
 #ifdef HALO_WEB
-        solo = distributed;
+        web = distributed;
 #endif
-        assert(server.game.minimum_players == (solo ? 1 : 2));
+        assert(server.game.minimum_players == (web ? 1 : 2));
         assert(!server_ok_to_countdown(&server));
         server.client_machines[0].machine_index = 0;
         assert(!server_ok_to_countdown(&server));
+        /* one player alone may start any game (upstream's server_alone) */
         server.game.players[0] = (struct network_player){1, 0, 0};
         server.game.player_count = 1;
-        assert(server_ok_to_countdown(&server) == solo);
+        assert(server_ok_to_countdown(&server));
         network_game_server_update_countdown(&server, _network_game_server_countdown_event_player_joined);
-        assert(server.countdown_state.active == solo);
-        if (solo) assert(server.countdown_state.timer.remaining == NETWORK_GAME_COUNTDOWN_TIME);
+        assert(server.countdown_state.active);
+        assert(server.countdown_state.timer.remaining == NETWORK_GAME_COUNTDOWN_TIME);
         network_game_server_update_countdown(&server, _network_game_server_countdown_event_start_immediately);
-        assert(server.countdown_state.active == solo);
-        if (solo) assert(server.countdown_state.timer.remaining == 0);
+        assert(server.countdown_state.active);
+        assert(server.countdown_state.timer.remaining == 0);
         server.game.variant.universal_variant.teams = 1;
-        assert(!server_ok_to_countdown(&server));
+        assert(server_ok_to_countdown(&server));
         server.game.variant.universal_variant.teams = 0;
         server.client_machines[1].machine_index = 1;
         assert(!server_ok_to_countdown(&server)); /* new machine has no player yet */
@@ -130,6 +132,9 @@ int main(void) {
         assert(server_ok_to_countdown(&server));
         server.game.variant.universal_variant.teams = 1;
         assert(server_ok_to_countdown(&server));
+        /* two players of one team need the other team's */
+        server.game.players[1].team_index = 0;
+        assert(!server_ok_to_countdown(&server));
     }
     assert(opened == 2);
     puts("Solo lobby, empty lobby, joining machine, teams, and lockstep gates passed.");

@@ -21,23 +21,43 @@ Apple-specific integration in the merge:
   post-processing guards now use `HALO_ILP32`.
 - Guest runtime: 8-byte `memcmp`, callback-less SDL audio streams for voice
   capture, `host_gl_read_buffer`; Opus and zlib compiled into the guest.
-  `NSMicrophoneUsageDescription` added; `brokers.txt` bundled.
+  `NSMicrophoneUsageDescription` added; `brokers.txt` bundled; Lucide's ISC
+  notice (voice speaker icons) bundled with Opus's and zlib's.
+- Web build: zlib, Opus and the port's game headers wired into
+  `tools/web_build.py` as on the other ports; `posix_trace_marker.c` excluded;
+  `memory_watch_begin_frame` and the SDL audio stream calls voice chat links
+  against added to the web layer (the page records no audio); texture swizzle
+  state skipped on WebGL 2, which has none.
+- Scoreboards: the voice speaker is placed after the browser builds'
+  " (HOST)" mark, and the split-screen score's ping column falls back to the
+  host's measurement outside browser rooms.
+- Regression harnesses that extract production functions were updated for
+  upstream's code: the render-target cache and multisampled framebuffers
+  (`web-memory.test.cjs`), the host's vehicle carry in the client tick, and
+  upstream's solo-host lobby gate (`server_alone`: one player may start any
+  game) in `test_web_server_policy.py`.
 
 Observed:
 
-- Apple guest, signed iPad app (Release, team build) and simulator app built.
-  `tools/ios_test.py` passes. Eight applicable `tools/test_linux_port.py`
+- Apple guest, signed iPad app (Release, team build), unsigned IPA, simulator
+  app and macOS app built. `tools/ios_test.py`, the 132
+  `tools/tests/*.test.cjs` checks, the web workflow's nine Python harnesses
+  and its four C regressions pass. Eight applicable `tools/test_linux_port.py`
   checks pass; the same three Linux-toolchain checks fail on macOS as before.
-  `tools/harness` needs an i686 Linux toolchain and was not run.
+  `tools/harness` and `port/relay` tests need Linux and were not run.
+- `ninja web` with Emscripten 6.0.10 links; the page loads its capability
+  checks and room UI (game data import and play not exercised).
+  `tools/ci_build.py android debug` builds the APK on this Mac. Linux and
+  Windows builds were not run here.
 - iPad Pro 11" (4th gen, M2): the user's NTSC-US image imported from a loose
   Documents copy; 216 guest imports resolved, Metal (ANGLE) renderer, main
   menu with music. A network co-op host on `a10` (`debug.network_test =
   "host:a10:coop"`) loaded, the cutscene skip vote passed, and gameplay
-  rendered with the touch controls (device screenshot inspected).
+  rendered with the touch controls (device screenshot inspected). The final
+  build reopened to the main menu.
 - Not verified: joining a v24 public server, online split screen with
-  multiple controllers, voice chat capture on device, browser rooms, the web
-  build (no Emscripten on this host). The macOS app built but was not
-  launched.
+  multiple controllers, voice chat capture on device, browser rooms, and
+  launching the macOS app.
 
 ## Main refresh — 0.1.9 (13), 2026-10-04
 

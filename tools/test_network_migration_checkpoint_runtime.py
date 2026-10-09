@@ -140,6 +140,7 @@ static void distributed_client_remove_own_objects(void) { removed++; }
 static void distributed_client_note_own_inventories(void) {}
 static void distributed_client_send_identity(void) {}
 static void distributed_client_send_vehicles(void) { vehicles++; }
+static void distributed_client_carry_unsteered_vehicles(void) {}
 static struct { long deletes; } objects_statistics;
 static void distributed_client_delete(long index) {
  long slot = DATUM_INDEX_TO_ABSOLUTE_INDEX(index);

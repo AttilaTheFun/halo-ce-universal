@@ -84,6 +84,7 @@ def main():
         ('port/third_party/tomlc17/LICENSE', 'tomlc17.txt'),
         ('port/third_party/opus/COPYING', 'Opus.txt'),
         ('port/third_party/zlib/LICENSE', 'zlib.txt'),
+        ('port/assets/icons/lucide/LICENSE', 'Lucide.txt'),
     ):
         shutil.copyfile(ROOT/source, notices/name)
     if args.guest_only:
