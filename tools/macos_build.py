@@ -71,6 +71,7 @@ def build_host():
         companion.unlink()
     if not companion.exists():
         companion.symlink_to(companion_target)
+    mbedtls = ROOT / "port/third_party/mbedtls"
     flags = ["-arch", "arm64", "-mmacosx-version-min=14.0", "-O2", "-g", "-DHALO_MACOS=1", "-D_DARWIN_C_SOURCE",
              "-Wall", "-Wextra", "-Wno-unused-function", "-Wno-unused-parameter",
              "-I.", "-Iport/macos/host", "-Iport/macos/native", "-Iport/android/include", "-Iport/linux/src",
@@ -78,14 +79,18 @@ def build_host():
              f"-I{MINIUPNPC_DIR / 'include'}", f"-I{MINIUPNPC_DIR / 'src'}", *MINIUPNPC_DEFINES]
     sources = sorted((ROOT / "port/macos/host").glob("*.c"))
     sources += sorted((ROOT / "port/macos/native").glob("*.m"))
-    sources += [ROOT / "port/linux/src/xiso.c"]
+    sources += [ROOT / "port/linux/src/xiso.c", ROOT / "port/linux/src/posix_dtls.c"]
     sources += miniupnpc_sources()
+    sources += sorted((mbedtls / "library").glob("*.c"))
     sources += [BUILD / "host/host_import_table.c", ROOT / "port/macos/host/entry.s"]
     objects = []
     for source in sources:
         obj = obj_dir / (source.name + ".o")
         native_flags = ["-fobjc-arc", "-fblocks", f"-F{sparkle.parent}"] if source.suffix == ".m" else []
-        run("clang", *flags, *native_flags, "-c", source, "-o", obj)
+        quiet = ["-w"] if source.is_relative_to(mbedtls) else []
+        dtls_includes = [f"-I{mbedtls / 'include'}"] if source.name == "posix_dtls.c" or source.is_relative_to(mbedtls) else []
+        library_include = [f"-I{mbedtls / 'library'}"] if source.is_relative_to(mbedtls) else []
+        run("clang", *flags, *native_flags, *quiet, *dtls_includes, *library_include, "-c", source, "-o", obj)
         objects.append(obj)
     run("clang", "-arch", "arm64", "-mmacosx-version-min=14.0", *objects, f"-L{SDL / 'lib'}", "-lSDL3",
         *(f"-F{directory}" for directory in frameworks),
