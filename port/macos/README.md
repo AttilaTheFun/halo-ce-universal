@@ -106,8 +106,8 @@ Keyboard/mouse controls:
 | Shift (either side) | Crouch |
 | Control (either side) or middle mouse button | Zoom |
 | 1 | Pause (Start) |
-| Backtick (`) or F1 | Hold for scoreboard (Back/Select) |
-| F2 | Open / close developer console |
+| F1 | Hold for scoreboard (Back/Select) |
+| Backtick (`) | Open / close developer console |
 | F12 (Fn-F12 on some keyboards) | Release or recapture mouse |
 
 Menus support mouse navigation. The cursor stays free after switching apps or
@@ -132,11 +132,11 @@ x = "E, R"
 y = "Q, Tab, Wheel"
 zoom = "Ctrl, MouseMiddle"
 start = "1"
-select = "Grave, F1"
+select = "F1"
 a = "Space, Return, KeypadEnter"
 b = "F, Escape, Backspace, MouseX1, ACBack"
 crouch = "Shift"
-console = "F2"
+console = "Grave"
 release_mouse = "F12"
 ```
 

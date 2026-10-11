@@ -11,7 +11,9 @@ device itself (d3d8_gl.c).
 #define __HALO_LINUX_XGPU_H
 
 #include "platform.h"
+#if !defined(HALO_MACOS_NATIVE_METAL)
 #include "gl.h"
+#endif
 
 #ifdef HALO_GLES
 /* OpenGL ES features that are optional (d3d8_gl.c gl_initialize) */
@@ -39,6 +41,7 @@ void host_gl_fence_frame(unsigned int slot);
 void host_gl_wait_frame(unsigned int slot);
 #endif
 
+#if !defined(HALO_MACOS_NATIVE_METAL)
 /* ---------- GL state
 
 The device caches the GL state it sets for draws (d3d8_gl.c); code that
@@ -54,6 +57,7 @@ void xgpu_gl_texture_deleted(unsigned int texture);
 written */
 GLuint xgpu_compile_shader(GLenum type, const char *code, const char *what);
 GLuint xgpu_link_program(GLuint vertex_shader, GLuint fragment_shader, const char *what);
+#endif
 
 /* ---------- generated source text */
 
@@ -86,19 +90,17 @@ struct nv2a_vertex_lighting
 	unsigned long position_instruction, position_register;
 };
 
-/* finds them in a model lighting program, checking that it lights its
-diffuse color as nv2a_psh.c does for each pixel; FALSE if it does not */
-BOOL nv2a_vertex_shader_lighting(const DWORD *instructions, unsigned long instruction_count,
-	struct nv2a_vertex_lighting *lighting);
-
 /* GLSL for an NV2A vertex program (the instruction words after the program
 header). Attributes whose bit is set in packed_attribute_mask are fed as
-NORMPACKED3 32-bit integers and unpacked in the shader. With lighting (else
-NULL), the normal and world position go to the pixel shader too, which
-lights the diffuse color for each pixel (nv2a_pixel_shader_key
-per_pixel_lighting). Returns a malloc'd string. */
+NORMPACKED3 32-bit integers and unpacked in the shader. Returns a malloc'd
+string. Direct Metal translation returns NULL when the program is not
+supported. */
 char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instruction_count,
-	unsigned long packed_attribute_mask, const struct nv2a_vertex_lighting *lighting);
+	unsigned long packed_attribute_mask);
+char *nv2a_vertex_shader_to_msl(const DWORD *instructions, unsigned long instruction_count,
+	unsigned long packed_attribute_mask);
+char *nv2a_vertex_shader_to_msl_compact(const DWORD *instructions, unsigned long instruction_count,
+	unsigned long packed_attribute_mask);
 
 /* ---------- pixel shaders */
 
@@ -153,6 +155,7 @@ struct nv2a_pixel_shader_key
 };
 
 char *nv2a_pixel_shader_to_glsl(const struct nv2a_pixel_shader_key *key);
+char *nv2a_pixel_shader_to_msl(const struct nv2a_pixel_shader_key *key);
 
 #ifdef HALO_GLES
 /* ES samplers have no LOD bias of their own */
@@ -205,6 +208,58 @@ unsigned long xgpu_texture_face_size(const struct xgpu_texture_description *desc
 unsigned long xgpu_texture_level_offset(const struct xgpu_texture_description *description, unsigned long level);
 unsigned long xgpu_texture_level_pitch(const struct xgpu_texture_description *description, unsigned long level);
 
+/* CPU copy of one authored mip. Compressed levels stay in their blocks.
+Other color formats become tightly packed bytes. Cube faces stay in the
+original +X,-X,+Y,-Y,+Z,-Z order. */
+enum xgpu_texture_copy_order
+{
+	_xgpu_texture_copy_rgba, _xgpu_texture_copy_bgra,
+};
+
+enum xgpu_texture_copy_format
+{
+	_xgpu_texture_copy_rgba8 = 1, _xgpu_texture_copy_bgra8,
+	_xgpu_texture_copy_bc1, _xgpu_texture_copy_bc2, _xgpu_texture_copy_bc3,
+};
+
+enum xgpu_texture_copy_status
+{
+	_xgpu_texture_copy_ok = 0, _xgpu_texture_copy_invalid = -1,
+	_xgpu_texture_copy_unsupported = -2, _xgpu_texture_copy_bounds = -3,
+};
+
+struct xgpu_texture_mip_layout
+{
+	unsigned long texture_width, texture_height, levels, faces;
+	unsigned long face, level, width, height;
+	unsigned long source_face_pitch, source_total_size, source_offset, source_size, source_row_pitch;
+	unsigned long output_row_pitch, output_size;
+	enum xgpu_texture_copy_format format;
+};
+
+enum xgpu_texture_copy_status xgpu_texture_mip_layout(DWORD format_word, DWORD size_word,
+	unsigned long face, unsigned long level, enum xgpu_texture_copy_order order,
+	struct xgpu_texture_mip_layout *layout);
+enum xgpu_texture_copy_status xgpu_texture_mip_copy(DWORD format_word, DWORD size_word,
+	const void *source, unsigned long source_bytes, const D3DCOLOR *palette, unsigned long palette_entries,
+	unsigned long face, unsigned long level, enum xgpu_texture_copy_order order,
+	void *destination, unsigned long destination_bytes, struct xgpu_texture_mip_layout *layout);
+
+struct xgpu_texture_volume_mip_layout
+{
+	struct xgpu_texture_mip_layout mip;
+	unsigned long texture_depth, depth, source_image_pitch, output_image_pitch;
+};
+
+enum xgpu_texture_copy_status xgpu_texture_volume_mip_layout(DWORD format_word, DWORD size_word,
+	unsigned long face, unsigned long level, enum xgpu_texture_copy_order order,
+	struct xgpu_texture_volume_mip_layout *layout);
+enum xgpu_texture_copy_status xgpu_texture_volume_mip_copy(DWORD format_word, DWORD size_word,
+	const void *source, unsigned long source_bytes, const D3DCOLOR *palette, unsigned long palette_entries,
+	unsigned long face, unsigned long level, enum xgpu_texture_copy_order order,
+	void *destination, unsigned long destination_bytes, struct xgpu_texture_volume_mip_layout *layout);
+
+#if !defined(HALO_MACOS_NATIVE_METAL)
 /* the GL texture for an Xbox texture header, uploading or refreshing it
 from guest memory as needed; *target receives GL_TEXTURE_2D etc. */
 GLuint xgpu_texture_get(const DWORD *resource, const D3DCOLOR *palette, GLenum *target,
@@ -255,4 +310,5 @@ not build */
 BOOL xgpu_post_anti_alias(BOOL smaa, GLuint framebuffer, unsigned long width, unsigned long height,
 	const GLint corners[4]);
 
+#endif
 #endif

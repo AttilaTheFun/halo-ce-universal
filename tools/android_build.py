@@ -238,7 +238,8 @@ def android_configure_inputs() -> List[Path]:
 def generate_android_build(n: Writer, sln: Any) -> None:
     macos = getattr(sln, "macos", False)
     ios = getattr(sln, "ios", False)
-    build_root = Path("build/ios") if ios else Path("build/macos") if macos else BUILD
+    native_metal = macos and not ios and getattr(sln, "macos_renderer", "angle") == "metal"
+    build_root = Path("build/ios") if ios else Path("build/macos-metal") if native_metal else Path("build/macos") if macos else BUILD
     config_path = LINUX_DIR / "port.json"
     if not config_path.is_file() or not (PORT_DIR / "host").is_dir():
         return
@@ -247,12 +248,14 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     if guest_only:
         llvm_bin = getattr(sln, "android_guest_llvm_bin", None)
         gl_headers = getattr(sln, "android_guest_gl_include", None)
-        if not llvm_bin or not gl_headers:
+        if not llvm_bin or (not native_metal and not gl_headers):
             raise ValueError("--android-guest-only requires --android-guest-llvm-bin and --android-guest-gl-include")
         ndk_bin = Path(llvm_bin).resolve()
-        sysroot_include = Path(gl_headers).resolve()
-        required = [ndk_bin / "llvm-ar", ndk_bin / "ld.lld", sysroot_include / "GLES3/gl32.h",
-                    sysroot_include / "GLES2/gl2ext.h", sysroot_include / "KHR/khrplatform.h"]
+        sysroot_include = Path(gl_headers).resolve() if gl_headers else None
+        required = [ndk_bin / "llvm-ar", ndk_bin / "ld.lld"]
+        if not native_metal:
+            required += [sysroot_include / "GLES3/gl32.h", sysroot_include / "GLES2/gl2ext.h",
+                         sysroot_include / "KHR/khrplatform.h"]
         for path in required:
             if not path.is_file():
                 raise ValueError(f"ARM guest build input is missing: {path}")
@@ -341,25 +344,25 @@ def generate_android_build(n: Writer, sln: Any) -> None:
 
     # the NDK's OpenGL ES headers (C declarations only) for the guest
     gl_stamp = gl_include / "stamp"
-    n.rule(
-        name="android_gl_include",
-        command=(f"mkdir -p {gl_include} && ln -sfn {sysroot_include}/GLES2 {gl_include}/GLES2 && "
-                 f"ln -sfn {sysroot_include}/GLES3 {gl_include}/GLES3 && "
-                 f"ln -sfn {sysroot_include}/KHR {gl_include}/KHR && touch $out"),
-        description="ANDROID GL HEADERS",
-    )
-    n.build(outputs=gl_stamp, rule="android_gl_include")
-
     guest_gl_c = gen_dir / "guest_gl.c"
     gl_imports = gen_dir / "gl_imports.list"
-    n.rule(
-        name="android_gl_stubs",
-        command=(f"{python} tools/android_gl_stubs.py {LINUX_DIR}/src/gl.h {sysroot_include}/GLES3/gl32.h "
-                 f"{sysroot_include}/GLES2/gl2ext.h {guest_gl_c} {gl_imports}"),
-        description="ANDROID GL STUBS",
-    )
-    n.build(outputs=[guest_gl_c, gl_imports], rule="android_gl_stubs",
-            implicit=[Path("tools/android_gl_stubs.py"), LINUX_DIR / "src" / "gl.h"])
+    if not native_metal:
+        n.rule(
+            name="android_gl_include",
+            command=(f"mkdir -p {gl_include} && ln -sfn {sysroot_include}/GLES2 {gl_include}/GLES2 && "
+                     f"ln -sfn {sysroot_include}/GLES3 {gl_include}/GLES3 && "
+                     f"ln -sfn {sysroot_include}/KHR {gl_include}/KHR && touch $out"),
+            description="ANDROID GL HEADERS",
+        )
+        n.build(outputs=gl_stamp, rule="android_gl_include")
+        n.rule(
+            name="android_gl_stubs",
+            command=(f"{python} tools/android_gl_stubs.py {LINUX_DIR}/src/gl.h {sysroot_include}/GLES3/gl32.h "
+                     f"{sysroot_include}/GLES2/gl2ext.h {guest_gl_c} {gl_imports}"),
+            description="ANDROID GL STUBS",
+        )
+        n.build(outputs=[guest_gl_c, gl_imports], rule="android_gl_stubs",
+                implicit=[Path("tools/android_gl_stubs.py"), LINUX_DIR / "src" / "gl.h"])
 
     guest_posix_c = gen_dir / "guest_posix.c"
     posix_imports = gen_dir / "posix_imports.list"
@@ -374,17 +377,27 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     imports_s = gen_dir / "imports.s"
     host_table_c = build_root / "host" / "host_import_table.c"
     host_imports_list = PORT_DIR / "host_imports.list"
+    if native_metal:
+        filtered_imports = gen_dir / "native_host_imports.list"
+        n.rule(name="macos_metal_imports",
+               command=f"{python} tools/macos_metal_imports.py $in $out",
+               description="MACOS NATIVE IMPORTS")
+        n.build(outputs=filtered_imports, rule="macos_metal_imports", inputs=host_imports_list,
+                implicit=[Path("tools/macos_metal_imports.py")])
+        host_imports_list = filtered_imports
     platform_imports = [Path("port/macos/host_imports.list")] if macos else []
+    if native_metal:
+        platform_imports.append(Path("port/macos/metal_imports.list"))
     n.rule(
         name="android_imports",
         command=f"{python} tools/android_imports.py {'--ios ' if ios else ''}--host-table {host_table_c} {imports_s} $in",
         description="ANDROID IMPORTS",
     )
     n.build(outputs=[imports_s, host_table_c], rule="android_imports",
-            inputs=[host_imports_list, posix_imports, gl_imports, *platform_imports],
+            inputs=[host_imports_list, posix_imports, *([] if native_metal else [gl_imports]), *platform_imports],
             implicit=[Path("tools/android_imports.py")])
 
-    generated_headers = [*xdk_headers(), alltypes, syscall_h, version_h, gl_stamp,
+    generated_headers = [*xdk_headers(), alltypes, syscall_h, version_h, *([] if native_metal else [gl_stamp]),
                          semantics_header, platform_semantics_header]
 
     # ---------- guest compilation: C -> Darwin assembly -> ELF assembly -> object
@@ -408,12 +421,14 @@ def generate_android_build(n: Writer, sln: Any) -> None:
         f"-isystem {libc_include}", f"-isystem {arch}", f"-isystem {MUSL_DIR}/arch/generic",
         f"-isystem {MUSL_DIR}/include",
     ]
-    guest_abi = " ".join(GUEST_ABI_FLAGS + configuration_defines(sln))
+    guest_abi = " ".join(GUEST_ABI_FLAGS + configuration_defines(sln) +
+                         (["-DHALO_MACOS_NATIVE_METAL=1"] if native_metal else []))
     guest_code = " ".join(GUEST_CODE_FLAGS)
     tool_implicit = [Path("tools/android_asm_convert.py"), *generated_headers]
     if macos or ios:
         platform = "ios" if ios else "macos"
-        n.rule(name="macos_rebase_plugin", command=f"{python} tools/{platform}_build.py --plugin-only",
+        renderer_argument = " --renderer metal" if native_metal else " --renderer angle"
+        n.rule(name="macos_rebase_plugin", command=f"{python} tools/{platform}_build.py{renderer_argument} --plugin-only",
                description="MACOS COMPILER PASS")
         plugin = build_root / "guest_rebase.dylib"
         n.build(outputs=plugin, rule="macos_rebase_plugin",
@@ -492,9 +507,14 @@ def generate_android_build(n: Writer, sln: Any) -> None:
         f"-I{LINUX_DIR}/src", f"-I{LINUX_DIR}/include", f"-I{PORT_DIR}/guest/runtime",
         f"-I{PORT_DIR}/include", f"-I{TOML_DIR}", f"-I{EXPAT_DIR}", f"-I{KCP_DIR}", f"-I{MONOCYPHER_DIR}",
         f"-I{ZLIB_DIR}", "-Isource -Isource/cseries",
-        f"-I{SDL_DIR}/include", f"-I{gl_include}", *libc_includes, f"-idirafter {XDK_INCLUDE}",
+        f"-I{SDL_DIR}/include", *([] if native_metal else [f"-I{gl_include}"]), *libc_includes, f"-idirafter {XDK_INCLUDE}",
     ])
     guest_host_only = {"memory_watch.c"}  # replaced by guest_memory_watch.c
+    if native_metal:
+        guest_host_only.update({"d3d8_gl.c", "gl_functions.c", "xgpu_post.c"})
+    else:
+        guest_host_only.update({"d3d8_metal.c", "halo_frame_pacing.c"})
+        guest_host_only.update(source.name for source in (LINUX_DIR / "src").glob("metal_*.c"))
     for source in sorted((LINUX_DIR / "src").glob("*.c")):
         if source.name.startswith("posix_") or source.name in guest_host_only:
             continue
@@ -541,7 +561,7 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     runtime_cflags = " ".join([
         guest_abi, guest_code, "-std=gnu11", "-D_GNU_SOURCE",
         f"-I{PORT_DIR}/guest/runtime", f"-I{PORT_DIR}/include", f"-I{LINUX_DIR}/src",
-        f"-I{SDL_DIR}/include", f"-I{gl_include}", *libc_includes,
+        f"-I{SDL_DIR}/include", *([] if native_metal else [f"-I{gl_include}"]), *libc_includes,
     ])
     runtime_dir = PORT_DIR / "guest" / "runtime"
     for source in sorted(runtime_dir.glob("*.c")):
@@ -551,7 +571,8 @@ def generate_android_build(n: Writer, sln: Any) -> None:
             objects.append(guest_object(source, platform_cflags))
         else:
             objects.append(guest_object(source, runtime_cflags))
-    objects.append(guest_object(guest_gl_c, runtime_cflags))
+    if not native_metal:
+        objects.append(guest_object(guest_gl_c, runtime_cflags))
     objects.append(guest_object(guest_posix_c, runtime_cflags))
     imports_o = obj_dir / "gen" / "imports.o"
     n.build(outputs=imports_o, rule="android_guest_as", inputs=imports_s)

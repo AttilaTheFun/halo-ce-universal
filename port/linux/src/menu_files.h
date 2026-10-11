@@ -23,5 +23,8 @@ extern const unsigned int menu_files_embedded_count;
 /* the GL texture standing for a menu bitmap's D3D texture (data: its Data),
 decoded from its PNG on first use, and its mip levels; 0 if it is none */
 unsigned int menu_art_texture(unsigned long data, unsigned long *levels);
+/* the same PNG as RGBA, kept for the life of the registration. 0 if data is
+not a menu bitmap or the PNG cannot be decoded */
+int menu_art_pixels(unsigned long data, unsigned char **rgba, unsigned long *width, unsigned long *height);
 
 #endif

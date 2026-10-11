@@ -162,7 +162,12 @@ int hud_hires_sprites_drawable(long asset, unsigned long address, unsigned long 
 		}
 		return 0;
 	}
+#if defined(HALO_MACOS_NATIVE_METAL)
+	(void)levels;
+	return 1;
+#else
 	return hud_hires_override_texture(asset, &levels) != 0;
+#endif
 }
 
 /* the placeholder the game draws the texture's sprites from: its D3D
@@ -182,6 +187,7 @@ void hud_hires_register_placeholder(long asset, const unsigned long *texture)
 	}
 }
 
+#if !defined(HALO_MACOS_NATIVE_METAL)
 unsigned int hud_hires_placeholder_texture(unsigned long data, unsigned long *levels)
 {
 	long index;
@@ -193,6 +199,7 @@ unsigned int hud_hires_placeholder_texture(unsigned long data, unsigned long *le
 	}
 	return 0;
 }
+#endif
 
 int hud_hires_override_point_threshold(long asset)
 {
@@ -334,6 +341,43 @@ static int power_of_two_size(unsigned long value)
 	return value && (value & (value - 1)) == 0;
 }
 
+unsigned char *hud_hires_override_pixels(long asset, unsigned long *width, unsigned long *height)
+{
+	const struct hud_hires_embedded *embedded;
+	unsigned char *pixels;
+	unsigned long decoded_width = 0, decoded_height = 0;
+
+	if (width)
+		*width = 0;
+	if (height)
+		*height = 0;
+	if (!width || !height || asset < 0 || asset >= hud_hires_asset_count() || textures[asset].failed)
+		return NULL;
+	embedded = &hud_hires_embedded[asset];
+	pixels = png_decode((const unsigned char *)embedded->png, embedded->png_size, &decoded_width, &decoded_height);
+	if (!pixels)
+	{
+		platform_log("high-res hud: could not decode the texture for %s bitmap %d", embedded->tag, embedded->bitmap);
+		textures[asset].failed = 1;
+		return NULL;
+	}
+	*width = decoded_width;
+	*height = decoded_height;
+	return pixels;
+}
+
+unsigned char *hud_hires_png_pixels(const void *png, unsigned long size, unsigned long *width, unsigned long *height)
+{
+	if (width)
+		*width = 0;
+	if (height)
+		*height = 0;
+	if (!png || !size || !width || !height)
+		return NULL;
+	return png_decode(png, size, width, height);
+}
+
+#if !defined(HALO_MACOS_NATIVE_METAL)
 unsigned int hud_hires_png_texture(const void *png, unsigned long size, unsigned long *levels)
 {
 	unsigned long width = 0, height = 0, largest;
@@ -384,3 +428,4 @@ unsigned int hud_hires_override_texture(long asset, unsigned long *levels)
 	*levels = textures[asset].levels;
 	return textures[asset].texture;
 }
+#endif

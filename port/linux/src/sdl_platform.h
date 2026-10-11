@@ -62,6 +62,9 @@ struct platform_keystroke
 BOOL platform_sdl_initialize(void);
 /* creates the window and makes its OpenGL context current on this thread */
 BOOL platform_video_initialize(unsigned long width, unsigned long height);
+#if defined(HALO_MACOS_NATIVE_METAL)
+unsigned int platform_video_native_window(void);
+#endif
 #ifndef HALO_ANDROID
 BOOL platform_screen_mode(long *width, long *height);
 #endif

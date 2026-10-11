@@ -145,6 +145,12 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"The size the objects' shadows are drawn at, in pixels each way: 128 as\n"
 		"on the Xbox, or 256, 512 or 1024 for smoother edges, as soft." },
+	{ "display.render_height", _config_integer, "0", "HALO_RENDER_HEIGHT", _environment_value, _platform_all,
+		"Native Metal's 3D resolution, in lines: 0 uses the window, or 720, 1080,\n"
+		"1440 or 2160. The HUD stays in the game's own coordinates." },
+	{ "display.frame_limit", _config_integer, "0", "HALO_FRAME_LIMIT", _environment_value, _platform_all,
+		"Caps presentation at 30, 60 or 120 frames a second when vertical sync is\n"
+		"off. 0 leaves the cap to vertical sync." },
 	{ "display.menus", _config_string, "\"pc\"", "HALO_MENUS", _environment_value, _platform_all,
 		"The menus: \"pc\" for the PC version's main menu (Quit, and Join Game's\n"
 		"Server Browser), \"xbox\" for the Xbox's." },
@@ -574,6 +580,9 @@ static const struct config_setting config_settings[] =
 		"each voice heard logged once a second." },
 	{ "debug.null_renderer", _config_boolean, "false", "HALO_NULL_RENDERER", _environment_set_is_true, _platform_all,
 		"Run without a window, drawing nothing." },
+	{ "debug.metal_gpu_vertex_decode", _config_boolean, "true", NULL, _environment_set_is_true, _platform_all,
+		"Native Metal decodes packed Xbox vertices on the GPU. Off keeps that\n"
+		"work on the CPU, which slows down when many characters are on screen." },
 	{ "debug.gl_debug", _config_boolean, "false", "HALO_GL_DEBUG", _environment_set_is_true, _platform_all,
 		"Report OpenGL errors in the log." },
 	{ "debug.gpu_stats", _config_boolean, "false", "HALO_GPU_STATS", _environment_set_is_true, _platform_all,

@@ -16,8 +16,10 @@ SDL's stream lock recursively from a different thread.
 #include "../../linux/include/native_input_events.h"
 #endif
 
+#if !defined(HALO_MACOS_NATIVE_METAL)
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#endif
 #include <SDL3/SDL.h>
 #include <pthread.h>
 #include <string.h>
@@ -94,14 +96,19 @@ static void *handle_release(uint32_t handle, int type) {
     return object;
 }
 
+#if !defined(HALO_MACOS_NATIVE_METAL)
 static EGLDisplay metal_display;
 static EGLContext metal_context;
 static EGLSurface metal_surface;
 static int requested_minor;
+#endif
 static SDL_Window *metal_window;
 static SDL_MetalView metal_view;
+static int native_metal_owned;
 static int metal_window_hidden;
+#if !defined(HALO_MACOS_NATIVE_METAL)
 static int metal_swap_interval = 1;
+#endif
 #ifndef HALO_IOS
 static int command_held;
 #endif
@@ -268,6 +275,33 @@ int host_sdl_set_relative_mouse(uint32_t window, int enabled) {
     return object ? SDL_SetWindowRelativeMouseMode(object, enabled != 0) : 0;
 }
 
+void *host_sdl_native_metal_layer(uint32_t window) {
+    SDL_Window *object = handle_get(window, _handle_window);
+    if (!object || native_metal_owned) return NULL;
+#if !defined(HALO_MACOS_NATIVE_METAL)
+    if (metal_context != EGL_NO_CONTEXT) return NULL;
+#endif
+    if (!metal_view) metal_view = SDL_Metal_CreateView(object);
+    if (!metal_view) return NULL;
+    native_metal_owned = 1;
+    return SDL_Metal_GetLayer(metal_view);
+}
+
+#if defined(HALO_MACOS_NATIVE_METAL)
+void *host_gl_resolve(const char *name) {
+    (void)name;
+    return NULL;
+}
+#endif
+
+void host_sdl_native_metal_release(void) {
+    if (!native_metal_owned) return;
+    SDL_Metal_DestroyView(metal_view);
+    metal_view = NULL;
+    native_metal_owned = 0;
+}
+
+#if !defined(HALO_MACOS_NATIVE_METAL)
 int host_sdl_gl_set_attribute(int attribute, int value) {
     if (attribute == SDL_GL_CONTEXT_MINOR_VERSION)
         requested_minor = value;
@@ -356,6 +390,7 @@ int host_sdl_gl_swap_window(uint32_t window) {
     }
     return result;
 }
+#endif
 
 int host_sdl_poll_event(void *event) {
     SDL_Event host_event;

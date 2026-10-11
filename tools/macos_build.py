@@ -27,7 +27,16 @@ from tools.macos_content_tools import stage_content_tools
 BUILD = ROOT / "build/macos"
 LLVM = Path(os.environ.get("HALO_MACOS_LLVM_BIN", "/opt/homebrew/opt/llvm/bin"))
 SDL = Path(os.environ.get("HALO_MACOS_SDL_PREFIX", "/opt/homebrew/opt/sdl3"))
-ANGLE = Path(os.environ.get("HALO_MACOS_ANGLE_DIR", str(BUILD / "angle/dist")))
+ANGLE = Path(os.environ.get("HALO_MACOS_ANGLE_DIR", str(ROOT / "build/macos/angle/dist")))
+RENDERER = "metal"
+
+
+def use_renderer(renderer):
+    global BUILD, RENDERER
+    if renderer not in ("metal", "angle"):
+        raise RuntimeError(f"Unknown renderer {renderer}")
+    RENDERER = renderer
+    BUILD = ROOT / ("build/macos-metal" if renderer == "metal" else "build/macos")
 GL = BUILD / "toolchain/gl"
 APP_ICON = "AppIcon.icns"
 APP_VERSION = "0.3.0"
@@ -58,26 +67,34 @@ def build_plugin():
 
 
 def build_host():
+    native_metal = RENDERER == "metal"
     sparkle = setup_sparkle()
     obj_dir = BUILD / "host-obj"
     obj_dir.mkdir(parents=True, exist_ok=True)
-    frameworks = [ANGLE / f"{name}.xcframework/macos-arm64" for name in ("EGL", "GLESv2")]
-    for name, directory in zip(("libEGL", "libGLESv2"), frameworks):
-        require(directory / f"{name}.framework" / name)
-    # EGL's loader also uses this name beside the EGL binary.
-    companion = frameworks[0] / "libEGL.framework/libGLESv2.dylib"
-    companion_target = frameworks[1] / "libGLESv2.framework/libGLESv2"
-    if companion.is_symlink() and companion.resolve() != companion_target.resolve():
-        companion.unlink()
-    if not companion.exists():
-        companion.symlink_to(companion_target)
+    frameworks = [] if native_metal else [ANGLE / f"{name}.xcframework/macos-arm64" for name in ("EGL", "GLESv2")]
+    if not native_metal:
+        for name, directory in zip(("libEGL", "libGLESv2"), frameworks):
+            require(directory / f"{name}.framework" / name)
+        # EGL's loader also uses this name beside the EGL binary.
+        companion = frameworks[0] / "libEGL.framework/libGLESv2.dylib"
+        companion_target = frameworks[1] / "libGLESv2.framework/libGLESv2"
+        if companion.is_symlink() and companion.resolve() != companion_target.resolve():
+            companion.unlink()
+        if not companion.exists():
+            companion.symlink_to(companion_target)
     mbedtls = ROOT / "port/third_party/mbedtls"
     flags = ["-arch", "arm64", "-mmacosx-version-min=14.0", "-O2", "-g", "-DHALO_MACOS=1", "-D_DARWIN_C_SOURCE",
              "-Wall", "-Wextra", "-Wno-unused-function", "-Wno-unused-parameter",
-             "-I.", "-Iport/macos/host", "-Iport/macos/native", "-Iport/android/include", "-Iport/linux/src",
-             f"-I{SDL / 'include'}", f"-I{GL}",
+             "-I.", "-Iport/macos/host", "-Iport/macos/native", "-Iport/macos/include",
+             "-Iport/android/include", "-Iport/linux/src",
+             f"-I{SDL / 'include'}",
+             *([] if native_metal else [f"-I{GL}"]),
+             *(["-DHALO_MACOS_NATIVE_METAL=1"] if native_metal else []),
              f"-I{MINIUPNPC_DIR / 'include'}", f"-I{MINIUPNPC_DIR / 'src'}", *MINIUPNPC_DEFINES]
     sources = sorted((ROOT / "port/macos/host").glob("*.c"))
+    if native_metal:
+        sources = [source for source in sources if source.name not in ("host_gl.c", "host_gl_bridge.c", "host_perf.c")]
+    sources += sorted((ROOT / "port/macos/host").glob("*.mm"))
     sources += sorted((ROOT / "port/macos/native").glob("*.m"))
     sources += [ROOT / "port/linux/src/xiso.c", ROOT / "port/linux/src/posix_dtls.c"]
     sources += miniupnpc_sources()
@@ -86,18 +103,26 @@ def build_host():
     objects = []
     for source in sources:
         obj = obj_dir / (source.name + ".o")
-        native_flags = ["-fobjc-arc", "-fblocks", f"-F{sparkle.parent}"] if source.suffix == ".m" else []
+        native_flags = ["-fobjc-arc", "-fblocks", f"-F{sparkle.parent}"] if source.suffix in (".m", ".mm") else []
+        if source.suffix == ".mm":
+            native_flags += ["-std=c++17"]
         quiet = ["-w"] if source.is_relative_to(mbedtls) else []
         dtls_includes = [f"-I{mbedtls / 'include'}"] if source.name == "posix_dtls.c" or source.is_relative_to(mbedtls) else []
         library_include = [f"-I{mbedtls / 'library'}"] if source.is_relative_to(mbedtls) else []
-        run("clang", *flags, *native_flags, *quiet, *dtls_includes, *library_include, "-c", source, "-o", obj)
+        compiler = "clang++" if source.suffix == ".mm" else "clang"
+        run(compiler, *flags, *native_flags, *quiet, *dtls_includes, *library_include, "-c", source, "-o", obj)
         objects.append(obj)
-    run("clang", "-arch", "arm64", "-mmacosx-version-min=14.0", *objects, f"-L{SDL / 'lib'}", "-lSDL3",
-        *(f"-F{directory}" for directory in frameworks),
-        "-framework", "libEGL", "-framework", "libGLESv2",
-        f"-F{sparkle.parent}", "-framework", "Sparkle", "-framework", "Cocoa",
-        f"-Wl,-rpath,{sparkle.parent}",
-        *(f"-Wl,-rpath,{directory}" for directory in frameworks), "-o", BUILD / "halo")
+    link = ["clang++" if native_metal else "clang", "-arch", "arm64", "-mmacosx-version-min=14.0", *objects,
+            f"-L{SDL / 'lib'}", "-lSDL3"]
+    if native_metal:
+        link += ["-framework", "Metal", "-framework", "QuartzCore", "-framework", "CoreVideo"]
+    else:
+        link += [*(f"-F{directory}" for directory in frameworks),
+                 "-framework", "libEGL", "-framework", "libGLESv2",
+                 *(f"-Wl,-rpath,{directory}" for directory in frameworks)]
+    link += [f"-F{sparkle.parent}", "-framework", "Sparkle", "-framework", "Cocoa",
+             f"-Wl,-rpath,{sparkle.parent}", "-o", BUILD / "halo"]
+    run(*link)
 
 
 def package_icon(resources):
@@ -200,21 +225,24 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     run("install_name_tool", "-change", str(SDL / "lib/libSDL3.0.dylib"),
         "@rpath/libSDL3.0.dylib", executable)
     run("install_name_tool", "-id", "@rpath/libSDL3.0.dylib", sdl)
-    for name in ("EGL", "GLESv2"):
-        directory = ANGLE / f"{name}.xcframework/macos-arm64"
-        source = directory / f"lib{name}.framework"
-        old_framework = frameworks / source.name
-        if old_framework.exists():
-            shutil.rmtree(old_framework)
-        target = frameworks / f"lib{name}.dylib"
-        if target.exists():
-            target.unlink()
-        shutil.copy2(source / f"lib{name}", target)
-        target.chmod(0o755)
-        run("install_name_tool", "-change", f"@rpath/lib{name}.framework/lib{name}",
-            f"@rpath/lib{name}.dylib", executable)
-        run("install_name_tool", "-id", f"@rpath/lib{name}.dylib", target)
-        run("install_name_tool", "-delete_rpath", str(directory), executable)
+    angle_libraries = []
+    if RENDERER != "metal":
+        for name in ("EGL", "GLESv2"):
+            directory = ANGLE / f"{name}.xcframework/macos-arm64"
+            source = directory / f"lib{name}.framework"
+            old_framework = frameworks / source.name
+            if old_framework.exists():
+                shutil.rmtree(old_framework)
+            target = frameworks / f"lib{name}.dylib"
+            if target.exists():
+                target.unlink()
+            shutil.copy2(source / f"lib{name}", target)
+            target.chmod(0o755)
+            run("install_name_tool", "-change", f"@rpath/lib{name}.framework/lib{name}",
+                f"@rpath/lib{name}.dylib", executable)
+            run("install_name_tool", "-id", f"@rpath/lib{name}.dylib", target)
+            run("install_name_tool", "-delete_rpath", str(directory), executable)
+            angle_libraries.append(target)
     run("install_name_tool", "-add_rpath", "@executable_path/../Frameworks", executable)
     sparkle_source = setup_sparkle()
     sparkle = frameworks / "Sparkle.framework"
@@ -241,7 +269,7 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
         "CFBundleIconFile": APP_ICON,
         "CFBundlePackageType": "APPL", "CFBundleShortVersionString": version,
         "CFBundleVersion": build, "LSMinimumSystemVersion": minimum_macos_version([
-            executable, sdl, frameworks / "libEGL.dylib", frameworks / "libGLESv2.dylib", sparkle / "Sparkle", *content_binaries]),
+            executable, sdl, *angle_libraries, sparkle / "Sparkle", *content_binaries]),
         "CFBundleURLTypes": [{"CFBundleURLName": "Halo multiplayer invite",
                               # Match the shared discord.application_id default.
                               "CFBundleURLSchemes": ["halo", "discord-1553978809840050229"],
@@ -297,7 +325,7 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     for helper in ("XPCServices/Installer.xpc", "XPCServices/Downloader.xpc", "Autoupdate", "Updater.app"):
         run("codesign", *signing, "--preserve-metadata=entitlements", sparkle_version / helper)
     run("codesign", *signing, sparkle)
-    for binary in (sdl, frameworks / "libGLESv2.dylib", frameworks / "libEGL.dylib"):
+    for binary in (sdl, *angle_libraries):
         run("codesign", *signing, binary)
     app_signing = [*signing]
     if release:
@@ -434,8 +462,11 @@ def main():
                         help="Opt in to reviewed Invader helpers for local community package import")
     parser.add_argument("--install", nargs="?", const=Path("/Applications"), type=Path,
                         metavar="DIRECTORY", help="Install in /Applications, or the given directory, for Spotlight")
+    parser.add_argument("--renderer", choices=("metal", "angle"), default="metal",
+                        help="metal draws natively. angle keeps the OpenGL ES translation layer")
     parser.add_argument("--jobs", type=int, default=min(os.cpu_count() or 4, 6))
     args = parser.parse_args()
+    use_renderer(args.renderer)
     os.chdir(ROOT)
     if args.release:
         if not update_configuration(json.loads((ROOT / "port/macos/release-config.json").read_text())):
@@ -446,13 +477,16 @@ def main():
         build_plugin()
         return
     if not args.host_only:
-        llvm_bin = BUILD / "toolchain/bin"
+        llvm_bin = ROOT / "build/macos/toolchain/bin"
         require(llvm_bin / "llvm-ar")
         require(llvm_bin / "ld.lld")
-        require(GL / "GLES3/gl32.h")
-        run(sys.executable, "configure.py", "--macos", "--android-guest-llvm-bin", llvm_bin,
-            "--android-guest-gl-include", GL, "--pgo", "off")
-        ninja = shutil.which("ninja") or str(BUILD / "toolchain/venv/bin/ninja")
+        configure = [sys.executable, "configure.py", "--macos", "--macos-renderer", RENDERER,
+                     "--android-guest-llvm-bin", llvm_bin, "--pgo", "off"]
+        if RENDERER != "metal":
+            require(GL / "GLES3/gl32.h")
+            configure += ["--android-guest-gl-include", GL]
+        run(*configure)
+        ninja = shutil.which("ninja") or str(ROOT / "build/macos/toolchain/venv/bin/ninja")
         run(ninja, "-j", args.jobs, "macos_guest")
     build_host()
     package(None if args.no_data_path or args.release else args.data_root,

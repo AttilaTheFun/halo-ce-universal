@@ -84,6 +84,8 @@ parser.add_argument(
     help="clang with the arm64_32 target for the Android guest (default: clang)",
 )
 parser.add_argument("--macos", action="store_true", help="generate the rebased Apple Silicon guest target")
+parser.add_argument("--macos-renderer", choices=("angle", "metal"), default="angle",
+                    help="Apple Silicon guest renderer. metal draws with native Metal")
 parser.add_argument("--ios", action="store_true", help="generate the signed-image iPhone guest target")
 parser.add_argument("--android-guest-only", action="store_true", help="build the portable ARM image without an Android host")
 parser.add_argument("--android-guest-llvm-bin", type=Path, help="directory containing llvm-ar and ld.lld")
@@ -92,6 +94,8 @@ parser.add_argument("--android-guest-builtins", type=Path, help="optional AArch6
 args = parser.parse_args()
 if args.macos and args.ios:
     parser.error("Choose either --macos or --ios")
+if args.macos_renderer != "angle" and not args.macos:
+    parser.error("--macos-renderer metal requires --macos")
 try:
     check_profile_options(args.profile, args.pgo)
 except ValueError as error:
@@ -116,6 +120,7 @@ sln = SimpleNamespace(
     android_guest_builtins=args.android_guest_builtins,
     macos=args.macos,
     ios=args.ios,
+    macos_renderer=args.macos_renderer,
 )
 
 

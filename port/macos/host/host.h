@@ -117,5 +117,7 @@ void *host_gl_resolve(const char *name);
 void *host_perf_resolve(const char *name);
 void host_perf_frame(double swap_ms);
 void host_perf_upload(uint32_t size);
+void *host_sdl_native_metal_layer(uint32_t window);
+void host_sdl_native_metal_release(void);
 
 #endif

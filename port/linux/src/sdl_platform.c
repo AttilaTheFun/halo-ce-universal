@@ -11,7 +11,9 @@ and the debug keyboard that the game's console reads.
 
 #include "platform.h"
 #include "sdl_platform.h"
+#if !defined(HALO_MACOS_NATIVE_METAL)
 #include "gl.h"
+#endif
 #include "port_config.h"
 #include "input_bindings.h"
 #include "p2p.h"
@@ -402,8 +404,10 @@ int halo_video_fullscreen_set(int enabled)
 int halo_video_apply_settings(void)
 {
 	extern void render_interpolation_reset(void);
+#if !defined(HALO_MACOS_NATIVE_METAL)
 	if (!platform_gl_context || !SDL_GL_SetSwapInterval(config_boolean("display.vsync") ? 1 : 0))
 		return 0;
+#endif
 	/* Previous snapshots can be minutes old when interpolation is re-enabled. */
 	render_interpolation_reset();
 	return 1;
@@ -837,13 +841,16 @@ static long platform_window_width = -1, platform_window_height = -1;
 
 BOOL platform_video_initialize(unsigned long width, unsigned long height)
 {
+#if !defined(HALO_MACOS_NATIVE_METAL)
 	int version;
+#endif
 
 	if (platform_window)
 		return TRUE;
 	if (!platform_sdl_initialize())
 		return FALSE;
 
+#if !defined(HALO_MACOS_NATIVE_METAL)
 #ifdef HALO_GLES
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -865,6 +872,7 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 	explicit mesa_glthread setting alone and other drivers ignore it. */
 	setenv("mesa_glthread", "true", 0);
 #endif
+#endif
 
 #ifdef HALO_ANDROID
 	{
@@ -873,7 +881,12 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 		if (scale < 1)
 			scale = 1;
 		platform_window = SDL_CreateWindow("Halo OG", (int)(width * scale), (int)(height * scale),
-			SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN
+#if defined(HALO_MACOS_NATIVE_METAL)
+			SDL_WINDOW_METAL
+#else
+			SDL_WINDOW_OPENGL
+#endif
+			| SDL_WINDOW_FULLSCREEN
 #if defined(HALO_MACOS) && !defined(HALO_IOS)
 			| (config_boolean("debug.hidden_window") ? SDL_WINDOW_HIDDEN : 0)
 #endif
@@ -911,6 +924,7 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 	platform_fullscreen_requested = platform_fullscreen_setting();
 	platform_fullscreen_kind_apply();
 #endif
+#if !defined(HALO_MACOS_NATIVE_METAL)
 	platform_gl_context = SDL_GL_CreateContext(platform_window);
 #ifdef HALO_GLES
 	/* ES 3.2 where the driver has it, otherwise the renderer makes do with
@@ -931,8 +945,11 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 		return FALSE;
 	version = SDL_GL_SetSwapInterval(config_boolean("display.vsync") ? 1 : 0);
 	(void)version;
-	platform_event_thread = SDL_GetCurrentThreadID();
 	platform_log("OpenGL %s on %s", (const char *)glGetString(GL_VERSION), (const char *)glGetString(GL_RENDERER));
+#else
+	platform_log("native Metal");
+#endif
+	platform_event_thread = SDL_GetCurrentThreadID();
 #if !defined(HALO_ANDROID) || defined(HALO_MACOS)
 #if defined(HALO_MACOS) && !defined(HALO_IOS)
 	input_state.mouse_released = TRUE;
@@ -971,13 +988,22 @@ void platform_display_apply(void)
 	if (!platform_window)
 		return;
 #endif
+#if !defined(HALO_MACOS_NATIVE_METAL)
 	SDL_GL_SetSwapInterval(config_boolean("display.vsync") ? 1 : 0);
+#endif
 }
 
 void platform_video_drawable_size(int *width, int *height)
 {
 	SDL_GetWindowSizeInPixels(platform_window, width, height);
 }
+
+#if defined(HALO_MACOS_NATIVE_METAL)
+unsigned int platform_video_native_window(void)
+{
+	return (unsigned int)platform_window;
+}
+#endif
 
 #ifndef HALO_ANDROID
 /* with vsync off, the time between frames display.max_fps asks for (0:
@@ -1025,7 +1051,9 @@ void platform_video_swap(void)
 	Uint64 interval, now;
 
 #endif
+#if !defined(HALO_MACOS_NATIVE_METAL)
 	SDL_GL_SwapWindow(platform_window);
+#endif
 #ifndef HALO_ANDROID
 	interval = frame_interval_ns();
 	if (!interval)

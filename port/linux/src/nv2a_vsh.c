@@ -2,12 +2,12 @@
 NV2A_VSH.C
 
 Translation of NV2A vertex programs (Xbox vertex shader microcode) into
-GLSL.
+GLSL or directly into Metal Shading Language (MSL).
 
 Each instruction is four little-endian words. Word 1 to 3 hold a MAC
 (vector) operation and an ILU (scalar) operation that execute in parallel
 on the same three operands A, B and C, and the destinations of both; the
-bit positions of every field are spelled out in operand_fields() and in
+bit positions of every field are spelled out in operand() and in
 nv2a_vertex_shader_to_glsl(). When both units run, the ILU result goes to
 temporary r1, whatever the instruction's temporary register field says.
 
@@ -17,8 +17,15 @@ maintains. The generated shader inverts that transform to hand OpenGL a
 clip-space position again.
 */
 
+#ifdef XGPU_SHADER_STANDALONE
+#include "xgpu_shader_standalone.h"
+#else
 #include "xgpu.h"
+#endif
+#include "xgpu_msl.h"
+#include "xgpu_vertex_decode_msl.h"
 
+#include <errno.h>
 #include <stdlib.h>
 
 /* ---------- instruction fields */
@@ -76,63 +83,62 @@ static void write_mask(unsigned long mask, char *out)
 	out[count] = 0;
 }
 
-struct operand_fields
+struct nv2a_operand
 {
 	unsigned long negate, swizzle[4], index, mux;
 };
 
-static void operand_fields(const DWORD *instruction, char which, struct operand_fields *fields)
+static struct nv2a_operand operand_fields(const DWORD *instruction, char which)
 {
+	struct nv2a_operand result;
+
 	switch (which)
 	{
 	case 'A':
-		fields->negate = field(instruction, 1, 8, 1);
-		fields->swizzle[0] = field(instruction, 1, 6, 2);
-		fields->swizzle[1] = field(instruction, 1, 4, 2);
-		fields->swizzle[2] = field(instruction, 1, 2, 2);
-		fields->swizzle[3] = field(instruction, 1, 0, 2);
-		fields->index = field(instruction, 2, 28, 4);
-		fields->mux = field(instruction, 2, 26, 2);
+		result.negate = field(instruction, 1, 8, 1);
+		result.swizzle[0] = field(instruction, 1, 6, 2);
+		result.swizzle[1] = field(instruction, 1, 4, 2);
+		result.swizzle[2] = field(instruction, 1, 2, 2);
+		result.swizzle[3] = field(instruction, 1, 0, 2);
+		result.index = field(instruction, 2, 28, 4);
+		result.mux = field(instruction, 2, 26, 2);
 		break;
 	case 'B':
-		fields->negate = field(instruction, 2, 25, 1);
-		fields->swizzle[0] = field(instruction, 2, 23, 2);
-		fields->swizzle[1] = field(instruction, 2, 21, 2);
-		fields->swizzle[2] = field(instruction, 2, 19, 2);
-		fields->swizzle[3] = field(instruction, 2, 17, 2);
-		fields->index = field(instruction, 2, 13, 4);
-		fields->mux = field(instruction, 2, 11, 2);
+		result.negate = field(instruction, 2, 25, 1);
+		result.swizzle[0] = field(instruction, 2, 23, 2);
+		result.swizzle[1] = field(instruction, 2, 21, 2);
+		result.swizzle[2] = field(instruction, 2, 19, 2);
+		result.swizzle[3] = field(instruction, 2, 17, 2);
+		result.index = field(instruction, 2, 13, 4);
+		result.mux = field(instruction, 2, 11, 2);
 		break;
 	default:
-		fields->negate = field(instruction, 2, 10, 1);
-		fields->swizzle[0] = field(instruction, 2, 8, 2);
-		fields->swizzle[1] = field(instruction, 2, 6, 2);
-		fields->swizzle[2] = field(instruction, 2, 4, 2);
-		fields->swizzle[3] = field(instruction, 2, 2, 2);
-		fields->index = (field(instruction, 2, 0, 2) << 2) | field(instruction, 3, 30, 2);
-		fields->mux = field(instruction, 3, 28, 2);
+		result.negate = field(instruction, 2, 10, 1);
+		result.swizzle[0] = field(instruction, 2, 8, 2);
+		result.swizzle[1] = field(instruction, 2, 6, 2);
+		result.swizzle[2] = field(instruction, 2, 4, 2);
+		result.swizzle[3] = field(instruction, 2, 2, 2);
+		result.index = (field(instruction, 2, 0, 2) << 2) | field(instruction, 3, 30, 2);
+		result.mux = field(instruction, 3, 28, 2);
 		break;
 	}
+	return result;
 }
 
-static void operand(struct xgpu_text *text, const DWORD *instruction, char which, int relative)
+static void operand(struct xgpu_text *text, const DWORD *instruction, char which, int relative,
+	int metal)
 {
 	static const char swizzle_names[] = "xyzw";
-	struct operand_fields fields;
-	unsigned long *swizzle = fields.swizzle, index, mux;
-
-	operand_fields(instruction, which, &fields);
-	index = fields.index;
-	mux = fields.mux;
-	xgpu_text_append(text, "%s", fields.negate ? "-" : "");
-	switch (mux)
+	struct nv2a_operand source = operand_fields(instruction, which);
+	xgpu_text_append(text, "%s", source.negate ? "-" : "");
+	switch (source.mux)
 	{
 	case _mux_temporary:
 		/* r12 reads back the position output */
-		if (index == 12)
+		if (source.index == 12)
 			xgpu_text_append(text, "oPos");
 		else
-			xgpu_text_append(text, "r%lu", index);
+			xgpu_text_append(text, "r%lu", source.index);
 		break;
 	case _mux_input:
 		xgpu_text_append(text, "v%lu", field(instruction, 1, 9, 4));
@@ -144,192 +150,16 @@ static void operand(struct xgpu_text *text, const DWORD *instruction, char which
 			xgpu_text_append(text, "c[%lu]", field(instruction, 1, 13, 8));
 		break;
 	default:
-		xgpu_text_append(text, "vec4(0.0)");
+		xgpu_text_append(text, "%s(0.0)", metal ? "float4" : "vec4");
 		break;
 	}
 	xgpu_text_append(text, ".%c%c%c%c",
-		swizzle_names[swizzle[0]], swizzle_names[swizzle[1]], swizzle_names[swizzle[2]], swizzle_names[swizzle[3]]);
+		swizzle_names[source.swizzle[0]], swizzle_names[source.swizzle[1]],
+		swizzle_names[source.swizzle[2]], swizzle_names[source.swizzle[3]]);
 }
-
-/* ---------- model lighting
-
-The game's model lighting programs (rasterizer_xbox_vertex_shaders_data.inc
-9, 10, 17 and 27) sum into the diffuse color oD0.xyz the ambient light
-c[-69], two distant lights (direction c[-73] and c[-71], color c[-72] and
-c[-70]; the first also lights the back by the translucency c[-82].z) and, in
-10 and 17, two point lights (c[-79] to c[-77] and c[-76] to c[-74]: position
-and 1 / radius squared, the cone's axis and falloff scale, the color and
-falloff offset). The normal and world position they light by are
-temporaries that the programs reuse (10 and 17 overwrite both after the
-sum). In 9, 10 and 17 the normal is the skinned normal turned by c[-84].w
-for the back faces' pass, r0 (written by instruction 17) and the position
-the skinned position, r10 (by 12); in 27, of a single node, the normal is
-r3 (by 5). They are taken as the first instruction that lights by them
-reads them: in 9 the normal before instruction 19, in 10 and 17 the normal
-before 24 and the position before 19, in 27 the normal before 7. A program
-is taken only where its lighting is the sum nv2a_psh.c computes for each
-pixel (the diffuse color written once, by the sum; both distant lights by
-one normal; the translucency; each point light by one position, its cone
-by its axis reversed) and the registers keep the same normal and position
-through it. Nothing else of the programs goes into oD0.xyz; oD0.w is 0, or
-in 17 the planar fog's. */
-
-static BOOL xyz_unswizzled(const struct operand_fields *operand)
-{
-	return operand->swizzle[0] == 0 && operand->swizzle[1] == 1 && operand->swizzle[2] == 2;
-}
-
-/* the operand is c[reg] (as the game numbers them: -73), its xyz unswizzled */
-static BOOL light_constant(const DWORD *instruction, const struct operand_fields *operand, int reg, BOOL negated)
-{
-	return operand->mux == _mux_constant && !field(instruction, 3, 1, 1) &&
-		field(instruction, 1, 13, 8) == (unsigned long)(XGPU_VERTEX_CONSTANT_BIAS + reg) &&
-		operand->negate == (negated ? 1UL : 0UL) && xyz_unswizzled(operand);
-}
-
-/* the operand is a temporary (not the position output), its xyz unswizzled */
-static BOOL light_temporary(const struct operand_fields *operand, BOOL negated)
-{
-	return operand->mux == _mux_temporary && operand->index < 12 &&
-		operand->negate == (negated ? 1UL : 0UL) && xyz_unswizzled(operand);
-}
-
-/* any of x, y and z of temporary reg written by the instructions in [first, last) */
-static BOOL temporary_written(const DWORD *instructions, unsigned long first, unsigned long last, unsigned long reg)
-{
-	unsigned long index;
-
-	for (index = first; index < last; index++)
-	{
-		const DWORD *instruction = instructions + index * 4;
-		unsigned long mac = field(instruction, 1, 21, 4);
-		unsigned long ilu = field(instruction, 1, 25, 3);
-		unsigned long temporary = field(instruction, 3, 20, 4);
-
-		if (mac != _mac_nop && mac != _mac_arl && temporary == reg && (field(instruction, 3, 24, 4) & 0xe))
-			return TRUE;
-		/* (the ILU writes r1 when both units run) */
-		if (ilu != _ilu_nop && (mac != _mac_nop ? 1 : temporary) == reg && (field(instruction, 3, 16, 4) & 0xe))
-			return TRUE;
-	}
-	return FALSE;
-}
-
-BOOL nv2a_vertex_shader_lighting(const DWORD *instructions, unsigned long instruction_count,
-	struct nv2a_vertex_lighting *lighting)
-{
-	unsigned long count, index, diffuse;
-	unsigned long distant[2], distant_register[2] = { 0, 0 }, point[2], point_register[2] = { 0, 0 };
-	BOOL cone[2] = { FALSE, FALSE }, translucency = FALSE, point_lights = FALSE;
-	int light;
-
-	/* to the instruction that ends the program */
-	for (count = 0; count < instruction_count;)
-	{
-		if (field(instructions + count++ * 4, 3, 0, 1))
-			break;
-	}
-	diffuse = distant[0] = distant[1] = point[0] = point[1] = count;
-	for (index = 0; index < count; index++)
-	{
-		const DWORD *instruction = instructions + index * 4;
-		unsigned long mac = field(instruction, 1, 21, 4);
-		unsigned long output_mask = field(instruction, 3, 12, 4);
-		unsigned long constant = field(instruction, 1, 13, 8);
-		struct operand_fields a, b, c;
-
-		operand_fields(instruction, 'A', &a);
-		operand_fields(instruction, 'B', &b);
-		operand_fields(instruction, 'C', &c);
-		/* the diffuse color's x, y and z, written once and last by the sum:
-		the second distant light's term times its color, plus the rest */
-		if ((output_mask & 0xe) && field(instruction, 3, 11, 1) && field(instruction, 3, 3, 8) == 3)
-		{
-			if (diffuse != count || (output_mask & 0xe) != 0xe || field(instruction, 3, 2, 1) ||
-				mac != _mac_mad || !light_constant(instruction, &b, -70, FALSE) || c.mux != _mux_temporary)
-			{
-				return FALSE;
-			}
-			diffuse = index;
-		}
-		for (light = 0; light < 2; light++)
-		{
-			/* each distant light's facing: the normal's dot product with the
-			light's direction reversed */
-			if (mac == _mac_dp3 && light_constant(instruction, &b, light ? -71 : -73, TRUE))
-			{
-				if (distant[light] != count || !light_temporary(&a, FALSE))
-					return FALSE;
-				distant[light] = index;
-				distant_register[light] = a.index;
-			}
-			/* each point light's direction, from the world position */
-			if (mac == _mac_add && light_constant(instruction, &a, light ? -76 : -79, FALSE) &&
-				light_temporary(&c, TRUE))
-			{
-				if (point[light] != count)
-					return FALSE;
-				point[light] = index;
-				point_register[light] = c.index;
-			}
-			/* and its cone: the direction's dot product with the light's axis
-			reversed */
-			if (mac == _mac_dp3 && b.mux == _mux_constant && !field(instruction, 3, 1, 1) &&
-				constant == (unsigned long)(XGPU_VERTEX_CONSTANT_BIAS + (light ? -75 : -78)))
-			{
-				if (!light_constant(instruction, &b, light ? -75 : -78, TRUE))
-					return FALSE;
-				cone[light] = TRUE;
-			}
-		}
-		/* the back lit by the first distant light: its facing reversed, times
-		the translucency */
-		if (mac == _mac_mul && a.mux == _mux_temporary && a.negate && b.mux == _mux_constant &&
-			!field(instruction, 3, 1, 1) && constant == XGPU_VERTEX_CONSTANT_BIAS - 82 && b.swizzle[0] == 2)
-		{
-			translucency = TRUE;
-		}
-		if ((a.mux == _mux_constant || b.mux == _mux_constant || c.mux == _mux_constant) &&
-			!field(instruction, 3, 1, 1) && constant >= XGPU_VERTEX_CONSTANT_BIAS - 79 &&
-			constant <= XGPU_VERTEX_CONSTANT_BIAS - 74)
-		{
-			point_lights = TRUE;
-		}
-	}
-
-	if (diffuse == count || distant[0] >= diffuse || distant[1] >= diffuse ||
-		distant_register[0] != distant_register[1] || !translucency)
-	{
-		return FALSE;
-	}
-	lighting->lights = 1;
-	lighting->normal_register = distant_register[0];
-	lighting->normal_instruction = distant[0] < distant[1] ? distant[0] : distant[1];
-	if (temporary_written(instructions, lighting->normal_instruction, diffuse, lighting->normal_register))
-		return FALSE;
-	lighting->position_instruction = lighting->position_register = 0;
-	if (point_lights)
-	{
-		unsigned long last = point[0] > point[1] ? point[0] : point[1];
-
-		if (point[0] >= diffuse || point[1] >= diffuse || point_register[0] != point_register[1] ||
-			!cone[0] || !cone[1])
-		{
-			return FALSE;
-		}
-		lighting->lights = 2;
-		lighting->position_register = point_register[0];
-		lighting->position_instruction = point[0] < point[1] ? point[0] : point[1];
-		if (temporary_written(instructions, lighting->position_instruction, last, lighting->position_register))
-			return FALSE;
-	}
-	return TRUE;
-}
-
-/* ---------- translation */
 
 static const char shader_prologue[] =
-#ifdef HALO_GLES
+#ifdef HALO_ANDROID
 	/* the #version line comes first, from the context's capabilities */
 	"precision highp float;\n"
 	"precision highp int;\n"
@@ -351,7 +181,12 @@ static const char shader_prologue[] =
 	"out vec4 xT2;\n"
 	"out vec4 xT3;\n"
 	"out float xFog;\n"
-	"invariant gl_Position;\n"
+	"invariant gl_Position;\n";
+
+/* MSL's vector constructors and scalar helpers have the same semantics for
+ * these operations. xgpu_msl.h declares native vector aliases, so both
+ * backends emit from the decoded Xbox instructions without a transpiler. */
+static const char shader_helpers[] =
 	"vec4 unpack_normpacked3(uint p)\n"
 	"{\n"
 	"	int x = int(p << 21) >> 21;\n"
@@ -383,36 +218,122 @@ static const char shader_prologue[] =
 	"	return vec4(1.0, max(s.x, 0.0), specular, 1.0);\n"
 	"}\n";
 
-char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instruction_count,
-	unsigned long packed_attribute_mask, const struct nv2a_vertex_lighting *lighting)
+static int operand_used(unsigned long mac, unsigned long ilu, char which)
+{
+	if (which == 'A') return mac != _mac_nop;
+	if (which == 'B') return mac != _mac_nop && mac != _mac_mov &&
+		mac != _mac_add && mac != _mac_arl;
+	return ilu != _ilu_nop || mac == _mac_add || mac == _mac_mad;
+}
+
+/* Reject unsupported microcode before emitting a Metal function: a zero
+ * substitute or an out-of-range register would hide a rendering mismatch.
+ * Unused operand fields are don't-care bits in the NV2A format. */
+static int metal_program_valid(const DWORD *instructions, unsigned long instruction_count,
+	unsigned long packed_attribute_mask)
+{
+	unsigned long index;
+	if (!instructions || !instruction_count ||
+		(packed_attribute_mask >> XGPU_VERTEX_ATTRIBUTE_COUNT)) return 0;
+	for (index = 0; index < instruction_count; index++)
+	{
+		const DWORD *instruction = instructions + index * 4;
+		unsigned long mac = field(instruction, 1, 21, 4);
+		unsigned long ilu = field(instruction, 1, 25, 3);
+		unsigned long temporary = field(instruction, 3, 20, 4);
+		unsigned long output_from_ilu = field(instruction, 3, 2, 1);
+		char which;
+		if (mac > _mac_arl) return 0;
+		for (which = 'A'; which <= 'C'; which++)
+		{
+			struct nv2a_operand source = operand_fields(instruction, which);
+			if (!operand_used(mac, ilu, which)) continue;
+			if (source.mux == _mux_unknown ||
+				(source.mux == _mux_temporary && source.index > 12) ||
+				(source.mux == _mux_constant && !field(instruction, 3, 1, 1) &&
+				 field(instruction, 1, 13, 8) >= XGPU_VERTEX_CONSTANT_COUNT)) return 0;
+		}
+		if (mac != _mac_nop && mac != _mac_arl && field(instruction, 3, 24, 4) && temporary > 12)
+			return 0;
+		if (ilu != _ilu_nop && field(instruction, 3, 16, 4) &&
+			mac == _mac_nop && temporary > 12) return 0;
+		if (field(instruction, 3, 12, 4) && (output_from_ilu ? ilu : mac) != 0)
+		{
+			unsigned long address = field(instruction, 3, 3, 8);
+			if (!field(instruction, 3, 11, 1) ||
+				(address != 0 && (address < 3 || address > 12))) return 0;
+		}
+		if (field(instruction, 3, 0, 1)) break;
+	}
+	return 1;
+}
+
+static char *vertex_shader(const DWORD *instructions, unsigned long instruction_count,
+	unsigned long packed_attribute_mask, int metal, int compact)
 {
 	struct xgpu_text text = { 0 };
 	unsigned long index;
+	int capture_clip = metal;
 
-#ifdef HALO_GLES
-	xgpu_text_append(&text, "#version %s\n", xgpu_capabilities.shading_language);
+#ifdef HALO_ANDROID
+	capture_clip = 1;
+	if (!metal) xgpu_text_append(&text, "#version %s\n", xgpu_capabilities.shading_language);
 #endif
-	xgpu_text_append(&text, "%s", shader_prologue);
-	/* (the pixel shader's model_lighting; the normal's length in w) */
-	if (lighting)
-		xgpu_text_append(&text, "out vec4 xWorldNormal;\n");
-	if (lighting && lighting->lights == 2)
-		xgpu_text_append(&text, "out vec3 xWorldPosition;\n");
-	for (index = 0; index < XGPU_VERTEX_ATTRIBUTE_COUNT; index++)
+	if (metal)
+		xgpu_text_append(&text, "%s%s%s", XGPU_MSL_TYPES, XGPU_MSL_VERTEX_VARYINGS,
+			XGPU_MSL_VERTEX_UNIFORMS);
+	else
+		xgpu_text_append(&text, "%s", shader_prologue);
+	xgpu_text_append(&text, "%s", shader_helpers);
+	if (compact) xgpu_text_append(&text, "%s", xgpu_vertex_decode_msl);
+	if (metal && !compact) xgpu_text_append(&text, "struct XgpuVertexInput {\n");
+	for (index = 0; !compact && index < XGPU_VERTEX_ATTRIBUTE_COUNT; index++)
 	{
-		if (packed_attribute_mask & (1UL << index))
+		if (metal)
+		{
+			if (packed_attribute_mask & (1UL << index))
+				xgpu_text_append(&text, "\tuint v%lu_packed [[attribute(%lu)]];\n", index, index);
+			else
+				xgpu_text_append(&text, "\tfloat4 v%lu_in [[attribute(%lu)]];\n", index, index);
+		}
+		else if (packed_attribute_mask & (1UL << index))
 			xgpu_text_append(&text, "layout(location = %lu) in uint v%lu_packed;\n", index, index);
 		else
 			xgpu_text_append(&text, "layout(location = %lu) in vec4 v%lu_in;\n", index, index);
 	}
 
-	xgpu_text_append(&text, "void main()\n{\n");
+	if (metal)
+	{
+		if (compact)
+			xgpu_text_append(&text,
+				"vertex XgpuVaryings xgpu_vertex(uint vertex_id [[vertex_id]],\n"
+				"\tdevice const uchar *vertex_bytes [[buffer(1)]],\n");
+		else
+			xgpu_text_append(&text,
+				"};\nvertex XgpuVaryings xgpu_vertex(XgpuVertexInput input [[stage_in]],\n");
+		xgpu_text_append(&text,
+			"\tconstant XgpuVertexUniforms &uniforms [[buffer(0)]])\n{\n"
+			"\tconstant float4 *c = uniforms.c;\n"
+			"\tfloat4 viewport_scale = uniforms.viewport_scale, viewport_offset = uniforms.viewport_offset;\n"
+			"\tfloat point_size = uniforms.point_size, screen_offset = uniforms.screen_offset;\n"
+			"\tXgpuVaryings output;\n");
+		if (compact)
+			xgpu_text_append(&text,
+				"\tfloat4 vertex_values[16]; uint vertex_packed[16];\n"
+				"\txgpu_vertex_fetch(vertex_bytes, vertex_id, vertex_values, vertex_packed);\n");
+	}
+	else
+		xgpu_text_append(&text, "void main()\n{\n");
 	for (index = 0; index < XGPU_VERTEX_ATTRIBUTE_COUNT; index++)
 	{
-		if (packed_attribute_mask & (1UL << index))
-			xgpu_text_append(&text, "\tvec4 v%lu = unpack_normpacked3(v%lu_packed);\n", index, index);
+		if (compact && (packed_attribute_mask & (1UL << index)))
+			xgpu_text_append(&text, "\tvec4 v%lu = unpack_normpacked3(vertex_packed[%lu]);\n", index, index);
+		else if (compact)
+			xgpu_text_append(&text, "\tvec4 v%lu = vertex_values[%lu];\n", index, index);
+		else if (packed_attribute_mask & (1UL << index))
+			xgpu_text_append(&text, "\tvec4 v%lu = unpack_normpacked3(%sv%lu_packed);\n", index, metal ? "input." : "", index);
 		else
-			xgpu_text_append(&text, "\tvec4 v%lu = v%lu_in;\n", index, index);
+			xgpu_text_append(&text, "\tvec4 v%lu = %sv%lu_in;\n", index, metal ? "input." : "", index);
 	}
 	xgpu_text_append(&text,
 		"\tvec4 r0 = vec4(0.0), r1 = vec4(0.0), r2 = vec4(0.0), r3 = vec4(0.0);\n"
@@ -426,7 +347,8 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		"\tvec4 oFog = vec4(1.0), oPts = vec4(point_size), oUnused = vec4(0.0);\n"
 		"\tint a0 = 0;\n"
 		"\tvec4 A, B, C, mac, ilu;\n");
-	xgpu_text_append(&text, "\tvec4 clip_position = vec4(0.0);\n\tbool clip_captured = false;\n");
+	if (capture_clip)
+		xgpu_text_append(&text, "\tvec4 clip_position = vec4(0.0);\n\tbool clip_captured = false;\n");
 
 	for (index = 0; index < instruction_count; index++)
 	{
@@ -442,19 +364,18 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		unsigned long output_from_ilu = field(instruction, 3, 2, 1);
 		int relative = (int)field(instruction, 3, 1, 1);
 		char mask[5];
+		char which;
 
 		xgpu_text_append(&text, "\t/* %lu */\n", index);
-		/* the lighting's normal and position, before the program reuses them */
-		if (lighting && index == lighting->normal_instruction)
+		for (which = 'A'; which <= 'C'; which++)
 		{
-			xgpu_text_append(&text, "\txWorldNormal = vec4(r%lu.xyz, length(r%lu.xyz));\n",
-				lighting->normal_register, lighting->normal_register);
+			xgpu_text_append(&text, "\t%c = ", which);
+			if (metal && !operand_used(mac, ilu, which))
+				xgpu_text_append(&text, "float4(0.0)");
+			else
+				operand(&text, instruction, which, relative, metal);
+			xgpu_text_append(&text, ";\n");
 		}
-		if (lighting && lighting->lights == 2 && index == lighting->position_instruction)
-			xgpu_text_append(&text, "\txWorldPosition = r%lu.xyz;\n", lighting->position_register);
-		xgpu_text_append(&text, "\tA = "); operand(&text, instruction, 'A', relative); xgpu_text_append(&text, ";\n");
-		xgpu_text_append(&text, "\tB = "); operand(&text, instruction, 'B', relative); xgpu_text_append(&text, ";\n");
-		xgpu_text_append(&text, "\tC = "); operand(&text, instruction, 'C', relative); xgpu_text_append(&text, ";\n");
 
 		switch (mac)
 		{
@@ -462,15 +383,23 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		case _mac_mov: xgpu_text_append(&text, "\tmac = A;\n"); break;
 		case _mac_mul: xgpu_text_append(&text, "\tmac = A * B;\n"); break;
 		case _mac_add: xgpu_text_append(&text, "\tmac = A + C;\n"); break;
-		case _mac_mad: xgpu_text_append(&text, "\tmac = A * B + C;\n"); break;
+		case _mac_mad:
+			/* Keep the multiply and add as separate expression stages. Under
+			invariant Metal compilation this also preserves weighted matrix
+			results produced by the original GLSL compiler's temporaries. */
+			if (metal)
+				xgpu_text_append(&text, "\tvec4 mac_product_%lu = A * B;\n\tmac = mac_product_%lu + C;\n", index, index);
+			else
+				xgpu_text_append(&text, "\tmac = A * B + C;\n");
+			break;
 		case _mac_dp3: xgpu_text_append(&text, "\tmac = vec4(dot(A.xyz, B.xyz));\n"); break;
 		case _mac_dph: xgpu_text_append(&text, "\tmac = vec4(dot(A.xyz, B.xyz) + B.w);\n"); break;
 		case _mac_dp4: xgpu_text_append(&text, "\tmac = vec4(dot(A, B));\n"); break;
 		case _mac_dst: xgpu_text_append(&text, "\tmac = vec4(1.0, A.y * B.y, A.z, B.w);\n"); break;
 		case _mac_min: xgpu_text_append(&text, "\tmac = min(A, B);\n"); break;
 		case _mac_max: xgpu_text_append(&text, "\tmac = max(A, B);\n"); break;
-		case _mac_slt: xgpu_text_append(&text, "\tmac = vec4(lessThan(A, B));\n"); break;
-		case _mac_sge: xgpu_text_append(&text, "\tmac = vec4(greaterThanEqual(A, B));\n"); break;
+		case _mac_slt: xgpu_text_append(&text, metal ? "\tmac = float4(A < B);\n" : "\tmac = vec4(lessThan(A, B));\n"); break;
+		case _mac_sge: xgpu_text_append(&text, metal ? "\tmac = float4(A >= B);\n" : "\tmac = vec4(greaterThanEqual(A, B));\n"); break;
 		case _mac_arl: xgpu_text_append(&text, "\tmac = A;\n"); break;
 		default: xgpu_text_append(&text, "\tmac = vec4(0.0);\n"); break;
 		}
@@ -480,16 +409,19 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		case _ilu_mov: xgpu_text_append(&text, "\tilu = C;\n"); break;
 		case _ilu_rcp: xgpu_text_append(&text, "\tilu = vec4(1.0 / C.x);\n"); break;
 		case _ilu_rcc: xgpu_text_append(&text, "\tilu = nv2a_rcc(C.x);\n"); break;
-		case _ilu_rsq: xgpu_text_append(&text, "\tilu = vec4(inversesqrt(abs(C.x)));\n"); break;
+		case _ilu_rsq: xgpu_text_append(&text, metal ? "\tilu = float4(rsqrt(abs(C.x)));\n" : "\tilu = vec4(inversesqrt(abs(C.x)));\n"); break;
 		case _ilu_exp: xgpu_text_append(&text, "\tilu = nv2a_exp(C.x);\n"); break;
 		case _ilu_log: xgpu_text_append(&text, "\tilu = nv2a_log(C.x);\n"); break;
 		case _ilu_lit: xgpu_text_append(&text, "\tilu = nv2a_lit(C);\n"); break;
 		default: xgpu_text_append(&text, "\tilu = vec4(0.0);\n"); break;
 		}
 		/* the screen-space conversion takes the reciprocal of the clip-space
-		position's w (rcc of r12.w); keep the position it converts */
-		if (ilu == _ilu_rcc && field(instruction, 3, 28, 2) == _mux_temporary &&
-			((field(instruction, 2, 0, 2) << 2) | field(instruction, 3, 30, 2)) == 12)
+		position's w (rcc of r12.w); keep the position it converts. The Metal
+		backend checks the scalar swizzle so RCC of another component cannot
+		be mistaken for the viewport conversion. */
+		if (capture_clip && ilu == _ilu_rcc && field(instruction, 3, 28, 2) == _mux_temporary &&
+			((field(instruction, 2, 0, 2) << 2) | field(instruction, 3, 30, 2)) == 12 &&
+			(!metal || (field(instruction, 2, 8, 2) == 3 && !field(instruction, 2, 10, 1))))
 		{
 			xgpu_text_append(&text, "\tclip_position = oPos;\n\tclip_captured = true;\n");
 		}
@@ -534,7 +466,7 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		"\t/* undo the screen-space conversion done with c[-38] and c[-37] */\n"
 		"\tvec3 scale = vec3(viewport_scale.x != 0.0 ? viewport_scale.x : 1.0,\n"
 		"\t\tviewport_scale.y != 0.0 ? viewport_scale.y : 1.0,\n"
-		"\t\tviewport_scale.z != 0.0 ? viewport_scale.z : 1.0);\n"
+		"\t\tviewport_scale.z != 0.0 ? viewport_scale.z : 1.0);\n");
 		/* Direct3D 8 puts pixel centres on integer screen coordinates (the
 		game offsets its screen-space quads by -0.5 to match), OpenGL on
 		half-integers */
@@ -543,29 +475,63 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		rcc clamps and 1/w rounds differently on each GPU (Mali put vertices
 		of the first-person weapon at the vanishing point). Where the clip
 		position was kept, the same result is computed without dividing. */
-		"\tvec4 position;\n"
-		"\tif (clip_captured)\n"
-		"\t\tposition = vec4((clip_position.xyz * c[%d].xyz + (c[%d].xyz + vec3(0.5 + screen_offset, 0.5, 0.0)\n"
-		"\t\t\t- viewport_offset.xyz) * clip_position.w) / scale, clip_position.w);\n"
-		"\telse\n"
-		"\t{\n"
-		"\t\tvec3 ndc = (vec3(oPos.xy + vec2(0.5 + screen_offset, 0.5), oPos.z) - viewport_offset.xyz) / scale;\n"
-		"\t\tposition = vec4(ndc * oPos.w, oPos.w);\n"
-		"\t}\n"
-		/* A position whose w is zero, or is not a number, is the clip-space
-		origin: the screen conversion's reciprocal is clamped rather than
-		infinite, so a large position times a w of zero is exactly zero, and
-		the origin is inside the frustum. Nothing then clips the triangle
-		away and OpenGL divides zero by zero there: the vertex lands on the
-		middle of the screen and the triangle is drawn out to it from the
-		first-person weapon, whose pose follows the camera and so reaches the
-		camera plane. The divide on the Xbox sends such a vertex to infinity
-		and the clipper takes the triangle; put it behind the camera instead,
-		which the clipper also takes. */
-		"\tif (!(abs(position.w) > 0.0))\n"
-		"\t\tposition = vec4(0.0, 0.0, 0.0, -1.0);\n"
-		"\tgl_Position = position;\n"
-#ifdef HALO_GLES
+	if (capture_clip && metal)
+		/* Keep the viewport arithmetic in its original evaluation stages.
+		 * Combining it into a single vector expression lets fast floating-
+		 * point compilation change rounding before invariant rasterization. */
+		xgpu_text_append(&text,
+			"\tif (clip_captured) {\n"
+			"\t\tvec3 scaled_clip = clip_position.xyz * c[%d].xyz;\n"
+			"\t\tvec3 pixel_offset = vec3(0.5 + screen_offset, 0.5, 0.0);\n"
+			"\t\tvec3 screen_origin = c[%d].xyz + pixel_offset;\n"
+			"\t\tvec3 origin_delta = screen_origin - viewport_offset.xyz;\n"
+			"\t\tvec3 clip_delta = origin_delta * clip_position.w;\n"
+			"\t\tvec3 numerator = scaled_clip + clip_delta;\n"
+			"\t\tvec3 position = numerator / scale;\n"
+			"\t\toutput.position = vec4(position, clip_position.w);\n"
+			"\t} else {\n"
+			"\t\tvec2 pixel_offset = vec2(0.5 + screen_offset, 0.5);\n"
+			"\t\tvec2 pixel_xy = oPos.xy + pixel_offset;\n"
+			"\t\tvec3 screen_position = vec3(pixel_xy, oPos.z);\n"
+			"\t\tvec3 delta = screen_position - viewport_offset.xyz;\n"
+			"\t\tvec3 ndc = delta / scale;\n"
+			"\t\tvec3 position = ndc * oPos.w;\n"
+			"\t\toutput.position = vec4(position, oPos.w);\n"
+			"\t}\n", XGPU_VERTEX_CONSTANT_BIAS - 38, XGPU_VERTEX_CONSTANT_BIAS - 37);
+	else if (capture_clip)
+		xgpu_text_append(&text,
+			"\tif (clip_captured)\n"
+			"\t\t%s = vec4((clip_position.xyz * c[%d].xyz + (c[%d].xyz + vec3(0.5 + screen_offset, 0.5, 0.0)\n"
+			"\t\t\t- viewport_offset.xyz) * clip_position.w) / scale, clip_position.w);\n"
+			"\telse\n"
+			"\t\t%s = vec4((vec3(oPos.xy + vec2(0.5 + screen_offset, 0.5), oPos.z) - viewport_offset.xyz) / scale * oPos.w, oPos.w);\n",
+			metal ? "output.position" : "gl_Position", XGPU_VERTEX_CONSTANT_BIAS - 38,
+			XGPU_VERTEX_CONSTANT_BIAS - 37, metal ? "output.position" : "gl_Position");
+	else
+		xgpu_text_append(&text,
+			"\tvec3 ndc = (vec3(oPos.xy + vec2(0.5 + screen_offset, 0.5), oPos.z) - viewport_offset.xyz) / scale;\n"
+			"\tgl_Position = vec4(ndc * oPos.w, oPos.w);\n");
+	if (metal)
+	{
+		/* Metal maps NDC +Y to the viewport's top and depth to 0..1. Xbox's
+		 * viewport_scale.y is already negative, so the inverse above needs
+		 * neither the GLES Y flip nor its zero-one to minus-one-one Z fix. */
+		xgpu_text_append(&text,
+			"\toutput.point_size = oPts.x;\n"
+			"\toutput.xD0 = clamp(oD0, 0.0, 1.0);\n"
+			"\toutput.xD1 = clamp(oD1, 0.0, 1.0);\n"
+			"\toutput.xB0 = clamp(oB0, 0.0, 1.0);\n"
+			"\toutput.xB1 = clamp(oB1, 0.0, 1.0);\n"
+			"\toutput.xT0 = oT0;\n"
+			"\toutput.xT1 = oT1;\n"
+			"\toutput.xT2 = oT2;\n"
+			"\toutput.xT3 = oT3;\n"
+			"\toutput.xFog = oFog.x;\n"
+			"\treturn output;\n}\n");
+		return text.buffer;
+	}
+	xgpu_text_append(&text,
+#ifdef HALO_ANDROID
 		/* what glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE) does on desktop
 		GL: rows from the top, depth 0..1 */
 		"\tgl_Position.y = -gl_Position.y;\n"
@@ -581,8 +547,35 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		"\txT2 = oT2;\n"
 		"\txT3 = oT3;\n"
 		"\txFog = oFog.x;\n"
-		"}\n",
-		XGPU_VERTEX_CONSTANT_BIAS - 38, XGPU_VERTEX_CONSTANT_BIAS - 37
+		"}\n"
 		);
 	return text.buffer;
+}
+
+char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instruction_count,
+	unsigned long packed_attribute_mask)
+{
+	return vertex_shader(instructions, instruction_count, packed_attribute_mask, 0, 0);
+}
+
+char *nv2a_vertex_shader_to_msl(const DWORD *instructions, unsigned long instruction_count,
+	unsigned long packed_attribute_mask)
+{
+	if (!metal_program_valid(instructions, instruction_count, packed_attribute_mask))
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+	return vertex_shader(instructions, instruction_count, packed_attribute_mask, 1, 0);
+}
+
+char *nv2a_vertex_shader_to_msl_compact(const DWORD *instructions, unsigned long instruction_count,
+	unsigned long packed_attribute_mask)
+{
+	if (!metal_program_valid(instructions, instruction_count, packed_attribute_mask))
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+	return vertex_shader(instructions, instruction_count, packed_attribute_mask, 1, 1);
 }

@@ -1,0 +1,6 @@
+# Native Metal services, only in the macOS guest/host pair.
+host_metal_initialize
+host_metal_submit
+host_metal_readback
+host_metal_shutdown
+host_metal_pace_vblank
