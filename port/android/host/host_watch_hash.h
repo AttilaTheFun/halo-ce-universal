@@ -17,6 +17,8 @@ as a write. A write is therefore seen in the next frame, not at once.
 #include <stdint.h>
 
 #define WATCH_HASH_PAGE_SIZE 0x1000u
+#define WATCH_HASH_STABLE_CHECKS 30u
+#define WATCH_HASH_STABLE_FRAMES 60u
 
 struct watch_hash
 {
