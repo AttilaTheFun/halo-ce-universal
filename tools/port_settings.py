@@ -414,8 +414,11 @@ def _setting_screen(folder: str, spec: dict) -> list:
                 rows += [(row, name, places[name]) for name in ("desktop", "android")]
         else:
             rows.append((row, platform, place + 1 + index))
+        # Mac menus accept only platform="desktop" or platform="android". A row
+        # named for both is written with no platform, so it is shown.
+        menu_platform = platform if platform in (None, "desktop", "android") else None
         extra += _widget(row, [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
-                               ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF"), ("platform", platform)],
+                               ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF"), ("platform", menu_platform)],
                          [f'<on event="a" open="{target}"/>', f'<on event="start" open="{target}"/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>',
                           f'<child widget="{base}/{key}_label"/>'])

@@ -1787,6 +1787,77 @@ void objects_scripting_set_scale(
 	return;
 }
 
+/* a flag or an oddball: weapon_is_flag's bit, which a running game is not
+allowed to destroy */
+static boolean object_is_game_flag(
+	long object_index)
+{
+	struct object_datum *object = object_get(object_index);
+
+	return game_engine_running() &&
+		object->object.type == _object_type_weapon &&
+		weapon_is_flag(object_index);
+}
+
+/* port: deleting a flag while a game is running halted (objects.c 829).
+A machine that joined in progress deletes what the host does not have, and
+what leaves its view, and that delete can reach a flag. The flag stays, off
+whatever was about to take it along. The next sibling, which unlinking
+clears, is returned so the rest of that delete still runs. */
+static long object_spare_game_flag(
+	long object_index)
+{
+	struct object_datum *object = object_get(object_index);
+	struct object_header_datum *header = object_header_get(object_index);
+	long next_index = object->object.next_object_index;
+	long parent_index = object->object.parent_object_index;
+	static boolean logged = FALSE;
+
+	SET_FLAG(object->object.flags, _object_deleted_when_deactivated_bit, FALSE);
+	object_set_automatic_deactivation(object_index, FALSE);
+	if (parent_index != NONE)
+	{
+		if (TEST_FLAG(object->object.flags, _object_connected_to_map_bit))
+			object_detach(object_index);
+		else
+		{
+			object_remove_from_list(
+				&object_get(parent_index)->object.first_child_object_index,
+				object_index);
+			object = object_get(object_index);
+			object->object.parent_object_index = NONE;
+			object->object.parent_node_index = NONE;
+			SET_FLAG(header->flags, _object_header_child_bit, FALSE);
+			object_reconnect_to_map(object_index, NULL);
+			object_set_visibility(object_index, TRUE);
+		}
+		if (TEST_FLAG(_object_mask_unit, object_get(parent_index)->object.type))
+		{
+			struct unit_datum *unit = unit_get(parent_index);
+			short slot;
+
+			for (slot = 0; slot < MAXIMUM_WEAPONS_PER_UNIT; ++slot)
+			{
+				if (unit->unit.weapon_object_indices[slot] != object_index)
+					continue;
+				unit->unit.weapon_object_indices[slot] = NONE;
+				if (unit->unit.current_weapon_index == slot)
+					unit->unit.current_weapon_index = NONE;
+				if (unit->unit.desired_weapon_index == slot)
+					unit->unit.desired_weapon_index = NONE;
+			}
+		}
+	}
+	SET_FLAG(item_get(object_index)->item.flags, _item_attached_to_unit_bit, FALSE);
+	if (!logged)
+	{
+		logged = TRUE;
+		error(_error_silent, "a flag was kept: deleting it would have halted the game");
+	}
+
+	return next_index;
+}
+
 static void object_delete_initial_recursive(
 	long object_index,
 	boolean delete_siblings)
@@ -1794,9 +1865,13 @@ static void object_delete_initial_recursive(
 	struct object_header_datum *header = object_header_get(object_index);
 	struct object_datum *object = object_get(object_index);
 
-	if (game_engine_running() && object->object.type == _object_type_weapon)
+	if (object_is_game_flag(object_index))
 	{
-		match_assert("c:\\halo\\SOURCE\\objects\\objects.c", 829, !(weapon_is_flag(object_index)));
+		long next_index = object_spare_game_flag(object_index);
+
+		if (delete_siblings && next_index != NONE)
+			object_delete_initial_recursive(next_index, TRUE);
+		return;
 	}
 	
 	if (object->object.first_child_object_index!=NONE)
@@ -5124,7 +5199,18 @@ static void object_delete_recursive(
 	boolean delete_siblings)
 {
 	struct object_datum *object = object_get(object_index);
-	struct object_definition *object_definition = object_definition_get(object->definition_index);
+	struct object_definition *object_definition;
+
+	if (object_is_game_flag(object_index))
+	{
+		long next_index = object_spare_game_flag(object_index);
+
+		if (delete_siblings && next_index != NONE)
+			object_delete_recursive(next_index, TRUE);
+		return;
+	}
+
+	object_definition = object_definition_get(object->definition_index);
 
 	if (TEST_FLAG(object->object.flags, _object_garbage_bit))
 	{
