@@ -34,6 +34,9 @@ void rasterizer_text_begin(
 	struct rasterizer_dynamic_screen_geometry_parameters const *parameters);
 void rasterizer_text_end(
 	void);
+/* port: draws the characters of the string so far (rasterizer_xbox_text.c) */
+void rasterizer_text_flush(
+	void);
 
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 /* Scale only this text's glyph quads and stock shadows, leaving font layout,
