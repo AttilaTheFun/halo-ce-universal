@@ -13,6 +13,7 @@ SDL's stream lock recursively from a different thread.
 #include "host.h"
 #ifdef HALO_APPLE_GRAPHICS
 #include "../../apple/host_debug.h"
+#include "../../apple/host_graphics.h"
 #endif
 #ifndef HALO_IOS
 #include "../native/host_menu.h"
@@ -164,6 +165,9 @@ static SDL_HitTestResult SDLCALL window_hit_test(SDL_Window *window, const SDL_P
 uint32_t host_sdl_create_window(const char *title, int width, int height, int64_t flags) {
     const char *windowed = SDL_getenv("HALO_WINDOWED");
     SDL_WindowFlags mode = SDL_WINDOW_METAL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+#ifdef HALO_IOS
+    if (!halo_graphics_metal()) mode = (mode & ~SDL_WINDOW_METAL) | SDL_WINDOW_OPENGL;
+#endif
     metal_window_hidden = (flags & SDL_WINDOW_HIDDEN) != 0;
     if (metal_window_hidden) mode |= SDL_WINDOW_HIDDEN;
     else if (!windowed || !SDL_atoi(windowed)) mode |= SDL_WINDOW_FULLSCREEN;
@@ -272,12 +276,25 @@ int host_sdl_set_relative_mouse(uint32_t window, int enabled) {
 }
 
 int host_sdl_gl_set_attribute(int attribute, int value) {
+#ifdef HALO_IOS
+    if (!halo_graphics_metal()) return SDL_GL_SetAttribute(attribute, value);
+#endif
     if (attribute == SDL_GL_CONTEXT_MINOR_VERSION)
         requested_minor = value;
     return 1;
 }
 uint32_t host_sdl_gl_create_context(uint32_t window) {
     SDL_Window *object = handle_get(window, _handle_window);
+#ifdef HALO_IOS
+    if (!halo_graphics_metal()) {
+        SDL_GLContext native = object ? SDL_GL_CreateContext(object) : NULL;
+        if (!native) return 0;
+        halo_debug_initialize();
+        extern void host_ios_controls_initialize(SDL_Window *);
+        host_ios_controls_initialize(object);
+        return handle_new(_handle_context, native);
+    }
+#endif
     if (!object || requested_minor > 0) {
         SDL_SetError("ANGLE Metal uses ES 3.0");
         return 0;
@@ -304,9 +321,9 @@ uint32_t host_sdl_gl_create_context(uint32_t window) {
                                        EGL_ALPHA_SIZE,
                                        8,
                                        EGL_DEPTH_SIZE,
-                                       24,
+                                       0,
                                        EGL_STENCIL_SIZE,
-                                       8,
+                                       0,
                                        EGL_NONE};
     EGLConfig config;
     if (!eglChooseConfig(metal_display, configAttributes, &config, 1, &count) || !count)
@@ -347,18 +364,37 @@ uint32_t host_sdl_gl_create_context(uint32_t window) {
     return handle_new(_handle_context, metal_context);
 }
 int host_sdl_gl_make_current(uint32_t window, uint32_t context) {
+#ifdef HALO_IOS
+    if (!halo_graphics_metal()) return SDL_GL_MakeCurrent(handle_get(window, _handle_window), handle_get(context, _handle_context));
+#endif
     (void)window;
     return eglMakeCurrent(metal_display, metal_surface, metal_surface,
                           handle_get(context, _handle_context));
 }
 int host_sdl_gl_set_swap_interval(int interval) {
+#ifdef HALO_IOS
+    if (!halo_graphics_metal()) return SDL_GL_SetSwapInterval(interval);
+#endif
     metal_swap_interval = interval;
     return eglSwapInterval(metal_display, interval);
 }
 int host_sdl_gl_swap_window(uint32_t window) {
     (void)window;
     uint64_t start = SDL_GetTicksNS();
-    int result = eglSwapBuffers(metal_display, metal_surface);
+    int result;
+#ifdef HALO_IOS
+    result = halo_graphics_metal() ? (halo_metalfx_take_presented() ? 1 : eglSwapBuffers(metal_display, metal_surface)) : SDL_GL_SwapWindow(handle_get(window, _handle_window));
+    static uint64_t last_frame;
+    int limit = halo_debug_frame_limit();
+    uint64_t now = SDL_GetTicksNS();
+    uint64_t period = limit > 0 ? 1000000000ull / limit : 0;
+    if (last_frame && now - last_frame < period) SDL_DelayNS(period - (now - last_frame));
+    now = SDL_GetTicksNS();
+    if (last_frame) halo_debug_frame((now-last_frame)/1e6);
+    last_frame = now;
+#else
+    result = eglSwapBuffers(metal_display, metal_surface);
+#endif
     host_perf_frame((SDL_GetTicksNS() - start) / 1e6);
     if (metal_window_hidden && metal_swap_interval > 0) {
         uint64_t elapsed = SDL_GetTicksNS() - start;

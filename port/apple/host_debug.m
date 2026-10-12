@@ -28,6 +28,78 @@ static NSString *glRenderer;
 #define HALO_BUILD_REVISION "unknown"
 #endif
 static NSUInteger sourceBytes,dropped;
+static int frameLimit = 60;
+static BOOL showFPS;
+static NSMutableArray *frameSamples;
+static double frameTotal,frameWorst;
+static NSUInteger frameCount;
+static double lastSample;
+#ifdef HALO_IOS
+static UILabel *fpsLabel;
+#endif
+int halo_debug_renderer_preference(void) {
+#ifdef HALO_IOS
+    NSString *forced=NSProcessInfo.processInfo.environment[@"HALO_IOS_TEST_RENDERER"];
+    NSString *setting=forced?:[NSUserDefaults.standardUserDefaults stringForKey:@"HaloRenderer"];
+    return ![setting isEqualToString:@"opengl"];
+#else
+    return 1;
+#endif
+}
+void halo_debug_set_renderer_preference(int metal) {
+    [NSUserDefaults.standardUserDefaults setObject:metal?@"metal":@"opengl" forKey:@"HaloRenderer"];
+}
+int halo_debug_frame_limit(void) {return frameLimit;}
+void halo_debug_configure_launch(void) {
+#ifdef HALO_IOS
+    NSUserDefaults *settings=NSUserDefaults.standardUserDefaults;
+    [settings registerDefaults:@{@"HaloRenderHeight":@720,@"HaloFrameLimit":@60,@"HaloFPSOverlay":@NO,@"HaloInterpolation":@YES}];
+    int height=(int)[settings integerForKey:@"HaloRenderHeight"];
+    if (!height) {
+        CGSize pixels=UIScreen.mainScreen.nativeBounds.size;
+        height=(int)MIN(pixels.width,pixels.height);
+    }
+    char value[32];snprintf(value,sizeof(value),"%d",height);
+    setenv("HALO_IOS_RENDER_HEIGHT",value,0);
+    setenv("HALO_CONSOLE_LOG","none",0);
+    setenv("HALO_INTERPOLATION",[settings boolForKey:@"HaloInterpolation"]?"1":"0",0);
+    setenv("HALO_IOS_REFRESH_RATE","60",0);
+    frameLimit=(int)[settings integerForKey:@"HaloFrameLimit"];
+    if(frameLimit!=30 && frameLimit!=60 && frameLimit!=120)frameLimit=60;
+    if(frameLimit==120)setenv("HALO_IOS_REFRESH_RATE","120",1);
+    showFPS=[settings boolForKey:@"HaloFPSOverlay"];
+#endif
+}
+void halo_debug_frame(double milliseconds) {
+#ifdef HALO_IOS
+    if(milliseconds<=0)return;
+    frameCount++;frameTotal+=milliseconds;frameWorst=MAX(frameWorst,milliseconds);
+    double now=CACurrentMediaTime();
+    if(now-lastSample<0.5)return;
+    if(!frameSamples)frameSamples=[NSMutableArray new];
+    double mean=frameTotal/MAX((NSUInteger)1,frameCount);
+    [frameSamples addObject:@{@"time":@(NSDate.date.timeIntervalSince1970),@"frames":@(frameCount),@"mean_ms":@(mean),@"worst_ms":@(frameWorst),@"thermal_state":@(NSProcessInfo.processInfo.thermalState)}];
+    if(frameSamples.count>1200)[frameSamples removeObjectAtIndex:0];
+    if(showFPS && !fpsLabel) {
+        UIWindow *window=nil;
+        for(UIWindowScene *scene in UIApplication.sharedApplication.connectedScenes)
+            if([scene isKindOfClass:UIWindowScene.class])for(UIWindow *w in scene.windows)if(w.isKeyWindow)window=w;
+        if(window) {
+            fpsLabel=[[UILabel alloc]initWithFrame:CGRectMake(window.safeAreaInsets.left+12,window.safeAreaInsets.top+8,160,26)];
+            fpsLabel.font=[UIFont monospacedDigitSystemFontOfSize:13 weight:UIFontWeightSemibold];
+            fpsLabel.textColor=UIColor.whiteColor;fpsLabel.backgroundColor=[UIColor colorWithWhite:0 alpha:.6];
+            fpsLabel.userInteractionEnabled=NO;fpsLabel.accessibilityLabel=@"Frame rate";
+            [window.rootViewController.view addSubview:fpsLabel];
+        }
+    }
+    fpsLabel.hidden=!showFPS;
+    fpsLabel.text=[NSString stringWithFormat:@" %.0f FPS · %.1f ms",1000.0/mean,mean];
+    frameCount=0;frameTotal=frameWorst=0;lastSample=now;
+#else
+    (void)milliseconds;
+#endif
+}
+
 #if !defined(HALO_IOS)
 static BOOL debugPresented;
 #else
@@ -113,7 +185,7 @@ static void exportReport(UIViewController *presenter) {
         @"build":[NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleVersion"]?:@"unknown",@"threshold_ms":@2,
         @"note":@"CPU compile/link completion timings are always recorded. Synchronized first-use draw waits are opt-in. First-use waits include draw cost and may include deferred driver compilation; they are not isolated shader-compiler timings. Shader sources can guide warm-up updates.",
         @"first_use_gpu_recording":@(atomic_load(&recording)),@"programs":programs,
-        @"dropped":@(dropped),@"events":[events copy],@"sources":[sources copy]};
+        @"render_height":@([NSUserDefaults.standardUserDefaults integerForKey:@"HaloRenderHeight"]),@"frame_limit":@(frameLimit),@"fps_overlay":@(showFPS),@"frame_samples":[frameSamples copy]?:@[],@"dropped":@(dropped),@"events":[events copy],@"sources":[sources copy]};
     NSError *error=nil;NSData *data=[NSJSONSerialization dataWithJSONObject:report options:NSJSONWritingPrettyPrinted error:&error];
     NSURL *folder=[[NSFileManager.defaultManager URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject URLByAppendingPathComponent:@"ShaderReports" isDirectory:YES];
     [NSFileManager.defaultManager createDirectoryAtURL:folder withIntermediateDirectories:YES attributes:nil error:&error];
@@ -134,7 +206,21 @@ static void exportReport(UIViewController *presenter) {
 }
 #else
     if(!data || ![data writeToURL:file options:NSDataWritingAtomic error:&error]){UIAlertController *alert=[UIAlertController alertControllerWithTitle:@"Export failed" message:error.localizedDescription preferredStyle:UIAlertControllerStyleAlert];[alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];[presenter presentViewController:alert animated:YES completion:nil];return;}
-    UIActivityViewController *share=[[UIActivityViewController alloc]initWithActivityItems:@[file] applicationActivities:nil];
+    NSMutableArray *files=[NSMutableArray arrayWithObject:file];
+    const char *roots[]={getenv("HALO_SAVE_ROOT"),getenv("HALO_DATA_ROOT")};
+    const char *names[]={"halo.log","debug.txt"};
+    for(int i=0;i<2;i++)if(roots[i]) {
+        NSString *path=[[NSString stringWithUTF8String:roots[i]] stringByAppendingPathComponent:[NSString stringWithUTF8String:names[i]]];
+        NSFileHandle *input=[NSFileHandle fileHandleForReadingAtPath:path];
+        if(input) {
+            unsigned long long length=[input seekToEndOfFile];
+            [input seekToFileOffset:length>2*1024*1024?length-2*1024*1024:0];
+            NSData *tail=[input readDataToEndOfFile];[input closeFile];
+            NSURL *log=[folder URLByAppendingPathComponent:[NSString stringWithFormat:@"halo-session-%d.txt",i]];
+            if([tail writeToURL:log atomically:YES])[files addObject:log];
+        }
+    }
+    UIActivityViewController *share=[[UIActivityViewController alloc]initWithActivityItems:files applicationActivities:nil];
     share.popoverPresentationController.sourceView=presenter.view;share.popoverPresentationController.sourceRect=CGRectMake(CGRectGetMidX(presenter.view.bounds),40,1,1);
     [presenter presentViewController:share animated:YES completion:nil];
 }
@@ -142,51 +228,93 @@ static void exportReport(UIViewController *presenter) {
 @end
 @implementation HaloDebugController
 - (void)viewDidLoad {
-    [super viewDidLoad];self.title=@"Settings";
+    [super viewDidLoad];self.title=@"Graphics & Diagnostics";
     self.navigationItem.rightBarButtonItem=[[UIBarButtonItem alloc]initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done)];
 }
 - (void)done {[self dismissViewControllerAnimated:YES completion:^{debugController=nil;host_ios_touch_focus();}];}
 - (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController {
     (void)presentationController;debugController=nil;host_ios_touch_focus();
 }
-- (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {(void)table;(void)section;return 5;}
+- (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {(void)table;(void)section;return 9;}
 - (UITableViewCell *)tableView:(UITableView *)table cellForRowAtIndexPath:(NSIndexPath *)path {
     (void)table;UITableViewCell *cell=[[UITableViewCell alloc]initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.detailTextLabel.numberOfLines=0;
-    BOOL selectedMetal=halo_graphics_prefer_metal();
-    if(path.row==0) {
+    NSUserDefaults *settings=NSUserDefaults.standardUserDefaults;
+    switch(path.row) {
+    case 0: {
         cell.textLabel.text=@"Renderer";
-        cell.detailTextLabel.text=@"Metal via ANGLE (upstream Apple renderer).";
-    } else if(selectedMetal && path.row==1) {
-        UISwitch *toggle=[UISwitch new];toggle.tag=0;
-        toggle.enabled=halo_graphics_metal() && halo_metalfx_supported();toggle.on=halo_metalfx_enabled();
-        cell.textLabel.text=@"MetalFX spatial upscaling";
-        cell.detailTextLabel.text=toggle.enabled?@"Upscale the selected render resolution with MetalFX.":(!halo_graphics_metal()?@"Select Metal and relaunch to enable.":@"Unavailable on this device.");
-        [toggle addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];cell.accessoryView=toggle;
-    } else {
-        NSInteger action=path.row-(selectedMetal?2:1);
-        if(action==0) {
-            UISwitch *toggle=[UISwitch new];toggle.tag=1;toggle.on=atomic_load(&recording);
-            cell.textLabel.text=@"Record first-use GPU stalls";cell.detailTextLabel.text=@"Compile/link stalls are always recorded. This also times first draws and adds GPU synchronization overhead.";
-            [toggle addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];cell.accessoryView=toggle;
-        } else if(action==1){cell.textLabel.text=@"Share shader report…";cell.detailTextLabel.text=@"Choose AirDrop in the share sheet to send it to your Mac.";}
-        else{cell.textLabel.text=@"Clear recorded events";cell.detailTextLabel.text=[NSString stringWithFormat:@"%lu events; %lu dropped",(unsigned long)events.count,(unsigned long)dropped];}
+        cell.detailTextLabel.text=@"Metal (ANGLE) or native OpenGL ES. Relaunch to apply.";
+        UISegmentedControl *control=[[UISegmentedControl alloc]initWithItems:@[@"OpenGL",@"Metal"]];
+        control.selectedSegmentIndex=halo_graphics_prefer_metal()?1:0;
+        [control addTarget:self action:@selector(rendererChanged:) forControlEvents:UIControlEventValueChanged];
+        cell.accessoryView=control;break;
+    }
+    case 1: {
+        NSInteger height=[settings integerForKey:@"HaloRenderHeight"];
+        cell.textLabel.text=height?[NSString stringWithFormat:@"Render resolution: %ldp",(long)height]:@"Render resolution: Native";
+        cell.detailTextLabel.text=@"720p balances detail and GPU load. Lower values trade detail for speed. Relaunch to apply.";
+        cell.accessoryType=UITableViewCellAccessoryDisclosureIndicator;break;
+    }
+    case 2:
+        cell.textLabel.text=[NSString stringWithFormat:@"Frame limit: %d FPS",frameLimit];
+        cell.detailTextLabel.text=@"Limits rendering only; game simulation stays at 30 Hz. 120 FPS needs a compatible display and relaunch.";
+        cell.accessoryType=UITableViewCellAccessoryDisclosureIndicator;break;
+    case 3: case 4: case 5: {
+        UISwitch *toggle=[UISwitch new];toggle.tag=path.row;
+        if(path.row==3) {
+            cell.textLabel.text=@"MetalFX spatial upscaling";
+            cell.detailTextLabel.text=@"Upscale the render image to the display. Requires the active Metal renderer.";
+            toggle.enabled=halo_graphics_metal() && halo_metalfx_supported();toggle.on=halo_metalfx_enabled();
+        } else if(path.row==4) {
+            cell.textLabel.text=@"FPS overlay";cell.detailTextLabel.text=@"Show measured game frames and frame time.";toggle.on=showFPS;
+        } else {
+            cell.textLabel.text=@"Record first-use GPU stalls";
+            cell.detailTextLabel.text=@"Diagnostic only: synchronization can slow play. Normal session timing and shader compilation are recorded without it.";
+            toggle.on=atomic_load(&recording);
+        }
+        [toggle addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];cell.accessoryView=toggle;break;
+    }
+    case 6:cell.textLabel.text=@"Share play-session report…";cell.detailTextLabel.text=@"AirDrop logs, graphics settings, frame timings and shader diagnostics to your Mac. No game image or saves.";break;
+    case 8: {
+        UISwitch *toggle=[UISwitch new];toggle.tag=8;toggle.on=[settings boolForKey:@"HaloInterpolation"];
+        cell.textLabel.text=@"Smooth motion";cell.detailTextLabel.text=@"Interpolate rendered motion as in the earlier Apple build. Simulation stays at 30 Hz. Relaunch to apply.";
+        [toggle addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];cell.accessoryView=toggle;break;
+    }
+    case 7:cell.textLabel.text=@"Clear recorded diagnostics";cell.detailTextLabel.text=@"Start a fresh measurement for your next play session.";break;
     }
     return cell;
 }
-- (void)networkChanged:(UISwitch *)sender {[NSUserDefaults.standardUserDefaults setBool:sender.on forKey:@"HaloBrowserRooms"];}
 - (void)rendererChanged:(UISegmentedControl *)sender {
     halo_graphics_set_preference(sender.selectedSegmentIndex==1);[self.tableView reloadData];
 }
 - (void)changed:(UISwitch *)sender {
-    if(!sender.tag)halo_metalfx_set_enabled(sender.on);else {atomic_store(&recording,sender.on);[drawnPrograms removeAllObjects];}
-    [NSUserDefaults.standardUserDefaults setBool:sender.on forKey:sender.tag?@"HaloRecordShaderStalls":@"HaloMetalFX"];
+    NSUserDefaults *settings=NSUserDefaults.standardUserDefaults;
+    if(sender.tag==8)[settings setBool:sender.on forKey:@"HaloInterpolation"];
+    if(sender.tag==3){halo_metalfx_set_enabled(sender.on);[settings setBool:sender.on forKey:@"HaloMetalFX"];}
+    if(sender.tag==4){showFPS=sender.on;fpsLabel.hidden=!showFPS;[settings setBool:sender.on forKey:@"HaloFPSOverlay"];}
+    if(sender.tag==5){atomic_store(&recording,sender.on);[drawnPrograms removeAllObjects];[settings setBool:sender.on forKey:@"HaloRecordShaderStalls"];}
 }
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)path {
     [table deselectRowAtIndexPath:path animated:YES];
-    NSInteger action=path.row-(halo_graphics_prefer_metal()?2:1);
-    if(action==1)exportReport(self);
-    else if(action==2){[events removeAllObjects];[drawnPrograms removeAllObjects];dropped=0;[table reloadData];}
+    if(path.row==6){exportReport(self);return;}
+    if(path.row==7){[events removeAllObjects];[drawnPrograms removeAllObjects];[frameSamples removeAllObjects];frameTotal=frameWorst=0;frameCount=0;dropped=0;[table reloadData];return;}
+    if(path.row!=1 && path.row!=2)return;
+    BOOL resolution=path.row==1;
+    UIAlertController *choice=[UIAlertController alertControllerWithTitle:resolution?@"Render resolution":@"Frame limit" message:resolution?@"Resolution changes apply after relaunch.":@"Higher limits use more power and may increase heat." preferredStyle:UIAlertControllerStyleActionSheet];
+    NSArray *values=resolution?@[@480,@720,@900,@1080,@0]:@[@30,@60,@120];
+    for(NSNumber *value in values) {
+        NSString *title=resolution?(value.intValue?[NSString stringWithFormat:@"%@p",value]:@"Native"):[NSString stringWithFormat:@"%@ FPS",value];
+        [choice addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction *action){
+            (void)action;
+            [NSUserDefaults.standardUserDefaults setInteger:value.integerValue forKey:resolution?@"HaloRenderHeight":@"HaloFrameLimit"];
+            if(!resolution)frameLimit=value.intValue;
+            [table reloadData];
+        }]];
+    }
+    [choice addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    choice.popoverPresentationController.sourceView=[table cellForRowAtIndexPath:path];
+    choice.popoverPresentationController.sourceRect=[table cellForRowAtIndexPath:path].bounds;
+    [self presentViewController:choice animated:YES completion:nil];
 }
 @end
 void halo_debug_present(void) {

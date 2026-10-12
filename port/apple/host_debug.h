@@ -20,3 +20,9 @@ unsigned int host_ios_render_height(void);
 
 void halo_debug_replay_shader_report(void);
 void halo_debug_test_export(void);
+
+void halo_debug_configure_launch(void);
+int halo_debug_frame_limit(void);
+void halo_debug_frame(double milliseconds);
+
+int halo_metalfx_take_presented(void);

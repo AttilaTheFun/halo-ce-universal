@@ -1,5 +1,6 @@
 #import "host_orientation.h"
 #include "host.h"
+#include "../../apple/host_debug.h"
 
 /* SDL 3.4.16 owns these controllers. These categories add only orientation
    preferences inherited from UIKit, never replace SDL's own methods. Recheck
@@ -36,6 +37,10 @@ HALO_LANDSCAPE_PREFERENCES
 @end
 
 @implementation SDL_uikitviewcontroller (HaloLandscape)
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    if (motion == UIEventSubtypeMotionShake) halo_debug_present();
+    else [super motionEnded:motion withEvent:event];
+}
 HALO_LANDSCAPE_PREFERENCES
 @end
 

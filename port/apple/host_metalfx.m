@@ -1,6 +1,7 @@
 #include <TargetConditionals.h>
 #if TARGET_OS_SIMULATOR
 #include "host_debug.h"
+int halo_metalfx_take_presented(void) {return 0;}
 int halo_metalfx_supported(void) {return 0;}
 int halo_metalfx_enabled(void) {return 0;}
 void halo_metalfx_set_enabled(int enabled) {(void)enabled;}
@@ -26,6 +27,8 @@ int host_ios_metalfx_present(unsigned int t,unsigned int w,unsigned int h,unsign
 #include "host_debug.h"
 
 static BOOL enabled;
+static int presented;
+int halo_metalfx_take_presented(void) {int value=presented;presented=0;return value;}
 static id<MTLDevice> device;
 static id<MTLCommandQueue> queue;
 static id<MTLCommandBuffer> pending;
@@ -119,7 +122,7 @@ int host_ios_metalfx_present(unsigned int texture,unsigned int w,unsigned int h,
             UIWindow *window=nil;
             for(UIScene *scene in UIApplication.sharedApplication.connectedScenes)if([scene isKindOfClass:UIWindowScene.class])for(UIWindow *candidate in ((UIWindowScene*)scene).windows)if(candidate.isKeyWindow)window=candidate;
             UIView *root=window.rootViewController.view;
-            if(root){surface=[[UIView alloc]initWithFrame:root.bounds];surface.userInteractionEnabled=NO;surface.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;layer=[CAMetalLayer layer];layer.device=device;layer.pixelFormat=MTLPixelFormatBGRA8Unorm;layer.framebufferOnly=NO;[surface.layer addSublayer:layer];[root insertSubview:surface atIndex:0];}
+            if(root){surface=[[UIView alloc]initWithFrame:root.bounds];surface.userInteractionEnabled=NO;surface.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;layer=[CAMetalLayer layer];layer.device=device;layer.pixelFormat=MTLPixelFormatBGRA8Unorm;layer.framebufferOnly=NO;[surface.layer addSublayer:layer];[root insertSubview:surface atIndex:MIN((NSUInteger)1,root.subviews.count)];}
             else success=NO;
 #endif
         }
@@ -154,6 +157,7 @@ int host_ios_metalfx_present(unsigned int texture,unsigned int w,unsigned int h,
         glBindFramebuffer(GL_READ_FRAMEBUFFER,oldRead);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,oldWrite);glBindTexture(GL_TEXTURE_2D,oldTexture);
         if(scissor)glEnable(GL_SCISSOR_TEST);else glDisable(GL_SCISSOR_TEST);
         if(!success){halo_metalfx_set_enabled(0);releaseImages();}
+        presented=success;
         return success;
     }
 }

@@ -1,5 +1,6 @@
 /* Host GL arguments have already been widened by the shared guest bridge. */
 #include <GLES3/gl32.h>
+#include "host_gl_dispatch.h"
 #include <string.h>
 #include "host_debug.h"
 static void shader_source(GLuint shader, GLsizei count, const GLchar *const *text, const GLint *lengths) {

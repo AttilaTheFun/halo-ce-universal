@@ -190,6 +190,13 @@ static void screen_mode_choose(long *width, float scale[2])
 		*width = 1600;
 	*width &= ~1L;
 	scale[0] = scale[1] = 1.0f;
+#ifdef HALO_IOS
+    const char *render_height = getenv("HALO_IOS_RENDER_HEIGHT");
+    int height = render_height ? atoi(render_height) : 720;
+    if (height < 480) height = 480;
+    if (height > 2160) height = 2160;
+    scale[0] = scale[1] = height / 480.0f;
+#endif
 #else
 	long display_width, display_height;
 

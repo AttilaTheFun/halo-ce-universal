@@ -1,3 +1,4 @@
+#include <SDL3/SDL.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <EGL/eglext_angle.h>
@@ -11,10 +12,23 @@ static EGLConfig config;
 static EGLSurface sharedSurface;
 static GLuint sharedTexture;
 static int sharedBound;
-int halo_graphics_metal(void) { return 1; }
-int halo_graphics_prefer_metal(void) { return 1; }
-void halo_graphics_set_preference(int metal) { (void)metal; }
-void *halo_graphics_proc(const char *name) { return (void *)eglGetProcAddress(name); }
+static int metal = 1;
+extern int halo_debug_renderer_preference(void);
+extern void halo_debug_set_renderer_preference(int);
+int halo_graphics_metal(void) { return metal; }
+int halo_graphics_prefer_metal(void) { return halo_debug_renderer_preference(); }
+void halo_graphics_set_preference(int value) { halo_debug_set_renderer_preference(value); }
+void halo_graphics_initialize(void) {
+#ifdef HALO_IOS
+    metal = halo_graphics_prefer_metal();
+#endif
+}
+void *halo_graphics_proc(const char *name) {
+#ifdef HALO_IOS
+    if (!metal) return (void *)SDL_GL_GetProcAddress(name);
+#endif
+    return (void *)eglGetProcAddress(name);
+}
 void halo_graphics_attach(EGLDisplay current, EGLConfig configuration) {
     display=current; config=configuration;
     halo_debug_initialize();

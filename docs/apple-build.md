@@ -197,3 +197,21 @@ Direct on-device probes rejected 16 GiB (reserved), 64 GiB (GPU carveout) and
 1 TiB (outside the map), and successfully reserved the full arena at 448 GiB.
 See [XNU ARM VM definitions](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/arm/vm_param.h).
 The signed-image test checks both device bounds and consistent pointer lowering.
+
+### iPhone/iPad graphics and diagnostics
+
+Shake the device to open Graphics & Diagnostics, including with a hardware
+controller. Metal (ANGLE) remains the default; native Apple OpenGL ES is an
+alternative. Driver and render-resolution changes take effect on relaunch.
+Choose 480p, 720p (default), 900p, 1080p or native, with a 30/60/120 FPS render
+limit (default 60). Smooth motion restores the older Apple build's rendering
+interpolation, without changing the original 30-Hz game simulation.
+
+MetalFX spatial upscaling and the FPS overlay can be toggled live; upscaling
+is available only with the active Metal renderer. Ordinary game-console chatter
+is hidden; logs are retained. Share Play-session Report opens the system share
+sheet (AirDrop or Save to Files) with bounded log excerpts, settings, the last
+ten minutes of half-second timing summaries and shader diagnostics. It does
+not include maps, the ISO or saves. First-use GPU-stall capture is opt-in because
+its GPU synchronization changes performance. Normal timing capture avoids that
+synchronization.

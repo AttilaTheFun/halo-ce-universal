@@ -1,5 +1,7 @@
 /* SDL owns UIApplication and invokes this entry on the UIKit main thread. */
 #include "host.h"
+#include "../../apple/host_graphics.h"
+#include "../../apple/host_debug.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #import <Foundation/Foundation.h>
@@ -81,10 +83,14 @@ static uint32_t make_boot(void) {
 extern void macos_enter_guest_stack(void *, uint32_t) __attribute__((noreturn));
 int main(int argc, char **argv) {
     (void)argc; (void)argv;
+    halo_debug_configure_launch();
+    halo_graphics_initialize();
     SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
     SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "2");
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         host_fatal("Cannot initialize display: %s", SDL_GetError());
+    if (!halo_graphics_metal() && !SDL_GL_LoadLibrary(NULL))
+        host_fatal("Cannot load native OpenGL ES: %s", SDL_GetError());
     @autoreleasepool {
         NSFileManager *files = NSFileManager.defaultManager;
         NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
