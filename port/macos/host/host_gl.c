@@ -17,6 +17,11 @@ void *host_gl_bridge(const char *name);
 void *host_gl_resolve(const char *name) {
     void *profile = host_perf_resolve(name);
     if (profile) return profile;
+#ifdef HALO_APPLE_GRAPHICS
+    extern void *halo_debug_gl_resolve(const char *);
+    void *diagnostics = halo_debug_gl_resolve(name);
+    if (diagnostics) return diagnostics;
+#endif
     void *bridge = host_gl_bridge(name);
     return bridge ? bridge : (void *)eglGetProcAddress(name);
 }

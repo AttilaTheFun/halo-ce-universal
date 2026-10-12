@@ -3,6 +3,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #import <Foundation/Foundation.h>
+#import "../../apple/game_store.h"
+extern void host_ios_prepare_assets(const char *root);
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +30,34 @@ int host_errno(void) { return host_linux_errno(errno); }
 void host_android_path(int which, char *buffer, uint32_t size) {
     snprintf(buffer, size, "%s", which ? save_root : data_root);
 }
+/* UIKit touch controls use an SDL virtual gamepad; disable the Android overlay. */
+void host_gesture_insets(int *insets) {
+    if (!insets)
+        return;
+    insets[0] = insets[1] = insets[2] = insets[3] = 0;
+}
+void host_touch_read(int *state) {
+    int i;
+
+    if (!state)
+        return;
+    for (i = 0; i < 7; i++)
+        state[i] = 0;
+}
+void host_touch_look_read(float *delta) {
+    int i;
+
+    if (!delta)
+        return;
+    for (i = 0; i < 4; i++)
+        delta[i] = 0.0f;
+}
+void host_touch_rumble(unsigned int low, unsigned int high) {
+    (void)low;
+    (void)high;
+}
+void host_touch_scene(int scene) { (void)scene; }
+void host_touch_bindings(const int *controls) { (void)controls; }
 extern char **environ;
 static uint32_t make_boot(void) {
     size_t size = 0x20000;
@@ -51,14 +81,27 @@ static uint32_t make_boot(void) {
 extern void macos_enter_guest_stack(void *, uint32_t) __attribute__((noreturn));
 int main(int argc, char **argv) {
     (void)argc; (void)argv;
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "2");
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
+        host_fatal("Cannot initialize display: %s", SDL_GetError());
     @autoreleasepool {
         NSFileManager *files = NSFileManager.defaultManager;
         NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-        NSString *data = [documents stringByAppendingPathComponent:@"GameData"];
-        [files createDirectoryAtPath:data withIntermediateDirectories:YES attributes:nil error:NULL];
-        if (![files fileExistsAtPath:[data stringByAppendingPathComponent:@"maps/ui.map"]])
-            data = [NSBundle.mainBundle.resourcePath stringByAppendingPathComponent:@"GameData"];
-        NSString *saves = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"Halo"];
+        NSString *data = halo_game_store_current(documents);
+        NSString *legacy = [documents stringByAppendingPathComponent:@"GameData"];
+        // Existing innerhat extracted maps and our retained ISO generations
+        // both remain readable; new installations import through Files.
+        if (!data && xiso_maps_ready([legacy stringByAppendingPathComponent:@"maps"].fileSystemRepresentation, NULL, 0))
+            data = legacy;
+        if (!data) {
+            host_ios_prepare_assets(documents.fileSystemRepresentation);
+            data = halo_game_store_current(documents);
+        }
+        NSString *saves = [documents stringByAppendingPathComponent:@"save"];
+        NSString *legacySaves = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"Halo"];
+        if (![files fileExistsAtPath:saves] && [files fileExistsAtPath:legacySaves]) saves = legacySaves;
+        setenv("HALO_CONFIG_ROOT", documents.fileSystemRepresentation, 1);
         [files createDirectoryAtPath:saves withIntermediateDirectories:YES attributes:nil error:NULL];
         snprintf(data_root, sizeof(data_root), "%s", data.fileSystemRepresentation);
         snprintf(save_root, sizeof(save_root), "%s", saves.fileSystemRepresentation);
@@ -73,10 +116,6 @@ int main(int argc, char **argv) {
     }
     host_install_signal_handlers();
     setenv("HALO_DATA_ROOT", data_root, 1); setenv("HALO_SAVE_ROOT", save_root, 1);
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
-    SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "2");
-    if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
-        host_fatal("Cannot initialize display: %s", SDL_GetError());
     const SDL_DisplayMode *display = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay());
     if (display && display->h > 0 && display->w > 0) {
         int long_side = display->w > display->h ? display->w : display->h;

@@ -11,6 +11,9 @@ SDL's stream lock recursively from a different thread.
 */
 
 #include "host.h"
+#ifdef HALO_APPLE_GRAPHICS
+#include "../../apple/host_debug.h"
+#endif
 #ifndef HALO_IOS
 #include "../native/host_menu.h"
 #include "../../linux/include/native_input_events.h"
@@ -289,7 +292,7 @@ uint32_t host_sdl_gl_create_context(uint32_t window) {
         return 0;
     }
     const EGLint configAttributes[] = {EGL_SURFACE_TYPE,
-                                       metal_window_hidden ? EGL_PBUFFER_BIT : EGL_WINDOW_BIT,
+                                       metal_window_hidden ? EGL_PBUFFER_BIT : EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
                                        EGL_RENDERABLE_TYPE,
                                        EGL_OPENGL_ES3_BIT,
                                        EGL_RED_SIZE,
@@ -308,6 +311,10 @@ uint32_t host_sdl_gl_create_context(uint32_t window) {
     EGLConfig config;
     if (!eglChooseConfig(metal_display, configAttributes, &config, 1, &count) || !count)
         return 0;
+#ifdef HALO_APPLE_GRAPHICS
+    extern void halo_graphics_attach(EGLDisplay, EGLConfig);
+    halo_graphics_attach(metal_display, config);
+#endif
     eglBindAPI(EGL_OPENGL_ES_API);
     const EGLint contextAttributes[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
     metal_context = eglCreateContext(metal_display, config, EGL_NO_CONTEXT, contextAttributes);
@@ -328,6 +335,9 @@ uint32_t host_sdl_gl_create_context(uint32_t window) {
         return 0;
     }
     eglMakeCurrent(metal_display, metal_surface, metal_surface, metal_context);
+#if defined(HALO_APPLE_GRAPHICS) && !defined(HALO_IOS)
+    halo_debug_install_menu();
+#endif
 #if defined(HALO_IOS) && !defined(HALO_IOS_MAC_CHECK)
     // Attach controls after SDL has installed the Metal view, otherwise
     // the drawable can cover the controller's UIKit overlay.
@@ -416,6 +426,10 @@ int host_sdl_show_simple_message_box(uint32_t flags, const char *title, const ch
 /* ---------- gamepads */
 
 int host_sdl_get_gamepads(uint32_t *ids, int capacity) {
+#if defined(HALO_IOS) && !defined(HALO_IOS_MAC_CHECK)
+    extern int host_ios_gamepads(uint32_t *, int);
+    return host_ios_gamepads(ids, capacity);
+#endif
     int count = 0, index;
     SDL_JoystickID *list = SDL_GetGamepads(&count);
 
@@ -452,21 +466,42 @@ void host_sdl_close_gamepad(uint32_t gamepad) {
 }
 
 int host_sdl_gamepad_axis(uint32_t gamepad, int axis) {
+#ifdef HALO_APPLE_GRAPHICS
+    if (halo_debug_is_presented()) return 0;
+#endif
     SDL_Gamepad *object = handle_get(gamepad, _handle_gamepad);
 
+#if defined(HALO_IOS) && !defined(HALO_IOS_MAC_CHECK)
+    extern int host_ios_gamepad_axis(SDL_Gamepad *, int);
+    return object ? host_ios_gamepad_axis(object, axis) : 0;
+#else
     return object ? SDL_GetGamepadAxis(object, (SDL_GamepadAxis)axis) : 0;
+#endif
 }
 
 int host_sdl_gamepad_button(uint32_t gamepad, int button) {
+#ifdef HALO_APPLE_GRAPHICS
+    if (halo_debug_is_presented()) return 0;
+#endif
     SDL_Gamepad *object = handle_get(gamepad, _handle_gamepad);
 
+#if defined(HALO_IOS) && !defined(HALO_IOS_MAC_CHECK)
+    extern int host_ios_gamepad_button(SDL_Gamepad *, int);
+    return object ? host_ios_gamepad_button(object, button) : 0;
+#else
     return object ? SDL_GetGamepadButton(object, (SDL_GamepadButton)button) : 0;
+#endif
 }
 
 int host_sdl_gamepad_type(uint32_t gamepad) {
     SDL_Gamepad *object = handle_get(gamepad, _handle_gamepad);
 
+#if defined(HALO_IOS) && !defined(HALO_IOS_MAC_CHECK)
+    extern int host_ios_gamepad_type(SDL_Gamepad *);
+    return object ? host_ios_gamepad_type(object) : SDL_GAMEPAD_TYPE_UNKNOWN;
+#else
     return object ? SDL_GetGamepadType(object) : SDL_GAMEPAD_TYPE_UNKNOWN;
+#endif
 }
 
 int host_sdl_rumble_gamepad(uint32_t gamepad, uint32_t low, uint32_t high, uint32_t milliseconds) {
@@ -699,3 +734,9 @@ uint32_t host_sdl_audio_device_id(int recording, const char *name) {
     SDL_free(devices);
     return found;
 }
+
+#ifndef HALO_IOS
+void *host_macos_game_window(void) {
+    return metal_window ? SDL_GetPointerProperty(SDL_GetWindowProperties(metal_window), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL) : NULL;
+}
+#endif

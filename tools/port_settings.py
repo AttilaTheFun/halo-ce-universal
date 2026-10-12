@@ -21,7 +21,10 @@ ON_OFF = [("ON", "true"), ("OFF", "false")]
 # the multiplayer armor colors, in the profile's order (player_profile.c)
 SHIELD_COLORS = ["white", "black", "red", "blue", "gray", "yellow", "green", "pink", "purple", "cyan", "cobalt",
                  "orange", "teal", "sage", "brown", "tan", "maroon", "salmon"]
-SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
+# Quadratic spacing gives high-DPI mice fine low-end control. The config
+# retains its multiplier units, so existing saved values remain valid.
+SENSITIVITIES = [(f"{step}/100", f"{step * step / 4000:.5f}".rstrip("0").rstrip("."))
+                 for step in range(1, 101)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
 # each screen: its folder below PE, its screen's widget (the name the profile

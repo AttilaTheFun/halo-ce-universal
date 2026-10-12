@@ -6,8 +6,8 @@
 <key>CFBundleName</key><string>Halo OG</string>
 <key>CFBundleDisplayName</key><string>Halo OG</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.0</string>
-<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleShortVersionString</key><string>0.2.0</string>
+<key>CFBundleVersion</key><string>15</string>
 <key>LSRequiresIPhoneOS</key><true/>
 <key>MinimumOSVersion</key><string>26.0</string>
 <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string><string>metal</string></array>
@@ -20,5 +20,6 @@
 <key>UIFileSharingEnabled</key><true/>
 <key>UIApplicationSupportsIndirectInputEvents</key><true/>
 <key>LSSupportsOpeningDocumentsInPlace</key><true/>
+<key>NSMicrophoneUsageDescription</key><string>Use your microphone when you enable multiplayer voice chat.</string>
 <key>NSLocalNetworkUsageDescription</key><string>Find Halo games on your local network.</string>
 </dict></plist>
