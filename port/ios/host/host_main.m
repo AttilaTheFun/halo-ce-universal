@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
         if (profile && !strcmp(profile, "1"))
             setenv("HALO_PERF_LOG", [[saves stringByAppendingPathComponent:@"frames.csv"] fileSystemRepresentation], 1);
         if (![files fileExistsAtPath:[data stringByAppendingPathComponent:@"maps/ui.map"]])
-            host_fatal("Copy your Xbox Halo maps folder into Halo OG's GameData folder using Files or Finder, then reopen the app.");
+            host_fatal("Copy your Xbox Halo maps folder into Halo's GameData folder using Files or Finder, then reopen the app.");
     }
     host_install_signal_handlers();
     setenv("HALO_DATA_ROOT", data_root, 1); setenv("HALO_SAVE_ROOT", save_root, 1);

@@ -55,7 +55,7 @@ def main():
     p.add_argument('--platform', choices=['simulator', 'device', 'both'], default='simulator')
     p.add_argument('--no-bundle-maps', action='store_true', help='Compatibility option: game data is always imported after installation')
     p.add_argument('--team', help='Apple development team ID for device signing')
-    p.add_argument('--bundle-id', default='local.halo.ce-universal.ios',
+    p.add_argument('--bundle-id', default='com.LoganShire.OpenCE',
                    help='Unique reverse-DNS app identifier registered to your development team')
     p.add_argument('--sign', action='store_true', help='Use Xcode automatic device signing')
     p.add_argument('--jobs', type=int, default=6)

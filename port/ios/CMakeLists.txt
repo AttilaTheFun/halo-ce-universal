@@ -7,7 +7,7 @@ if(CMAKE_OSX_SYSROOT MATCHES "simulator")
 else()
     set(HALO_BUILD "${HALO_ROOT}/build/ios")
 endif()
-set(HALO_BUNDLE_IDENTIFIER "local.halo.ce-universal.ios" CACHE STRING "Unique iOS app bundle identifier")
+set(HALO_BUNDLE_IDENTIFIER "com.LoganShire.OpenCE" CACHE STRING "Unique iOS app bundle identifier")
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
@@ -92,7 +92,7 @@ endforeach()
 
 # Ship the same app artwork as a standard PNG for IPA catalog readers.
 # Asset-catalog icons may be Apple CgBI PNGs, which web image decoders reject.
-configure_file(Assets.xcassets/AppIcon.appiconset/AppIcon.png
+configure_file(Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
     "${CMAKE_CURRENT_BINARY_DIR}/AppIcon1024.png" COPYONLY)
 target_sources(Halo PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/AppIcon1024.png")
 set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/AppIcon1024.png"

@@ -114,7 +114,7 @@ class MacOSInstallerTests(unittest.TestCase):
         self.assertEqual(len(self.unregister.call_args_list), 1)
 
     def test_rename_archives_legacy_app_and_preserves_independent_data(self):
-        source = make_app(self.macos / "Halo OG.app", marker=b"renamed")
+        source = make_app(self.macos / "Halo.app", marker=b"renamed")
         old = make_app(self.applications / "Halo CE Universal.app", marker=b"previous")
         data = self.root / "Library/Application Support/Halo OG"
         data.mkdir(parents=True)
@@ -130,7 +130,7 @@ class MacOSInstallerTests(unittest.TestCase):
     def test_rename_preserves_unrelated_and_malformed_legacy_apps(self):
         for identity in ("local.unrelated.game", "malformed", "array"):
             with self.subTest(identity=identity):
-                source = make_app(self.macos / "Halo OG.app")
+                source = make_app(self.macos / "Halo.app")
                 old = make_app(self.applications / "Halo CE Universal.app", identifier=identity)
                 if identity == "malformed":
                     (old / "Contents/Info.plist").write_bytes(b"broken plist")

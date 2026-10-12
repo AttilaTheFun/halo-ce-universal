@@ -54,7 +54,7 @@ static int import_progress(void *context, const char *file, uint64_t done, uint6
     UIView *content=[UIView new];content.translatesAutoresizingMaskIntoConstraints=NO;[scroll addSubview:content];
     UIStackView *stack=[UIStackView new];stack.axis=UILayoutConstraintAxisVertical;stack.spacing=14;
     stack.alignment=UIStackViewAlignmentCenter;stack.translatesAutoresizingMaskIntoConstraints=NO;[content addSubview:stack];
-    UIImageView *icon=[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AppArtwork"]];
+    UIImageView *icon=[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"RingArtwork"]];
     icon.contentMode=UIViewContentModeScaleAspectFill;icon.clipsToBounds=YES;icon.layer.cornerRadius=16;
     [icon.widthAnchor constraintEqualToConstant:72].active=YES;[icon.heightAnchor constraintEqualToConstant:72].active=YES;
     [stack addArrangedSubview:icon];

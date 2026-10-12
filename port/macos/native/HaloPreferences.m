@@ -350,7 +350,7 @@ static BOOL migrationSources(NSURL *directory, NSString *prefix, NSMutableArray 
     for (NSURL *file in files) {
         struct stat info;
         if (lstat(file.fileSystemRepresentation, &info)) {
-            if (error) *error = failure(@"A legacy file changed while Halo OG was preparing its copy. Close the older app and retry.");
+            if (error) *error = failure(@"A legacy file changed while Halo was preparing its copy. Close the older app and retry.");
             return NO;
         }
         NSString *relative = prefix.length ? [prefix stringByAppendingPathComponent:file.lastPathComponent] : file.lastPathComponent;
@@ -373,7 +373,7 @@ static BOOL migrationPublishData(NSData *data, NSURL *target, NSURL *staging, NS
     if (descriptor >= 0) close(descriptor);
     success = success && !link(partial.fileSystemRepresentation, target.fileSystemRepresentation);
     unlink(partial.fileSystemRepresentation);
-    if (!success && error) *error = failure(@"Halo OG could not publish a complete migration record or settings file. Existing files were preserved.");
+    if (!success && error) *error = failure(@"Halo could not publish a complete migration record or settings file. Existing files were preserved.");
     return success;
 }
 static NSDictionary *migrationCopyFile(NSURL *source, NSURL *target, NSURL *staging,
@@ -437,16 +437,16 @@ BOOL HaloMigrateLegacySupportDirectory(NSURL *legacy, NSURL *destination, xiso_p
     if (lstat(legacy.fileSystemRepresentation, &info) || !S_ISDIR(info.st_mode) ||
         [legacy.path isEqual:destination.path] || [destination.path hasPrefix:[legacy.path stringByAppendingString:@"/"]] ||
         [legacy.path hasPrefix:[destination.path stringByAppendingString:@"/"]]) {
-        if (error) *error = failure(@"The legacy Application Support location must be a real folder separate from Halo OG. No original data was changed.");
+        if (error) *error = failure(@"The legacy Application Support location must be a real folder separate from Halo. No original data was changed.");
         return NO;
     }
     if ((!lstat(destination.fileSystemRepresentation, &info) && !S_ISDIR(info.st_mode)) ||
         ![NSFileManager.defaultManager createDirectoryAtURL:destination withIntermediateDirectories:YES attributes:nil error:error]) {
-        if (error && !*error) *error = failure(@"The Halo OG data location is not a writable real folder. The legacy files remain available.");
+        if (error && !*error) *error = failure(@"The Halo data location is not a writable real folder. The legacy files remain available.");
         return NO;
     }
     if (!lstat(migrationRecordURL(destination).fileSystemRepresentation, &info)) {
-        if (error) *error = failure(@"An unrecognized migration record already exists in Halo OG. It was preserved; migration cannot safely continue.");
+        if (error) *error = failure(@"An unrecognized migration record already exists in Halo. It was preserved; migration cannot safely continue.");
         return NO;
     }
     NSURL *staging = [destination URLByAppendingPathComponent:[@".migration-" stringByAppendingString:NSUUID.UUID.UUIDString] isDirectory:YES];
@@ -501,14 +501,14 @@ BOOL HaloMigrateLegacySupportDirectory(NSURL *legacy, NSURL *destination, xiso_p
             NSData *bytes = [NSData dataWithContentsOfURL:target options:0 error:error];
             id decoded = bytes ? [NSJSONSerialization JSONObjectWithData:bytes options:0 error:error] : nil;
             success = [decoded isKindOfClass:NSDictionary.class];
-            if (!success && error && !*error) *error = failure(@"Existing Halo OG settings are invalid. They were preserved; the game will not silently start with empty settings.");
+            if (!success && error && !*error) *error = failure(@"Existing Halo settings are invalid. They were preserved; the game will not silently start with empty settings.");
             if (success) [records addObject:@{@"path":@"macos-settings.json", @"action":@"existing-settings-preserved"}];
         } else {
             NSData *bytes = [NSData dataWithContentsOfURL:settingsSource[@"source"] options:0 error:error];
             id decoded = bytes ? [NSJSONSerialization JSONObjectWithData:bytes options:0 error:error] : nil;
             success = [decoded isKindOfClass:NSDictionary.class];
             NSMutableDictionary *settings = success ? [decoded mutableCopy] : nil;
-            if (!success && error && !*error) *error = failure(@"The legacy settings file is invalid. It was preserved; Halo OG will not silently start with empty settings.");
+            if (!success && error && !*error) *error = failure(@"The legacy settings file is invalid. It was preserved; Halo will not silently start with empty settings.");
             for (NSString *key in @[@"data_path", @"iso_path"]) {
                 NSString *mapped = success ? migrationMappedPath(settings[key], legacy, destination, conflicts) : nil;
                 if (mapped) { rewrites[key] = @{@"from":settings[key], @"to":mapped}; settings[key] = mapped; }

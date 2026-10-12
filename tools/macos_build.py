@@ -31,9 +31,9 @@ ANGLE = Path(os.environ.get("HALO_MACOS_ANGLE_DIR", str(BUILD / "angle/dist")))
 GL = BUILD / "toolchain/gl"
 APP_ICON = "AppIcon.icns"
 APP_VERSION = "0.3.0"
-APP_BUILD = "11"
-APP_NAME = "Halo OG"
-LEGACY_APP_NAMES = ("Halo CE Universal.app",)
+APP_BUILD = "12"
+APP_NAME = "Halo"
+LEGACY_APP_NAMES = ("Halo OG.app", "Halo CE Universal.app")
 
 
 def run(*args):
@@ -102,7 +102,7 @@ def build_host():
 
 
 def package_icon(resources):
-    source = require(ROOT / "port/ios/Assets.xcassets/AppIcon.appiconset/AppIcon.png")
+    source = require(ROOT / "port/ios/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png")
     with tempfile.TemporaryDirectory(prefix="halo-macos-icon-") as temporary:
         iconset = Path(temporary) / "AppIcon.iconset"
         iconset.mkdir()
@@ -237,7 +237,7 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     package_icon(resources)
     content_binaries = stage_content_tools(app, content_tools, sign_identity=sign_identity, release=release) if content_tools else []
     info = {
-        "CFBundleExecutable": "halo", "CFBundleIdentifier": "local.halo.ce-universal",
+        "CFBundleExecutable": "halo", "CFBundleIdentifier": "com.LoganShire.OpenCE",
         "CFBundleName": APP_NAME, "CFBundleDisplayName": APP_NAME,
         "CFBundleIconFile": APP_ICON,
         "CFBundlePackageType": "APPL", "CFBundleShortVersionString": version,
@@ -346,7 +346,7 @@ def install_app(app, applications):
         if destination.exists():
             with (destination / "Contents/Info.plist").open("rb") as stream:
                 installed = plistlib.load(stream)
-            if installed.get("CFBundleIdentifier") != "local.halo.ce-universal":
+            if installed.get("CFBundleIdentifier") not in ("local.halo.ce-universal", "com.LoganShire.OpenCE"):
                 raise RuntimeError(f"Another application already exists at {destination}")
             previous = Path(tempfile.mkdtemp(prefix=".halo-previous-", dir=applications))
             unregister(destination)
