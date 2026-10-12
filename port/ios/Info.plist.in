@@ -12,6 +12,7 @@
 <key>MinimumOSVersion</key><string>26.0</string>
 <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string><string>metal</string></array>
 <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
+<key>UISupportedInterfaceOrientations~ipad</key><array><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
 <key>UIRequiresFullScreen</key><true/>
 <key>CADisableMinimumFrameDurationOnPhone</key><true/>
 <key>UIStatusBarHidden</key><true/>
