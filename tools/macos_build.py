@@ -31,7 +31,7 @@ ANGLE = Path(os.environ.get("HALO_MACOS_ANGLE_DIR", str(BUILD / "angle/dist")))
 GL = BUILD / "toolchain/gl"
 APP_ICON = "AppIcon.icns"
 APP_VERSION = "0.3.0"
-APP_BUILD = "13"
+APP_BUILD = "14"
 APP_NAME = "Halo"
 LEGACY_APP_NAMES = ("Halo OG.app", "Halo CE Universal.app")
 
@@ -155,8 +155,7 @@ def update_configuration(config):
 def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION, build=APP_BUILD, content_tools=None):
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
-        if not update_configuration(configuration):
-            raise RuntimeError("Set Halo's update feed and public key before creating a release")
+        update_configuration(configuration)  # Optional for Installer distribution.
         if not sign_identity.startswith("Developer ID Application:"):
             raise RuntimeError("A release needs an explicit Developer ID Application signing identity")
     destination = BUILD / (APP_NAME + ".app")
@@ -255,11 +254,10 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
         updates = update_configuration(configuration)
-        if not updates:
-            raise RuntimeError("Set Halo's update feed and public key before creating a release")
         if sign_identity == "-":
             raise RuntimeError("A release needs an explicit Developer ID Application signing identity")
-        info.update(updates)
+        if updates:
+            info.update(updates)
     with (contents / "Info.plist").open("wb") as stream:
         plistlib.dump(info, stream)
     try:
@@ -439,8 +437,7 @@ def main():
     args = parser.parse_args()
     os.chdir(ROOT)
     if args.release:
-        if not update_configuration(json.loads((ROOT / "port/macos/release-config.json").read_text())):
-            raise RuntimeError("Choose release hosting and configure the public update key first")
+        update_configuration(json.loads((ROOT / "port/macos/release-config.json").read_text()))
         if not args.sign_identity.startswith("Developer ID Application:"):
             raise RuntimeError("A release needs an explicit Developer ID Application signing identity")
     if args.plugin_only:
