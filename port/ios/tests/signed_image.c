@@ -10,7 +10,7 @@
 #ifdef HALO_IOS_MAC_CHECK
 #define BIAS UINT64_C(0x10000000000)
 #else
-#define BIAS UINT64_C(0x1000000000)
+#define BIAS UINT64_C(0x7000000000)
 #endif
 static void *run(void *unused) {
     (void)unused;
@@ -21,6 +21,11 @@ static void *run(void *unused) {
     return (void *)(uintptr_t)(result != 93);
 }
 int main(void) {
+#ifndef HALO_IOS_MAC_CHECK
+    _Static_assert(BIAS >= UINT64_C(0x7000000000), "Device arena overlaps GPU carveout");
+    _Static_assert(BIAS + UINT64_C(0x100000000) <= UINT64_C(0x8000000000),
+                   "Device arena exceeds iOS extended VA limit");
+#endif
     mach_vm_address_t address = BIAS;
     kern_return_t reserved = mach_vm_allocate(mach_task_self(), &address, UINT64_C(0x100000000), VM_FLAGS_FIXED);
     if (reserved) {

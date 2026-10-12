@@ -186,3 +186,14 @@ but does not turn a locally built app into an approved redistributable package.
 Keep compiled apps, logs and provisioning profiles local. When contributing
 source, inspect `git diff --cached --name-only` and `git diff --cached` before
 committing; ignore rules cannot prevent an explicit `git add -f`.
+
+### iOS guest address bounds
+
+The device guest uses `0x7000000000` (448 GiB); the simulator keeps the
+Mac's 1-TiB base. Compiler lowering, GL/import bridges and host translation
+must agree. XNU reserves 64–448 GiB for GPU mappings. The iPhone 15 Pro
+runtime reports a 512-GiB upper limit with Extended Virtual Addressing active.
+Direct on-device probes rejected 16 GiB (reserved), 64 GiB (GPU carveout) and
+1 TiB (outside the map), and successfully reserved the full arena at 448 GiB.
+See [XNU ARM VM definitions](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/mach/arm/vm_param.h).
+The signed-image test checks both device bounds and consistent pointer lowering.

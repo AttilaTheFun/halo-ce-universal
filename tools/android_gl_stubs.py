@@ -64,7 +64,7 @@ def main():
         "#include <GLES2/gl2ext.h>",
         "#include <string.h>",
         "#if defined(HALO_IOS) && !defined(HALO_IOS_SIMULATOR)",
-        "#define HOST_POINTER(p) ((p) ? (0x1000000000ull | (unsigned int)(p)) : 0ull)",
+        "#define HOST_POINTER(p) ((p) ? (0x7000000000ull | (unsigned int)(p)) : 0ull)",
         "#elif defined(HALO_MACOS)",
         "#define HOST_POINTER(p) ((p) ? (0x10000000000ull | (unsigned int)(p)) : 0ull)",
         "#else",

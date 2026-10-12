@@ -15,9 +15,9 @@
 #if defined(HALO_IOS_SIMULATOR)
 #define HALO_MACOS_BIAS UINT64_C(0x10000000000)
 #else
-// iOS Metal may reserve up to 0xfc0000000 before guest startup.
-// Extended Virtual Addressing allows this arena above that reservation.
-#define HALO_MACOS_BIAS UINT64_C(0x1000000000)
+// iOS reserves 64–448 GB for the GPU; extended VA ends at 512 GB.
+// The device arena starts just after the carveout and stays below that limit.
+#define HALO_MACOS_BIAS UINT64_C(0x7000000000)
 #endif
 /* The allocator, Xbox window and linked image all fit below 0x90000000.
  * Reserve only that span so UIKit/Metal can use the rest of the address space. */
