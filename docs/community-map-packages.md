@@ -170,7 +170,7 @@ python3 -m unittest tools.test_community_packages
 python3 tools/macos_map_package_smoke.py \
   --package build/community-maps/local-package-prototype-20261003/downrush.hogpkg \
   --data-root assets \
-  --tools-app "build/community-maps/local-package-prototype-20261003/host-build-final/Halo OG.app" \
+  --tools-app "build/community-maps/local-package-prototype-20261003/host-build-final/OpenCE.app" \
   --output build/community-maps/local-package-prototype-20261003/native-smoke-new-run
 ```
 
@@ -206,7 +206,7 @@ unchanged. The filesystem could not exercise two differently cased stock
 filenames because it is case-insensitive; the parser's case-collision fixture
 did pass.
 
-The separately staged `host-build-final/Halo OG.app` passed the app signature
+The separately staged `host-build-final/OpenCE.app` passed the app signature
 and bundle audits for 11 Mach-O objects, with minimum OS 27.0. The game and UI
 were not launched by this acceptance check. These results prove the local ARM
 Mac data reconstruction and receipt path. Other toolchain/platform variants,

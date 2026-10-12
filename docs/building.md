@@ -1,4 +1,4 @@
-# Building Halo OG
+# Building OpenCE
 
 Players can use the [testing packages](../README.md#download) without developer
 tools. Native ports use the checked-in [Xbox SDK declarations](../port/include/xdk/README.md);

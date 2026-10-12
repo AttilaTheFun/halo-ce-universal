@@ -1,4 +1,4 @@
-# Halo OG native Apple Silicon build
+# OpenCE native Apple Silicon build
 
 The experimental native Mac build is playable. On 2026-09-27, the main menu,
 campaign loading and gameplay, mouse capture, and audible output were confirmed
@@ -15,7 +15,7 @@ For shared testing, use a published tag in the
 [testing releases](https://github.com/pfista/halo-og/releases) and
 download `Halo-OG-macos-arm64.dmg` directly from its assets. The
 [`test-v0.3.0-net11-dmg2` installer](https://github.com/pfista/halo-og/releases/download/test-v0.3.0-net11-dmg2/Halo-OG-macos-arm64.dmg)
-opens a window with Halo OG, a drag arrow and the Applications folder. Testing
+opens a window with OpenCE, a drag arrow and the Applications folder. Testing
 prereleases have permanent URLs containing the tag and require no GitHub sign-in.
 See [manual testing publication](../../docs/macos-menu-and-releases.md#manual-testing-prerelease)
 for the publishing workflow. No testing prerelease is created automatically.
@@ -29,7 +29,7 @@ Choose a successful run, then download **halo-macos-arm64-dmg** from its
 started manually. Artifacts expire after 14 days.
 
 Extract the downloaded ZIP and open `Halo-OG-macos-arm64.dmg`.
-Drag **Halo OG.app** onto the Applications shortcut, then launch it
+Drag **OpenCE.app** onto the Applications shortcut, then launch it
 from Applications. `README.txt` records that build's minimum macOS version and
 installation steps. `BuildInfo.txt` records the source revision and guest hash;
 `SHA256SUMS` lets you verify the DMG with `shasum -a 256 -c SHA256SUMS` from the
@@ -54,7 +54,7 @@ and build checks; play between platforms still needs testing.
 
 ## Launch
 
-Open `build/macos/Halo OG.app` in Finder. There is no automatic timeout.
+Open `build/macos/OpenCE.app` in Finder. There is no automatic timeout.
 The app includes SDL3, ANGLE, Sparkle, and the compiled game image. It remembers
 your chosen local data location. Development builds can fall back to this
 checkout's `assets/` directory. The helmet menu icon opens Settings, changes
@@ -190,7 +190,7 @@ From the repository root:
 
 ```sh
 python3 tools/macos_build.py
-open "build/macos/Halo OG.app"
+open "build/macos/OpenCE.app"
 ```
 
 To build and install a single copy in Applications for Spotlight:
@@ -202,7 +202,7 @@ python3 tools/macos_build.py --install
 To build without local game data, use `--no-data-path --install` instead;
 the app will ask for a disc image or game folder on first launch.
 
-Then press Command-Space, type `Halo OG`, and press Return. An
+Then press Command-Space, type `OpenCE`, and press Return. An
 optional directory, such as `--install ~/Applications`, installs for just your
 account. Installation verifies the signed bundle before replacing a previous
 copy, preserves the previous app in a hidden backup directory, and registers

@@ -114,23 +114,28 @@ class MacOSInstallerTests(unittest.TestCase):
         self.assertEqual(len(self.unregister.call_args_list), 1)
 
     def test_rename_archives_legacy_app_and_preserves_independent_data(self):
-        source = make_app(self.macos / "Halo OG.app", marker=b"renamed")
+        source = make_app(self.macos / "OpenCE.app", marker=b"renamed")
         old = make_app(self.applications / "Halo CE Universal.app", marker=b"previous")
+        renamed = make_app(self.applications / "Halo OG.app", marker=b"display")
         data = self.root / "Library/Application Support/Halo OG"
         data.mkdir(parents=True)
         (data / "config.toml").write_bytes(b"custom settings")
         installed = self.install(source)
         self.assertEqual((installed / "Contents/payload").read_bytes(), b"renamed")
         self.assertFalse(old.exists())
+        self.assertFalse(renamed.exists())
         previous = list(self.applications.glob(".halo-previous-*/Halo CE Universal.app.backup"))
         self.assertEqual(len(previous), 1)
         self.assertEqual((previous[0] / "Contents/payload").read_bytes(), b"previous")
+        renamed_backup = list(self.applications.glob(".halo-previous-*/Halo OG.app.backup"))
+        self.assertEqual(len(renamed_backup), 1)
+        self.assertEqual((renamed_backup[0] / "Contents/payload").read_bytes(), b"display")
         self.assertEqual((data / "config.toml").read_bytes(), b"custom settings")
 
     def test_rename_preserves_unrelated_and_malformed_legacy_apps(self):
         for identity in ("local.unrelated.game", "malformed", "array"):
             with self.subTest(identity=identity):
-                source = make_app(self.macos / "Halo OG.app")
+                source = make_app(self.macos / "OpenCE.app")
                 old = make_app(self.applications / "Halo CE Universal.app", identifier=identity)
                 if identity == "malformed":
                     (old / "Contents/Info.plist").write_bytes(b"broken plist")

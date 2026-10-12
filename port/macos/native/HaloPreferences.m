@@ -333,7 +333,7 @@ static BOOL migrationSources(NSURL *directory, NSString *prefix, NSMutableArray 
     for (NSURL *file in files) {
         struct stat info;
         if (lstat(file.fileSystemRepresentation, &info)) {
-            if (error) *error = failure(@"A legacy file changed while Halo OG was preparing its copy. Close the older app and retry.");
+            if (error) *error = failure(@"A legacy file changed while OpenCE was preparing its copy. Close the older app and retry.");
             return NO;
         }
         NSString *relative = prefix.length ? [prefix stringByAppendingPathComponent:file.lastPathComponent] : file.lastPathComponent;
@@ -356,7 +356,7 @@ static BOOL migrationPublishData(NSData *data, NSURL *target, NSURL *staging, NS
     if (descriptor >= 0) close(descriptor);
     success = success && !link(partial.fileSystemRepresentation, target.fileSystemRepresentation);
     unlink(partial.fileSystemRepresentation);
-    if (!success && error) *error = failure(@"Halo OG could not publish a complete migration record or settings file. Existing files were preserved.");
+    if (!success && error) *error = failure(@"OpenCE could not publish a complete migration record or settings file. Existing files were preserved.");
     return success;
 }
 static NSDictionary *migrationCopyFile(NSURL *source, NSURL *target, NSURL *staging,
@@ -491,7 +491,7 @@ BOOL HaloMigrateLegacySupportDirectory(NSURL *legacy, NSURL *destination, xiso_p
             id decoded = bytes ? [NSJSONSerialization JSONObjectWithData:bytes options:0 error:error] : nil;
             success = [decoded isKindOfClass:NSDictionary.class];
             NSMutableDictionary *settings = success ? [decoded mutableCopy] : nil;
-            if (!success && error && !*error) *error = failure(@"The legacy settings file is invalid. It was preserved; Halo OG will not silently start with empty settings.");
+            if (!success && error && !*error) *error = failure(@"The legacy settings file is invalid. It was preserved; OpenCE will not silently start with empty settings.");
             for (NSString *key in @[@"data_path", @"iso_path"]) {
                 NSString *mapped = success ? migrationMappedPath(settings[key], legacy, destination, conflicts) : nil;
                 if (mapped) { rewrites[key] = @{@"from":settings[key], @"to":mapped}; settings[key] = mapped; }

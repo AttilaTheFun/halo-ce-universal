@@ -1,4 +1,4 @@
-# Halo OG Mac menu, local data and releases
+# OpenCE Mac menu, local data and releases
 
 The native AppKit menu runs in the game's process. Its monochrome helmet opens
 Settings, changes fullscreen immediately, selects game data, opens saves and
@@ -14,7 +14,7 @@ builds an Apple Silicon app on code pushes to `main` and manual runs. Sign in to
 GitHub, choose a successful run, and download **halo-macos-arm64-dmg** under
 **Artifacts**. Artifacts are retained for 14 days and contain:
 
-- `Halo-OG-macos-arm64.dmg`, with `Halo OG.app` and an Applications shortcut.
+- `Halo-OG-macos-arm64.dmg`, with `OpenCE.app` and an Applications shortcut.
 - `README.txt`, with the build's minimum macOS version and installation steps.
 - `BuildInfo.txt`, identifying the source revision and compiled guest hash.
 - `SHA256SUMS`, for verifying the DMG after extracting the artifact ZIP.
@@ -23,7 +23,7 @@ The current bundled dependencies require macOS 26 or later on Apple Silicon.
 Use the minimum macOS version recorded in the artifact's `README.txt` for that
 build.
 No build tools are needed to run the download. Open the DMG, drag the app into
-Applications as **Halo OG.app**, and supply your own original Xbox game data on first launch.
+Applications as **OpenCE.app**, and supply your own original Xbox game data on first launch.
 These are ad hoc signed, unnotarized builds; see
 [Mac installation](../port/macos/README.md#download) for the first-launch steps.
 
@@ -38,7 +38,7 @@ Keychain credentials. Before upload, every bundled Mach-O architecture must have
 an ad hoc signature with no certificate authority or team identifier. The app
 uses the generic `local.halo.ce-universal` bundle identifier. Third-party helper
 identifiers and capability entitlements remain those of the pinned dependency.
-The app's displayed name is **Halo OG** and its bundle identifier remains stable.
+The app's displayed name is **OpenCE** and its bundle identifier remains stable.
 The canonical data directory is `~/Library/Application Support/Halo OG/`.
 Prior files are copied from `~/Library/Application Support/Halo CE Universal/`
 without deleting the original files or replacing files already in the new directory.
@@ -137,7 +137,7 @@ The Finder window has a Retina background, positioned app/folder icons and a
 drag arrow. Rendering uses macOS's native SVG support; the Python dependencies
 write Finder metadata without scripting Finder and are only used at build time.
 
-To repackage an existing signed app, pass `--app "/path/to/Halo OG.app"` and a
+To repackage an existing signed app, pass `--app "/path/to/OpenCE.app"` and a
 fresh `--output` filename to `local-dmg`. Packaging checks every bundle file,
 directory permission and symlink target against the source and verifies the
 copied signature. It preserves the app's build information and does not rebuild
@@ -173,7 +173,7 @@ See [managed storage and map downloads](map-downloads-plan.md) for the catalog,
 missing-map readiness flow and hosting configuration. The selected publisher
 is `https://dl.oghalo.com`; downloads default off until the player opts in.
 
-`macos-settings.json` in the Halo OG Application Support directory records the
+`macos-settings.json` in the OpenCE Application Support directory records the
 data/source-image paths and fullscreen preference. Saves, profiles, cache and
 `config.toml` stay in their established locations outside the signed app.
 Settings, file-picker sheets and disc imports return control to SDL while the

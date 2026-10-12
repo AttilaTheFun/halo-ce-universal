@@ -23,9 +23,9 @@ extern uint32_t host_sdl_create_window(const char *, int, int, int64_t);
 @end
 
 static void check_main_loop(const char *image, const char *data) {
-    assert([NSApp.mainMenu.itemArray[0].title isEqualToString:@"Halo OG"]);
-    assert([NSApp.mainMenu.itemArray[0].submenu.itemArray[0].title isEqualToString:@"About Halo OG"]);
-    assert([NSApp.mainMenu.itemArray[0].submenu.itemArray.lastObject.title isEqualToString:@"Quit Halo OG"]);
+    assert([NSApp.mainMenu.itemArray[0].title isEqualToString:@"OpenCE"]);
+    assert([NSApp.mainMenu.itemArray[0].submenu.itemArray[0].title isEqualToString:@"About OpenCE"]);
+    assert([NSApp.mainMenu.itemArray[0].submenu.itemArray.lastObject.title isEqualToString:@"Quit OpenCE"]);
     NSMenuItem *settings = NSApp.mainMenu.itemArray[0].submenu.itemArray[1];
     id<MenuActions> target = settings.target;
     int sender = socket(AF_INET, SOCK_DGRAM, 0), receiver = socket(AF_INET, SOCK_DGRAM, 0);
@@ -48,7 +48,7 @@ static void check_main_loop(const char *image, const char *data) {
             step++;
         } else if (step == 1 && elapsed > 400) {
             assert(window.visible);
-            assert([window.title isEqualToString:@"Halo OG Settings"]);
+            assert([window.title isEqualToString:@"OpenCE Settings"]);
             [target selectFolder:nil];
             assert(window.attachedSheet && !NSApp.modalWindow);
             step++;

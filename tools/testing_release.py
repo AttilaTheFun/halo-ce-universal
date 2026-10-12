@@ -179,7 +179,7 @@ def check_platform_archive(path, name):
 def release_notes(record):
     url = "https://github.com/" + record["repository"]
     source = f"{url}/blob/{record['sha']}"
-    return (f"Halo OG testing build `{record['tag']}` from [{record['sha']}]({url}/commit/{record['sha']}).\n\n"
+    return (f"OpenCE testing build `{record['tag']}` from [{record['sha']}]({url}/commit/{record['sha']}).\n\n"
             f"Network protocol: **{record['network_protocol']}**.\n\n"
             f"Start with the [playtesting setup guide]({source}/docs/playtesting.md) "
             f"or [project README]({source}/README.md). Download your platform's asset below; "
@@ -292,7 +292,7 @@ def main():
                 stdout=subprocess.DEVNULL)
             subprocess.run(["gh", "release", "create", args.tag, "--repo", args.repository,
                 "--verify-tag", "--prerelease", "--latest=false",
-                "--title", "Halo OG testing " + args.tag, "--notes-file", str(args.directory / "release-notes.md"),
+                "--title", "OpenCE testing " + args.tag, "--notes-file", str(args.directory / "release-notes.md"),
                 *(str(args.directory / name) for name in sorted(ASSETS))], check=True)
             print(f"DMG: https://github.com/{args.repository}/releases/download/{args.tag}/{DMG}")
         else:

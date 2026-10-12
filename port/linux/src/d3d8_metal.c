@@ -190,9 +190,14 @@ struct native_resource {
     struct halo_metal_mip_composite_copy *mip_copy_cache;
     uint32_t format, usage, storage_width, storage_height, scale_mode;
     BOOL mip_composite, volume, hud_checked, text_atlas, menu_art;
+    /* Same-address resources only. A frame's model draws must not scan every
+       bitmap the map has loaded. */
+    struct native_resource *bucket_next;
 };
 struct native_program {
     struct native_program *next;
+    struct native_program *bucket_next;
+    uint32_t lookup_hash;
     struct halo_metal_ref ref;
     struct vertex_shader_object *vertex;
     uint32_t packed_mask, depth_contract, alpha_border_mask, volume_border_mask, compact_vertices;
@@ -232,11 +237,46 @@ static struct halo_metal_guest_transport transport;
 static uint64_t sequence;
 static uint32_t next_resource_id = 1, next_program_id = 1, next_query_id = 1;
 static struct native_resource *resources;
+#define NATIVE_RESOURCE_BUCKETS 4096u
+static struct native_resource *resource_buckets[NATIVE_RESOURCE_BUCKETS];
+#define NATIVE_PROGRAM_BUCKETS 1024u
+static struct native_program *program_buckets[NATIVE_PROGRAM_BUCKETS];
 /* Keep the last completed indexed frame sampled at its original resolution
  * during the first resized frame. Its replacement is copied at Present. */
 static struct native_resource *history_sample_override;
 static struct native_resource *text_atlas_resource;
 static struct native_program *programs;
+static unsigned native_resource_bucket(DWORD data) {
+    uint32_t mixed=(uint32_t)data;
+    mixed^=mixed>>16;mixed*=0x7feb352du;mixed^=mixed>>15;
+    return (unsigned)(mixed&(NATIVE_RESOURCE_BUCKETS-1));
+}
+static void resource_publish(struct native_resource *entry) {
+    unsigned bucket=native_resource_bucket(entry->data);
+    entry->next=resources;resources=entry;
+    entry->bucket_next=resource_buckets[bucket];resource_buckets[bucket]=entry;
+}
+static void resource_unindex(struct native_resource *entry) {
+    unsigned bucket=native_resource_bucket(entry->data);
+    struct native_resource **link=&resource_buckets[bucket];
+    while (*link && *link!=entry) link=&(*link)->bucket_next;
+    if (*link) *link=entry->bucket_next;
+    entry->bucket_next=NULL;
+}
+static unsigned program_lookup_hash(struct vertex_shader_object *vertex,uint32_t packed,
+    const struct nv2a_pixel_shader_key *key,uint32_t alpha_border_mask,uint32_t volume_border_mask,
+    uint32_t depth_contract,uint32_t compact_vertices) {
+    const unsigned char *bytes=(const unsigned char *)key;
+    unsigned i;uint32_t hash=2166136261u;
+    hash^=(uint32_t)(unsigned long)vertex;hash*=16777619u;
+    hash^=packed;hash*=16777619u;
+    hash^=alpha_border_mask;hash*=16777619u;
+    hash^=volume_border_mask;hash*=16777619u;
+    hash^=depth_contract;hash*=16777619u;
+    hash^=compact_vertices;hash*=16777619u;
+    for (i=0;i<sizeof(*key);i++) { hash^=bytes[i];hash*=16777619u; }
+    return hash;
+}
 /* Original rasterizer.h verifies floating_point_zbuffer at byte0x3c in the
    linked ILP32 global. Character access reads that object's representation. */
 extern struct rasterizer_globals_definition rasterizer_globals;
@@ -1173,7 +1213,7 @@ static struct native_resource *target_get(const D3DSurface *surface) {
         require_status("native target dimensions",halo_metal_render_native_target_dimensions(width,height,
             halo_screen_width(),native_storage_width,native_storage_height,&dimensions));
     }
-    for (entry=resources;entry;entry=entry->next)
+    for (entry=resource_buckets[native_resource_bucket(surface->Data)];entry;entry=entry->bucket_next)
         if ((entry->usage&HALO_METAL_RENDER_TARGET) && entry->data==surface->Data &&
             entry->format_word==surface->Format && entry->size_word==surface->Size &&
             entry->storage_width==dimensions.storage_width && entry->storage_height==dimensions.storage_height &&
@@ -1190,16 +1230,16 @@ static struct native_resource *target_get(const D3DSurface *surface) {
     entry->format=depth ? HALO_METAL_DEPTH32_STENCIL8 : HALO_METAL_BGRA8;
     entry->usage=HALO_METAL_SHADER_READ|HALO_METAL_RENDER_TARGET;
     resource_create(entry);
+    resource_publish(entry);
     /* Fresh D3D attachment storage is undefined. Establish a deterministic
        zero allocation so untouched planes can safely be loaded by Metal.
        This uses no reference framebuffer or captured after-draw pixels. */
     target_storage_initialize(entry);
-    entry->next=resources;resources=entry;
     return entry;
 }
 static struct native_resource *rendered_alias(DWORD data) {
     struct native_resource *entry,*best=NULL;
-    for (entry=resources;entry;entry=entry->next)
+    for (entry=resource_buckets[native_resource_bucket(data)];entry;entry=entry->bucket_next)
         if (entry->data==data && (entry->usage&HALO_METAL_RENDER_TARGET) &&
             entry->format!=HALO_METAL_DEPTH32_STENCIL8 && (!best || entry->last_rendered>best->last_rendered)) best=entry;
     return best;
@@ -1276,6 +1316,7 @@ static void native_history_sample_retire(void) {
     while (*link && *link!=history_sample_override) link=&(*link)->next;
     if (!*link) native_fail("previous resolution history ownership",HALO_METAL_INVALID);
     struct native_resource *previous=*link;
+    resource_unindex(previous);
     resource_delete(previous);
     packet_flush(NATIVE_FLUSH_RESIZE);
     *link=previous->next;history_sample_override=NULL;
@@ -1409,7 +1450,7 @@ static struct native_resource *rendered_mip_composite(DWORD data,
         if (!composite->mip_copy_cache) native_fail("allocate rendered mip copy cache",HALO_METAL_MEMORY);
         composite->data=data;composite->description=*original;
         composite->format=plan.storage_format;composite->usage=HALO_METAL_SHADER_READ;composite->mip_composite=TRUE;
-        resource_create(composite);composite->next=resources;resources=composite;
+        resource_create(composite);resource_publish(composite);
         platform_log("Native rendered mip composite: Data %08lx %lux%lu levels %lu, independent original targets",
             data,original->width,original->height,original->levels);
     }
@@ -1485,7 +1526,7 @@ static struct native_resource *hud_texture_get(long asset) {
             mip_width=mip_width>1 ? mip_width/2:1;mip_height=mip_height>1 ? mip_height/2:1;
         }
     }
-    free(pixels);entry->next=resources;resources=entry;
+    free(pixels);resource_publish(entry);
     platform_log("Native high-res HUD: asset %ld uploaded %lux%lu, %lu mip levels",
         asset,width,height,entry->description.levels);
     return entry;
@@ -1501,7 +1542,7 @@ static struct native_resource *menu_texture_get(unsigned long data) {
     struct native_resource *entry;
     unsigned char *pixels=NULL;
     unsigned long width=0,height=0;
-    for (entry=resources;entry;entry=entry->next)
+    for (entry=resource_buckets[native_resource_bucket(data)];entry;entry=entry->bucket_next)
         if (entry->menu_art && entry->data==data) return entry;
     if (!menu_art_pixels(data,&pixels,&width,&height)) return NULL;
     uint32_t bytes=(uint32_t)(width*height*4),upload_end,payloads[]={bytes};
@@ -1514,7 +1555,7 @@ static struct native_resource *menu_texture_get(unsigned long data) {
     entry->description=(struct xgpu_texture_description){.format=D3DFMT_A8R8G8B8,
         .width=width,.height=height,.depth=1,.levels=1,.hires=TRUE};
     entry->format=HALO_METAL_RGBA8;entry->usage=HALO_METAL_SHADER_READ;
-    resource_create(entry);entry->next=resources;resources=entry;
+    resource_create(entry);resource_publish(entry);
     struct halo_metal_upload_ex upload={0};
     upload.command.opcode=HALO_METAL_UPLOAD_EX;upload.resource=entry->ref;
     upload.width=(uint32_t)width;upload.height=(uint32_t)height;upload.depth=1;
@@ -1554,7 +1595,7 @@ static struct native_resource *text_texture_get(unsigned long data) {
         /* Coverage is already the RGBA alpha channel, as with stock glyphs.
          * No HUD meter coverage transform or texture-channel swizzle applies. */
         entry->format=HALO_METAL_RGBA8;entry->usage=HALO_METAL_SHADER_READ;
-        resource_create(entry);entry->next=resources;resources=entry;
+        resource_create(entry);resource_publish(entry);
         text_atlas_resource=entry;
     }
     if (size) {
@@ -1593,7 +1634,7 @@ static struct native_resource *texture_get(D3DBaseTexture *texture,D3DPalette *p
         if (original.depth!=1) native_fail("rendered volume alias",HALO_METAL_UNSUPPORTED);
         return entry;
     }
-    for (entry=resources;entry;entry=entry->next)
+    for (entry=resource_buckets[native_resource_bucket(texture->Data)];entry;entry=entry->bucket_next)
         if (!(entry->usage&HALO_METAL_RENDER_TARGET) && !entry->mip_composite && !entry->description.hires && entry->data==texture->Data &&
             entry->format_word==texture->Format && entry->size_word==texture->Size) break;
     struct xgpu_texture_mip_layout layout;
@@ -1661,7 +1702,7 @@ static struct native_resource *texture_get(D3DBaseTexture *texture,D3DPalette *p
         entry->description=original;
         entry->volume=volume;
         entry->format=texture_format(layout.format);entry->usage=HALO_METAL_SHADER_READ;
-        resource_create(entry);entry->next=resources;resources=entry;
+        resource_create(entry);resource_publish(entry);
     }
     /* Protect before CRC validation as well as original uploads, so a later
      * source write invalidates this association on the next draw. A changed
@@ -1717,10 +1758,12 @@ static struct native_program *program_get(struct vertex_shader_object *vertex,ui
     const struct nv2a_pixel_shader_key *key, uint32_t alpha_border_mask,uint32_t volume_border_mask,uint32_t depth_contract,
     BOOL compact_vertices) {
     struct native_program *entry;
-    for (entry=programs;entry;entry=entry->next)
-        if (entry->vertex==vertex && entry->packed_mask==packed && entry->alpha_border_mask==alpha_border_mask &&
-            entry->depth_contract==depth_contract && entry->volume_border_mask==volume_border_mask &&
-            entry->compact_vertices==(uint32_t)compact_vertices &&
+    unsigned lookup=program_lookup_hash(vertex,packed,key,alpha_border_mask,volume_border_mask,
+        depth_contract,(uint32_t)compact_vertices);
+    for (entry=program_buckets[lookup&(NATIVE_PROGRAM_BUCKETS-1)];entry;entry=entry->bucket_next)
+        if (entry->lookup_hash==lookup && entry->vertex==vertex && entry->packed_mask==packed &&
+            entry->alpha_border_mask==alpha_border_mask && entry->depth_contract==depth_contract &&
+            entry->volume_border_mask==volume_border_mask && entry->compact_vertices==(uint32_t)compact_vertices &&
             !memcmp(&entry->key,key,sizeof(*key))) return entry;
     const BOOL diagnostics=config_boolean("debug.gpu_stats");
     const uint64_t translation_started=diagnostics ? monotonic_ns():0;
@@ -1774,6 +1817,7 @@ static struct native_program *program_get(struct vertex_shader_object *vertex,ui
     entry->depth_contract=depth_contract;
     entry->volume_border_mask=volume_border_mask;
     entry->compact_vertices=compact_vertices;
+    entry->lookup_hash=lookup;
     entry->ref.id=next_program_id++;entry->ref.generation=1;
     struct halo_metal_program command={0};
     command.command.opcode=HALO_METAL_CREATE_PROGRAM;command.resource=entry->ref;
@@ -1808,7 +1852,10 @@ static struct native_program *program_get(struct vertex_shader_object *vertex,ui
             command.vertex_source_size,command.fragment_source_size,
             (unsigned long long)translation_ns);
     packet_finish();free(vs);free(ps);
-    entry->next=programs;programs=entry;return entry;
+    entry->next=programs;programs=entry;
+    entry->bucket_next=program_buckets[lookup&(NATIVE_PROGRAM_BUCKETS-1)];
+    program_buckets[lookup&(NATIVE_PROGRAM_BUCKETS-1)]=entry;
+    return entry;
 }
 static void draw_original(D3DPRIMITIVETYPE type,UINT first,UINT count,const WORD *indices,BOOL immediate) {
     if (!count || !device.ready) return;

@@ -130,7 +130,7 @@ BOOL platform_sdl_initialize(void)
 	one already running, and goes */
 	if (p2p_hand_off_invite())
 		exit(EXIT_SUCCESS);
-	SDL_SetHint(SDL_HINT_APP_NAME, "Halo OG");
+	SDL_SetHint(SDL_HINT_APP_NAME, "OpenCE");
 #ifdef HALO_ANDROID
 	/* landscape only; the back key arrives as a key event (xinput_sdl.c)
 	instead of closing the activity */
@@ -218,7 +218,7 @@ static BOOL data_extract(const char *image, const char *destination, char *error
 	/* (waited for through extraction.finished; the Windows port's threads
 	cannot be joined) */
 	pthread_detach(thread);
-	window = SDL_CreateWindow("Halo OG", 640, 150, 0);
+	window = SDL_CreateWindow("OpenCE", 640, 150, 0);
 	if (window)
 	{
 		renderer = SDL_CreateRenderer(window, NULL);
@@ -334,14 +334,14 @@ BOOL platform_offer_game_data(const char *destination)
 		return FALSE;
 	}
 	snprintf(message, sizeof(message),
-		"Halo OG's game data (its maps folder) was not found.\n\n"
+		"OpenCE's game data (its maps folder) was not found.\n\n"
 		"Extract the maps folder from an Xbox disc image (.iso) of Halo: Combat Evolved? "
 		"It is copied to %s/maps (about 2 GB).\n\n"
 		"(Or put the maps folder there yourself, or set paths.data in config.toml.)",
 		destination);
 	for (;;)
 	{
-		SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, NULL, "Halo OG", message, 2, buttons, NULL };
+		SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, NULL, "OpenCE", message, 2, buttons, NULL };
 		char image[1024];
 		char error[512];
 		int answer = 0;
@@ -361,7 +361,7 @@ BOOL platform_offer_game_data(const char *destination)
 			return TRUE;
 		}
 		platform_log("extraction failed: %s", error);
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Halo OG", error, NULL);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "OpenCE", error, NULL);
 	}
 }
 #endif
@@ -880,7 +880,7 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 
 		if (scale < 1)
 			scale = 1;
-		platform_window = SDL_CreateWindow("Halo OG", (int)(width * scale), (int)(height * scale),
+		platform_window = SDL_CreateWindow("OpenCE", (int)(width * scale), (int)(height * scale),
 #if defined(HALO_MACOS_NATIVE_METAL)
 			SDL_WINDOW_METAL
 #else
@@ -900,7 +900,7 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 	(void)width;
 	(void)height;
 	platform_window_size_setting(&platform_window_width, &platform_window_height);
-	platform_window = SDL_CreateWindow("Halo OG", (int)platform_window_width, (int)platform_window_height,
+	platform_window = SDL_CreateWindow("OpenCE", (int)platform_window_width, (int)platform_window_height,
 		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY |
 		(config_boolean("debug.hidden_window") ? SDL_WINDOW_HIDDEN : 0) |
 		(platform_fullscreen_setting() ? SDL_WINDOW_FULLSCREEN : 0));

@@ -41,8 +41,8 @@ GL = BUILD / "toolchain/gl"
 APP_ICON = "AppIcon.icns"
 APP_VERSION = "0.3.0"
 APP_BUILD = "12"
-APP_NAME = "Halo OG"
-LEGACY_APP_NAMES = ("Halo CE Universal.app",)
+APP_NAME = "OpenCE"
+LEGACY_APP_NAMES = ("Halo CE Universal.app", "Halo OG.app")
 
 
 def run(*args):

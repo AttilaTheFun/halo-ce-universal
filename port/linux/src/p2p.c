@@ -3167,7 +3167,7 @@ static void *p2p_thread(void *unused)
 	pthread_mutex_lock(&p2p_lock);
 #ifndef HALO_ANDROID
 	/* (here: it may wait for a program) */
-	p2p_register_url_scheme("halo", "Halo OG invite");
+	p2p_register_url_scheme("halo", "OpenCE invite");
 #endif
 	for (;;)
 	{

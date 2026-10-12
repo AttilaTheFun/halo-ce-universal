@@ -4,7 +4,7 @@ Start here for both macOS and iPhone. All commands run on an Apple Silicon Mac
 from the repository root unless stated otherwise. The Mac game runs natively;
 the iPhone build also uses native ARM code and ANGLE's Metal renderer.
 
-To run Halo OG on Mac without compiling, download the
+To run OpenCE on Mac without compiling, download the
 [macOS DMG](../port/macos/README.md#download). Published testing prereleases have
 direct asset links; unpublished CI artifacts require GitHub sign-in and expire.
 The DMG bundles the runtime
@@ -169,7 +169,7 @@ before packaging and retains the DMG artifact for 14 days. This CI download is
 separate from the Developer ID and Sparkle release process. Manual testing
 publication can promote those audited CI outputs to a GitHub prerelease with
 tagged direct download links, without personal signing credentials or game data.
-The Mac download is `Halo-OG-macos-arm64.dmg` containing `Halo OG.app`.
+The Mac download is `Halo-OG-macos-arm64.dmg` containing `OpenCE.app`.
 The bundle identifier remains stable. The app copies prior data from
 `~/Library/Application Support/Halo CE Universal/` into the canonical
 `~/Library/Application Support/Halo OG/` directory, preserving original files

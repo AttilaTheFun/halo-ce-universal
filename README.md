@@ -1,4 +1,4 @@
-# Halo OG
+# OpenCE
 
 Original Xbox **Halo: Combat Evolved**, brought to modern devices through its
 decompilation and native ports.
@@ -38,7 +38,7 @@ or [Build workflow](https://github.com/pfista/halo-og/actions/workflows/build.ym
 Download the platform's `halo-…-release` artifact, or `halo-macos-arm64-dmg`, and
 match the runs' commit SHA. Artifact downloads are ZIPs and expire.
 
-The Mac test build is ad-hoc signed and unnotarized. Install **Halo OG.app** into
+The Mac test build is ad-hoc signed and unnotarized. Install **OpenCE.app** into
 Applications; no Homebrew or developer tools are needed. Testing packages have
 automatic updates disabled. [Installation steps](docs/playtesting.md) explain
 first launch, platform dependencies, and updating.
@@ -80,7 +80,7 @@ Timer announcements need a separate audio pack, not bundled with these builds.
 
 The current network protocol is **20**. Older builds, including protocol 19, cannot join it.
 Enabled PB Options require compatible peers. For the first cross-platform
-tests, use matching Halo OG packages with PB Options off.
+tests, use matching OpenCE packages with PB Options off.
 
 ## What has been checked
 
@@ -103,7 +103,7 @@ fidelity remain acceptance work. See the [fidelity policy](docs/xbox-fidelity.md
 [Report a playtest problem](docs/playtesting.md#report-a-problem)
 
 The experimental [iPhone port](port/ios/README.md) is a developer build with no
-installation package in this testing release. Halo OG builds on
+installation package in this testing release. OpenCE builds on
 [bnunu/halo-1](https://github.com/bnunu/halo-1),
 [punpckhdq/halo](https://github.com/punpckhdq/halo), and the platform work in
 [cybersecurity/halo-ce-universal](https://github.com/cybersecurity/halo-ce-universal).

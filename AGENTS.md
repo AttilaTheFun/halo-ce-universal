@@ -2,7 +2,7 @@
 
 ## Project direction
 
-This is **Halo OG**, `pfista/halo-og`, a cross-platform Xbox-derived port. Preserve original
+This is **OpenCE**, `pfista/halo-og`, a cross-platform Xbox-derived port. Preserve original
 Xbox Halo: Combat Evolved NTSC gameplay and presentation while improving native
 performance, portability and online play. Community maps are separate content
 imports. Custom maps and explicitly selected competitive options serve serious
@@ -53,7 +53,7 @@ to an Xbox executable, or a successful smoke test as proof of full retail parity
 ## Local Mac build installation
 
 After each successful local macOS app build, install the built app into
-`/Applications/Halo OG.app`. This is the user's default for this
+`/Applications/OpenCE.app`. This is the user's default for this
 project. Use the build script's `--install` option or its `install_app` helper
 for an already-built app; the installer verifies the bundle and preserves the
 previous copy. Verify the installed signature and `Contents/Resources/BuildInfo.txt`

@@ -92,7 +92,7 @@ def build_ui_test():
     """Reuse a built host and bundle its real menu/SDL code under a test identity."""
     output = ROOT / "build/macos/tests/menu-ui"
     app = output / "HaloMenuTest.app"
-    original = ROOT / "build/macos/Halo OG.app/Contents"
+    original = ROOT / "build/macos/OpenCE.app/Contents"
     frameworks = original / "Frameworks"
     output.mkdir(parents=True, exist_ok=True)
     flags = ["-arch", "arm64", "-mmacosx-version-min=14.0", "-O2", "-DHALO_MACOS=1", "-D_DARWIN_C_SOURCE",
@@ -289,6 +289,9 @@ class ReleaseBoundary(unittest.TestCase):
             (contents / "MacOS/halo").touch()
             for name in ("Sparkle.framework", "libSDL3.0.dylib", "libEGL.dylib", "libGLESv2.dylib"):
                 (contents / "Frameworks" / name).touch()
+            self.assertTrue(audit_bundle(app))
+            (contents / "Frameworks/libEGL.dylib").unlink()
+            (contents / "Frameworks/libGLESv2.dylib").unlink()
             self.assertTrue(audit_bundle(app))
             for name in ("GameDataPath.txt", "game.iso", "GameData", "ui.map"):
                 path = contents / "Resources" / name

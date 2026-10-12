@@ -69,7 +69,9 @@ def audit_bundle(app):
         audit_content_tools(app)
     if {path.name for path in (contents / "MacOS").iterdir()} != {"halo"}:
         raise RuntimeError("Release executables must contain only the native host")
-    if {path.name for path in (contents / "Frameworks").iterdir()} != {"Sparkle.framework", "libSDL3.0.dylib", "libEGL.dylib", "libGLESv2.dylib"}:
+    frameworks = {path.name for path in (contents / "Frameworks").iterdir()}
+    metal = {"Sparkle.framework", "libSDL3.0.dylib"}
+    if frameworks not in (metal, metal | {"libEGL.dylib", "libGLESv2.dylib"}):
         raise RuntimeError("Unexpected bundled runtime dependency")
     for path in app.rglob("*"):
         if path.suffix.lower() in {".iso", ".xiso", ".map", ".xbe", ".pdb", ".p12", ".mobileprovision"}:
@@ -265,7 +267,7 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("setup-updates", help="Create Halo's separate Sparkle key in the login Keychain")
     local = commands.add_parser("local-dmg", help="Package a verified asset-free local app without hosting or Developer ID")
-    local.add_argument("--app", type=Path, default=APP, help="Existing signed Halo OG.app to package")
+    local.add_argument("--app", type=Path, default=APP, help="Existing signed OpenCE.app to package")
     local.add_argument("--output", type=Path)
     build = commands.add_parser("build")
     build.add_argument("--version", default=APP_VERSION)

@@ -1,6 +1,6 @@
-# Playtesting Halo OG
+# Playtesting OpenCE
 
-Use the same Halo OG testing package as the other players:
+Use the same OpenCE testing package as the other players:
 **[test-v0.3.0-net11-dmg2](https://github.com/pfista/halo-og/releases/tag/test-v0.3.0-net11-dmg2)**.
 If the release is unavailable, the [download table](../README.md#download)
 explains matching-commit CI artifacts.
@@ -18,7 +18,7 @@ Edition, Anniversary, and MCC data are not substitutes.
 Requires Apple Silicon and macOS 26 or later. Use the minimum recorded in
 `macos-README.txt` / the package's `README.txt` if it changes in a later build.
 
-1. Open `Halo-OG-macos-arm64.dmg` and drag **Halo OG.app** into **Applications**.
+1. Open `Halo-OG-macos-arm64.dmg` and drag **OpenCE.app** into **Applications**.
 2. Open the app. This testing build is ad-hoc signed and unnotarized; if macOS
    blocks it, use **System Settings → Privacy & Security → Open Anyway** for
    this app after attempting to open it. See [Mac installation](../port/macos/README.md#download).
@@ -28,7 +28,7 @@ Requires Apple Silicon and macOS 26 or later. Use the minimum recorded in
    external folder selected. Your originals stay in place.
 4. Select/create your profile and try a stock map before joining others.
 
-Use **Halo OG → Settings…** or the menu-bar helmet for fullscreen, map selection,
+Use **OpenCE → Settings…** or the menu-bar helmet for fullscreen, map selection,
 download status, and **Open Saves Folder**. Data lives in
 `~/Library/Application Support/Halo OG/`. First launch copies old
 `Halo CE Universal` data where needed, preserving old and existing files. A
@@ -73,7 +73,7 @@ saves are copied while preserving existing files. See [Linux setup](../port/linu
 
 1. Extract `halo-android-release.zip` and copy `app-release.apk` to the device.
 2. Install the APK, allowing installation from that file source if Android asks.
-3. Copy your Xbox disc image onto the device, open Halo OG, and use its file
+3. Copy your Xbox disc image onto the device, open OpenCE, and use its file
    picker to select the image. Wait for map extraction to finish.
 4. Connect a game controller or keyboard. **Android gameplay has no touch
    controls.** Keep the app in the foreground during a match.
@@ -85,7 +85,7 @@ app data. See [Android installation/data](../port/android/README.md#game-data).
 
 ## Play together
 
-1. Confirm everyone uses the **same Halo OG release tag/commit**, protocol 11,
+1. Confirm everyone uses the **same OpenCE release tag/commit**, protocol 11,
    and matching map data. Old protocol-10 builds cannot join. For this first
    test, use a stock map and leave **PB Options → Stock** selected.
 2. The host opens **Multiplayer → System Link** and creates a game. Select a
@@ -117,7 +117,7 @@ community maps** for original Xbox v5 NTSC data, about **863 MiB** in total.
 This includes PB community variants with their normal embedded Halo dependencies;
 original disc images, stock map files, campaign files, and `ui.map` are excluded.
 
-On **Mac**, open **Halo OG → Settings…**, enable **Download approved community
+On **Mac**, open **OpenCE → Settings…**, enable **Download approved community
 maps in the background**, and accept the prompt. **Check Maps / Retry** refreshes
 the catalog. Missing maps from the collection are queued on launch while the
 app runs; joining a host whose approved map is missing also requests it. Watch
@@ -169,7 +169,7 @@ cannot be made compatible by renaming it or changing its version field.
 
 ## Report a problem
 
-Open an [issue in Halo OG](https://github.com/pfista/halo-og/issues/new) with:
+Open an [issue in OpenCE](https://github.com/pfista/halo-og/issues/new) with:
 
 - The release tag and commit from `provenance.json` or `BuildInfo.txt`.
 - Both devices' OS/CPU/GPU, controller or keyboard/mouse, and which is host.
