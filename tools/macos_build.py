@@ -31,7 +31,7 @@ ANGLE = Path(os.environ.get("HALO_MACOS_ANGLE_DIR", str(BUILD / "angle/dist")))
 GL = BUILD / "toolchain/gl"
 APP_ICON = "AppIcon.icns"
 APP_VERSION = "0.3.0"
-APP_BUILD = "12"
+APP_BUILD = "13"
 APP_NAME = "Halo"
 LEGACY_APP_NAMES = ("Halo OG.app", "Halo CE Universal.app")
 
@@ -102,7 +102,7 @@ def build_host():
 
 
 def package_icon(resources):
-    source = require(ROOT / "port/ios/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png")
+    source = require(ROOT / "build/internal-artwork/Assets.xcassets/AppIcon.appiconset/AppIcon.png")
     with tempfile.TemporaryDirectory(prefix="halo-macos-icon-") as temporary:
         iconset = Path(temporary) / "AppIcon.iconset"
         iconset.mkdir()

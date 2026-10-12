@@ -24,12 +24,16 @@ add_executable(Halo MACOSX_BUNDLE ${HOST_SOURCES} ${MINIUPNPC_SOURCES} ${MBEDTLS
     "${HALO_ROOT}/port/linux/src/posix_dtls.c"
     "${HALO_ROOT}/port/macos/host/entry.s" "${HALO_BUILD}/host/host_import_table.c"
     "${HALO_BUILD}/embed/guest_image.s")
-target_sources(Halo PRIVATE Assets.xcassets)
 # Internet discovery reads this beside config.toml; host_main installs the default.
 target_sources(Halo PRIVATE "${HALO_ROOT}/port/assets/network/brokers.txt")
 set_source_files_properties("${HALO_ROOT}/port/assets/network/brokers.txt"
     PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-set_source_files_properties(Assets.xcassets PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+set(INTERNAL_ASSETS "${HALO_ROOT}/build/internal-artwork/Assets.xcassets")
+if(NOT EXISTS "${INTERNAL_ASSETS}/AppIcon.appiconset/AppIcon.png")
+    message(FATAL_ERROR "Generate local title artwork first: python3 tools/internal_disc_icon.py /path/to/Halo.iso")
+endif()
+target_sources(Halo PRIVATE "${INTERNAL_ASSETS}")
+set_source_files_properties("${INTERNAL_ASSETS}" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 target_compile_definitions(Halo PRIVATE HALO_IOS=1 HALO_MACOS=1 HALO_APPLE_GRAPHICS=1 _DARWIN_C_SOURCE=1)
 target_compile_definitions(Halo PRIVATE MINIUPNP_STATICLIB MINIUPNPC_SET_SOCKET_TIMEOUT
     MINIUPNPC_GET_SRC_ADDR _BSD_SOURCE _DEFAULT_SOURCE)
@@ -92,7 +96,7 @@ endforeach()
 
 # Ship the same app artwork as a standard PNG for IPA catalog readers.
 # Asset-catalog icons may be Apple CgBI PNGs, which web image decoders reject.
-configure_file(Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
+configure_file("${INTERNAL_ASSETS}/AppIcon.appiconset/AppIcon.png"
     "${CMAKE_CURRENT_BINARY_DIR}/AppIcon1024.png" COPYONLY)
 target_sources(Halo PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/AppIcon1024.png")
 set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/AppIcon1024.png"
