@@ -1597,6 +1597,11 @@ static void gl_initialize(void)
 		calls the pointer it has, so it takes the extension's when the core one is
 		not there. One that cannot be loaded leaves the draws without a base vertex */
 		xgpu_capabilities.base_vertex = es32 && halo_glDrawElementsBaseVertex != NULL;
+#if defined(HALO_MACOS) && !defined(HALO_IOS)
+		/* port: Mac's ANGLE is OpenGL ES 3.0, and indexed models are drawn
+		by rebasing their indices. The extension's base vertex draws the
+		main menu's ring out of that view, so it stays off here */
+#else
 		if (!xgpu_capabilities.base_vertex)
 		{
 			if (host_gl_has_extension("GL_EXT_draw_elements_base_vertex") && halo_glDrawElementsBaseVertexEXT)
@@ -1612,6 +1617,7 @@ static void gl_initialize(void)
 				base_vertex_source = "GL_OES_draw_elements_base_vertex";
 			}
 		}
+#endif
 		xgpu_capabilities.shading_language = major > 3 || (major == 3 && minor >= 1) ? "310 es" : "300 es";
 		if (major > 3 || (major == 3 && minor >= 1))
 		{
