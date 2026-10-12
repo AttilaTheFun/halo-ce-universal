@@ -340,6 +340,26 @@ static BOOL mode_samples_texture(unsigned long mode)
 		mode != _mode_clipplane && mode != _mode_dot_product && mode != _mode_dot_zw;
 }
 
+/* A lens-flare occlusion test draws no texture and writes neither color nor
+ * depth. The visibility count has to be the samples that pass the depth test.
+ * Writing a sample mask forces that test to wait until after the shader, and
+ * on this GPU the count then includes samples the hull should have hidden. */
+static BOOL msl_depth_test_before_shader(const struct nv2a_pixel_shader_key *key)
+{
+	int stage;
+
+	if (key->alpha_test_function)
+		return FALSE;
+	for (stage = 0; stage < 4; stage++)
+	{
+		unsigned long mode = stage_mode(key, stage);
+
+		if (mode == _mode_dot_zw || mode == _mode_clipplane || mode_samples_texture(mode))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /* the input texel of a dot product stage, mapped per PSDotMapping */
 static void dot_input(struct xgpu_text *text, const DWORD *state, int stage,
 	enum shader_language language)
@@ -1078,7 +1098,7 @@ char *nv2a_pixel_shader_to_msl_with_options(const struct nv2a_pixel_shader_key *
 {
 	struct xgpu_text text = { 0 };
 	int stage;
-	BOOL depth_replace = FALSE;
+	BOOL depth_replace = FALSE, depth_before_shader = FALSE;
 	unsigned int alpha_border_mask, volume_border_mask;
 	if (!msl_key_supported(key, options))
 	{
@@ -1090,14 +1110,20 @@ char *nv2a_pixel_shader_to_msl_with_options(const struct nv2a_pixel_shader_key *
 	volume_border_mask = options && options->version == 3 ? options->native_volume_border_mask : 0;
 	for (stage = 0; stage < 4; stage++)
 		if (stage_mode(key, stage) == _mode_dot_zw) depth_replace = TRUE;
+	depth_before_shader = !depth_replace && msl_depth_test_before_shader(key);
 	xgpu_text_append(&text, XGPU_MSL_TYPES XGPU_MSL_FRAGMENT_VARYINGS XGPU_MSL_PIXEL_UNIFORMS);
 	/* Preserve covered samples while writing the helper sample mask used by
 	 * the working Apple GPU backend. Omitting this neutral all-ones output
 	 * changes texture-derivative results on Apple GPUs (including ordinary
-	 * single-sample draws). Alpha kill still discards the entire fragment. */
-	xgpu_text_append(&text,
-		"struct XgpuFragmentResult { float4 color [[color(0)]]; uint sample_mask [[sample_mask]];%s };\n",
-		depth_replace ? " float depth [[depth(any)]];" : "");
+	 * single-sample draws). Alpha kill still discards the entire fragment.
+	 * Occlusion tests skip the mask and test depth first, so a light behind
+	 * the ship is not counted as visible. */
+	if (depth_before_shader)
+		xgpu_text_append(&text, "struct XgpuFragmentResult { float4 color [[color(0)]]; };\n");
+	else
+		xgpu_text_append(&text,
+			"struct XgpuFragmentResult { float4 color [[color(0)]]; uint sample_mask [[sample_mask]];%s };\n",
+			depth_replace ? " float depth [[depth(any)]];" : "");
 	for (stage = 0; stage < 4; stage++) msl_border_sample_function(&text, key, stage);
 	for (stage = 0; stage < 4; stage++)
 		if (alpha_border_mask & (1u << stage)) msl_alpha_border_sample_function(&text, stage);
@@ -1114,8 +1140,9 @@ char *nv2a_pixel_shader_to_msl_with_options(const struct nv2a_pixel_shader_key *
 		"\treturn (b >= 128.0 ? b - 255.5 : b + 0.5) / 127.5;\n}\n"
 		"float3 gl_signed_bytes(float3 x)\n{\n"
 		"\treturn float3(gl_signed_byte(x.r), gl_signed_byte(x.g), gl_signed_byte(x.b));\n}\n");
-	xgpu_text_append(&text, "fragment XgpuFragmentResult xgpu_fragment(XgpuVaryings in [[stage_in]],\n"
-		" constant XgpuPixelUniforms &u [[buffer(0)]]");
+	xgpu_text_append(&text, "%sfragment XgpuFragmentResult xgpu_fragment(XgpuVaryings in [[stage_in]],\n"
+		" constant XgpuPixelUniforms &u [[buffer(0)]]",
+		depth_before_shader ? "[[early_fragment_tests]] " : "");
 	for (stage = 0; stage < 4; stage++)
 	{
 		const char *type = key->sampler_type[stage] == _xgpu_sampler_cube ? "texturecube" :
@@ -1141,7 +1168,9 @@ char *nv2a_pixel_shader_to_msl_with_options(const struct nv2a_pixel_shader_key *
 			" u.depth_clip_max > 1.0 || u.depth_clip_min > u.depth_clip_max) discard_fragment();\n"
 			"\tfloat replacement_depth = in.position.z;\n");
 	pixel_shader_body(&text, key, _shader_msl, alpha_border_mask, volume_border_mask);
-	if (depth_replace)
+	if (depth_before_shader)
+		xgpu_text_append(&text, "\treturn XgpuFragmentResult { clamp(result, 0.0, 1.0) };\n}\n");
+	else if (depth_replace)
 		xgpu_text_append(&text, "\treturn XgpuFragmentResult { clamp(result, 0.0, 1.0), 0xffffffffu, replacement_depth };\n}\n");
 	else
 		xgpu_text_append(&text, "\treturn XgpuFragmentResult { clamp(result, 0.0, 1.0), 0xffffffffu };\n}\n");

@@ -2032,7 +2032,9 @@ static struct halo_metal_ref query_create(void) {
     struct halo_metal_create_visibility command={0};
     command.command.opcode=HALO_METAL_CREATE_VISIBILITY;
     command.resource=(struct halo_metal_ref){next_query_id++,1};
-    command.mode=HALO_METAL_VISIBILITY_BOOLEAN;
+    /* Count samples. A boolean result treats one pixel beside the hull as
+       the whole engine corona. */
+    command.mode=HALO_METAL_VISIBILITY_COUNTING;
     packet_begin(sizeof(command),NULL,0);command_append(&command,sizeof(command));packet_finish();
     return command.resource;
 }
@@ -2050,7 +2052,16 @@ static void query_collect(unsigned index) {
         return;
     }
     require_status("read original visibility result",status);
-    device.query_results[index]=result ? VISIBILITY_ALL_SAMPLES:0;
+    /* Storage pixels back to the game's pixels. The flare divides this count
+       by the test quad's area in game pixels. */
+    {
+        double area=(double)screen_scale[0]*(double)screen_scale[1];
+
+        if (area>1.0)
+            result=(uint64_t)(result/area+0.5);
+    }
+    if (result>VISIBILITY_ALL_SAMPLES) result=VISIBILITY_ALL_SAMPLES;
+    device.query_results[index]=(UINT)result;
     device.query_pending[index]=FALSE;
 }
 void WINAPI D3DDevice_BeginVisibilityTest(void) {
