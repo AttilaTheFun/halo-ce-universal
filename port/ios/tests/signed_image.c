@@ -10,7 +10,7 @@
 #ifdef HALO_IOS_MAC_CHECK
 #define BIAS UINT64_C(0x10000000000)
 #else
-#define BIAS UINT64_C(0x400000000)
+#define BIAS UINT64_C(0x1000000000)
 #endif
 static void *run(void *unused) {
     (void)unused;

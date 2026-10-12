@@ -27,7 +27,7 @@ struct RebasePass : PassInfoMixin<RebasePass> {
     bool macCheck = false;
     explicit RebasePass(bool ios = false, bool macCheck = false) : ios(ios), macCheck(macCheck) {}
     PreservedAnalyses run(Module &module, ModuleAnalysisManager &) {
-        const uint64_t bias = ios && !macCheck ? 0x400000000ULL : GuestBias;
+        const uint64_t bias = ios && !macCheck ? 0x1000000000ULL : GuestBias;
         if (module.getDataLayout().getPointerSize(0) != 4 ||
             module.getDataLayout().getPointerSize(272) != 8)
             report_fatal_error("Halo rebase requires arm64_32 with 64-bit address space 272");

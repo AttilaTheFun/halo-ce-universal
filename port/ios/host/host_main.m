@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
         char width[32]; snprintf(width, sizeof(width), "%d", (480 * long_side / short_side) & ~1);
         setenv("HALO_DISPLAY_WIDTH", width, 0);
     }
-    if (host_load_image(NULL, 0)) host_fatal("Cannot initialize game memory. Check the app's Extended Virtual Addressing signing capability.");
+    if (host_load_image(NULL, 0)) host_fatal("Cannot initialize game memory. See save/halo.log for the failed memory reservation or image load.");
     uint32_t boot = make_boot();
     size_t stack_size = 16 * 1024 * 1024;
     char *stack = host_low_map(stack_size + HALO_MACOS_PAGE, PROT_READ | PROT_WRITE);
