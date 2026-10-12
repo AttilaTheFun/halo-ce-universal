@@ -199,7 +199,7 @@ uint32_t host_sdl_create_window(const char *title, int width, int height, int64_
 #endif
         int w, h;
         SDL_GetWindowSizeInPixels(metal_window, &w, &h);
-        host_logf(HOST_LOG_INFO, "Metal drawable %dx%d (%s)", w, h,
+        host_logf(HOST_LOG_INFO, "%s drawable %dx%d (%s)", halo_graphics_metal() ? "Metal" : "OpenGL", w, h,
                   (mode & SDL_WINDOW_FULLSCREEN) ? "borderless fullscreen" : "windowed");
     }
     return handle_new(_handle_window, metal_window);
@@ -275,6 +275,12 @@ int host_sdl_set_relative_mouse(uint32_t window, int enabled) {
     return object ? SDL_SetWindowRelativeMouseMode(object, enabled != 0) : 0;
 }
 
+#ifdef HALO_IOS
+unsigned int host_sdl_ios_default_framebuffer(void) {
+    return (unsigned int)SDL_GetNumberProperty(SDL_GetWindowProperties(metal_window),
+        SDL_PROP_WINDOW_UIKIT_OPENGL_FRAMEBUFFER_NUMBER, 0);
+}
+#endif
 int host_sdl_gl_set_attribute(int attribute, int value) {
 #ifdef HALO_IOS
     if (!halo_graphics_metal()) return SDL_GL_SetAttribute(attribute, value);

@@ -36,6 +36,7 @@ static NSUInteger frameCount;
 static double lastSample;
 #ifdef HALO_IOS
 static UILabel *fpsLabel;
+static void exportReport(UIViewController *presenter);
 #endif
 int halo_debug_renderer_preference(void) {
 #ifdef HALO_IOS
@@ -92,9 +93,17 @@ void halo_debug_frame(double milliseconds) {
             [window.rootViewController.view addSubview:fpsLabel];
         }
     }
+    if(fpsLabel.superview) {
+        UIEdgeInsets insets=fpsLabel.superview.safeAreaInsets;
+        fpsLabel.frame=CGRectMake(insets.left+12,insets.top+8,160,26);
+    }
     fpsLabel.hidden=!showFPS;
     fpsLabel.text=[NSString stringWithFormat:@" %.0f FPS · %.1f ms",1000.0/mean,mean];
     frameCount=0;frameTotal=frameWorst=0;lastSample=now;
+    static BOOL testExported;
+    if(!testExported && frameSamples.count>=10 && [NSProcessInfo.processInfo.environment[@"HALO_IOS_TEST_REPORT_EXPORT"] boolValue]) {
+        testExported=YES;exportReport(nil);
+    }
 #else
     (void)milliseconds;
 #endif
@@ -181,11 +190,15 @@ static void exportReport(UIViewController *presenter) {
     prepare();struct utsname device;uname(&device);
     NSMutableDictionary *programs=[NSMutableDictionary new];
     for(NSNumber *name in attachments)programs[name.stringValue]=[attachments[name] copy];
-    NSDictionary *report=@{@"schema":@2,@"renderer":halo_graphics_metal()?@"Metal (ANGLE)":@"OpenGL ES (Apple)",@"gpu":glRenderer?:@"unknown",@"revision":@HALO_BUILD_REVISION,@"metalfx":@(halo_metalfx_enabled()!=0),@"device":[NSString stringWithUTF8String:device.machine],@"os":NSProcessInfo.processInfo.operatingSystemVersionString,
+    NSMutableDictionary *report=[@{@"schema":@3,@"renderer":halo_graphics_metal()?@"Metal (ANGLE)":@"OpenGL ES (Apple)",@"gpu":glRenderer?:@"unknown",@"revision":@HALO_BUILD_REVISION,@"metalfx":@(halo_metalfx_enabled()!=0),@"device":[NSString stringWithUTF8String:device.machine],@"os":NSProcessInfo.processInfo.operatingSystemVersionString,
         @"build":[NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleVersion"]?:@"unknown",@"threshold_ms":@2,
         @"note":@"CPU compile/link completion timings are always recorded. Synchronized first-use draw waits are opt-in. First-use waits include draw cost and may include deferred driver compilation; they are not isolated shader-compiler timings. Shader sources can guide warm-up updates.",
         @"first_use_gpu_recording":@(atomic_load(&recording)),@"programs":programs,
-        @"render_height":@([NSUserDefaults.standardUserDefaults integerForKey:@"HaloRenderHeight"]),@"frame_limit":@(frameLimit),@"fps_overlay":@(showFPS),@"frame_samples":[frameSamples copy]?:@[],@"dropped":@(dropped),@"events":[events copy],@"sources":[sources copy]};
+        @"requested_render_height":@([NSUserDefaults.standardUserDefaults integerForKey:@"HaloRenderHeight"]),@"frame_limit":@(frameLimit),@"fps_overlay":@(showFPS),@"frame_samples":[frameSamples copy]?:@[],@"dropped":@(dropped),@"events":[events copy],@"sources":[sources copy]} mutableCopy];
+#ifdef HALO_IOS
+    report[@"render_height"]=@(atoi(getenv("HALO_IOS_RENDER_HEIGHT")?:"720"));
+    report[@"interpolation"]=@(!strcmp(getenv("HALO_INTERPOLATION")?:"0","1"));
+#endif
     NSError *error=nil;NSData *data=[NSJSONSerialization dataWithJSONObject:report options:NSJSONWritingPrettyPrinted error:&error];
     NSURL *folder=[[NSFileManager.defaultManager URLsForDirectory:NSCachesDirectory inDomains:NSUserDomainMask].firstObject URLByAppendingPathComponent:@"ShaderReports" isDirectory:YES];
     [NSFileManager.defaultManager createDirectoryAtURL:folder withIntermediateDirectories:YES attributes:nil error:&error];
@@ -220,6 +233,7 @@ static void exportReport(UIViewController *presenter) {
             if([tail writeToURL:log atomically:YES])[files addObject:log];
         }
     }
+    if([NSProcessInfo.processInfo.environment[@"HALO_IOS_TEST_REPORT_EXPORT"] boolValue])return;
     UIActivityViewController *share=[[UIActivityViewController alloc]initWithActivityItems:files applicationActivities:nil];
     share.popoverPresentationController.sourceView=presenter.view;share.popoverPresentationController.sourceRect=CGRectMake(CGRectGetMidX(presenter.view.bounds),40,1,1);
     [presenter presentViewController:share animated:YES completion:nil];
@@ -409,11 +423,11 @@ void halo_debug_replay_shader_report(void) {
     NSDictionary *report=data?[NSJSONSerialization JSONObjectWithData:data options:0 error:nil]:nil;
     NSDictionary *entries=[report isKindOfClass:NSDictionary.class]?report[@"sources"]:nil;
     if(![entries isKindOfClass:NSDictionary.class] || entries.count>4096)host_fatal("Invalid shader replay report");
-    __typeof__(&glCreateShader) create=halo_graphics_proc("glCreateShader");
-    __typeof__(&glShaderSource) source=halo_graphics_proc("glShaderSource");
-    __typeof__(&glCompileShader) compile=halo_graphics_proc("glCompileShader");
-    __typeof__(&glDeleteShader) destroy=halo_graphics_proc("glDeleteShader");
-    __typeof__(&glGetShaderInfoLog) getLog=halo_graphics_proc("glGetShaderInfoLog");
+    PFNGLCREATESHADERPROC create=halo_graphics_proc("glCreateShader");
+    PFNGLSHADERSOURCEPROC source=halo_graphics_proc("glShaderSource");
+    PFNGLCOMPILESHADERPROC compile=halo_graphics_proc("glCompileShader");
+    PFNGLDELETESHADERPROC destroy=halo_graphics_proc("glDeleteShader");
+    PFNGLGETSHADERINFOLOGPROC getLog=halo_graphics_proc("glGetShaderInfoLog");
     unsigned passed=0,failed=0;
     for(NSString *key in entries) {
         NSDictionary *entry=entries[key];

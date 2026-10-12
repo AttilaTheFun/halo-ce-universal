@@ -18,11 +18,20 @@ already have host types by then. Only strings need copying back.
 
 void *host_gl_bridge(const char *name);
 #ifdef HALO_IOS
+extern unsigned int host_sdl_ios_default_framebuffer(void);
+static void native_bind_framebuffer(GLenum target, GLuint framebuffer) {
+    /* EAGL's window drawable is an SDL-owned FBO, not framebuffer zero. */
+    glBindFramebuffer(target, framebuffer ? framebuffer : host_sdl_ios_default_framebuffer());
+}
 static void unsupported_gles_entry(void) {
     host_fatal("The selected OpenGL ES driver was asked to use an unsupported optional feature.");
 }
 #endif
 void *host_gl_resolve(const char *name) {
+#ifdef HALO_IOS
+    if (!halo_graphics_metal() && !strcmp(name,"glBindFramebuffer"))
+        return (void *)native_bind_framebuffer;
+#endif
     void *profile = host_perf_resolve(name);
     if (profile) return profile;
 #ifdef HALO_APPLE_GRAPHICS

@@ -42,6 +42,9 @@ else()
     set(ANGLE_PLATFORM ios-arm64)
     target_link_libraries(Halo PRIVATE "-framework MetalFX")
 endif()
+# SDL UIKit uses direct GL calls for its EAGL drawable. Bind those to Apple,
+# while the game and diagnostics select ANGLE/Apple through host_gl_dispatch.
+target_link_libraries(Halo PRIVATE "-framework OpenGLES")
 foreach(NAME EGL GLESv2)
     set(FRAMEWORK "${HALO_ROOT}/build/macos/angle/dist/${NAME}.xcframework/${ANGLE_PLATFORM}/lib${NAME}.framework")
     list(APPEND ANGLE_FRAMEWORKS "${FRAMEWORK}")
