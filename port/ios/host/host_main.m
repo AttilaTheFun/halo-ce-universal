@@ -1,5 +1,7 @@
 /* SDL owns UIApplication and invokes this entry on the UIKit main thread. */
 #include "host.h"
+#include "image.h"
+extern void host_ios_show_fatal(const char *) __attribute__((noreturn));
 #include "../../apple/host_graphics.h"
 #include "../../apple/host_debug.h"
 #include <SDL3/SDL.h>
@@ -23,8 +25,7 @@ void host_fatal(const char *format, ...) {
     char message[2048];
     va_list a; va_start(a, format); vsnprintf(message, sizeof(message), format, a); va_end(a);
     host_logf(HOST_LOG_ERROR, "%s", message);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Halo OG could not start", message, NULL);
-    exit(1);
+    host_ios_show_fatal(message);
 }
 void host_abort(const char *reason) { host_fatal("Game stopped: %s", reason); }
 void host_exit(int code) { host_logf(HOST_LOG_INFO, "Game exited (%d)", code); exit(code); }
@@ -94,6 +95,26 @@ int main(int argc, char **argv) {
     @autoreleasepool {
         NSFileManager *files = NSFileManager.defaultManager;
         NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+        NSString *saves = [documents stringByAppendingPathComponent:@"save"];
+        NSString *legacySaves = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"Halo"];
+        if (![files fileExistsAtPath:saves] && [files fileExistsAtPath:legacySaves]) saves = legacySaves;
+        setenv("HALO_CONFIG_ROOT", documents.fileSystemRepresentation, 1);
+        [files createDirectoryAtPath:saves withIntermediateDirectories:YES attributes:nil error:NULL];
+        snprintf(save_root, sizeof(save_root), "%s", saves.fileSystemRepresentation);
+        freopen([[saves stringByAppendingPathComponent:@"halo.log"] fileSystemRepresentation], "w", stderr);
+        setbuf(stderr, NULL);
+        // Fail before asking the user to spend time importing a large image.
+        if ([NSProcessInfo.processInfo.environment[@"HALO_IOS_TEST_STARTUP_ERROR"] boolValue] ||
+            host_memory_initialize(HALO_IOS_IMAGE_BASE, HALO_IOS_IMAGE_SIZE))
+            host_fatal("iOS could not reserve the game's required memory range (0x%llx, %llu MiB).\n\n"
+                "The running process needs Extended Virtual Addressing. A missing signing capability "
+                "or a container's address-space restrictions can cause this failure.\n\n"
+                "Try installing this app directly using the re-signing guide and a profile that grants "
+                "Extended Virtual Addressing. LiveContainer does not inherit a guest app's entitlements; "
+                "Fix File Picker does not change memory permissions. LiveContainer compatibility is not verified.\n\n"
+                "Your imported game and saves have not been removed. Re-importing the ISO will not fix "
+                "this memory error. Details are in save/halo.log.",
+                (unsigned long long)HALO_MACOS_BIAS,(unsigned long long)(HALO_ARENA_SIZE/(1024*1024)));
         NSString *data = halo_game_store_current(documents);
         NSString *legacy = [documents stringByAppendingPathComponent:@"GameData"];
         // Existing innerhat extracted maps and our retained ISO generations
@@ -104,15 +125,7 @@ int main(int argc, char **argv) {
             host_ios_prepare_assets(documents.fileSystemRepresentation);
             data = halo_game_store_current(documents);
         }
-        NSString *saves = [documents stringByAppendingPathComponent:@"save"];
-        NSString *legacySaves = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject stringByAppendingPathComponent:@"Halo"];
-        if (![files fileExistsAtPath:saves] && [files fileExistsAtPath:legacySaves]) saves = legacySaves;
-        setenv("HALO_CONFIG_ROOT", documents.fileSystemRepresentation, 1);
-        [files createDirectoryAtPath:saves withIntermediateDirectories:YES attributes:nil error:NULL];
         snprintf(data_root, sizeof(data_root), "%s", data.fileSystemRepresentation);
-        snprintf(save_root, sizeof(save_root), "%s", saves.fileSystemRepresentation);
-        freopen([[saves stringByAppendingPathComponent:@"halo.log"] fileSystemRepresentation], "w", stderr);
-        setbuf(stderr, NULL);
         // Refresh the shipped default; custom broker files use a separate
         // network.brokers_file path and remain untouched.
         NSURL *brokers = [NSBundle.mainBundle URLForResource:@"brokers" withExtension:@"txt"];

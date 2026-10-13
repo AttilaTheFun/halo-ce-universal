@@ -39,3 +39,20 @@ modal input suppression, and the different iOS/desktop single-controller rules.
 These checks establish routing behavior, not a complete multiplayer match.
 The device build validates the Objective-C settings/controls and iOS guest code.
 No physical iPhone/iPad installation or play session was performed for this review.
+
+## LiveContainer startup follow-up
+
+[UEMxMDE's follow-up](https://github.com/innerhat-dev/OpenCE/pull/1#issuecomment-6139443664)
+reports successful import followed by `KERN_INVALID_ADDRESS` reserving the
+fixed guest arena on iPhone 17 Pro Max / iOS 26.0. The logs do not distinguish
+missing host-process Extended Virtual Addressing from other container VM
+restrictions. LiveContainer documents that guest entitlements do not apply to
+its host; its file-picker workaround does not resolve this requirement.
+
+The startup memory check now runs before import, logs the requested base/size
+and kernel code, and directs users to standalone signing without deleting data.
+The fatal SDL message box is replaced by a dedicated scene-backed, scrollable
+UIKit screen. Its Copy details and Close buttons remain outside the scrolling
+text. A forced-error XCTest on an iPhone simulator exercised both buttons on
+three launches with orientation changes. An unsigned device build also passed.
+This is failure-path validation, not a LiveContainer compatibility result.

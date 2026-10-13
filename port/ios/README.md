@@ -11,7 +11,7 @@ when the same bundle ID and account are used. Different IDs have separate data.
 
 ## Download a test IPA
 
-[Download the unsigned IPA and re-signing kit](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261012) for this PR.
+[Download the unsigned IPA and re-signing kit](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261013) for this PR.
 Follow [the re-signing guide](RESIGNING.md). A profile granting Extended Virtual
 Addressing is required; free-account AltStore installation is not a tested path.
 You supply your own game image on first launch. No device ID needs to be sent

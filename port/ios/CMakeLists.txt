@@ -17,7 +17,7 @@ file(GLOB HOST_SOURCES "${HALO_ROOT}/port/macos/host/*.c")
 file(GLOB MBEDTLS_SOURCES "${HALO_ROOT}/port/third_party/mbedtls/library/*.c")
 file(GLOB MINIUPNPC_SOURCES "${HALO_ROOT}/port/third_party/miniupnpc/src/*.c")
 list(FILTER HOST_SOURCES EXCLUDE REGEX "host_(main|loader)\\.c$")
-add_executable(Halo MACOSX_BUNDLE ${HOST_SOURCES} ${MINIUPNPC_SOURCES} ${MBEDTLS_SOURCES} host/host_loader.c host/host_main.m host/host_controls.m host/host_import.m host/host_orientation.m
+add_executable(Halo MACOSX_BUNDLE ${HOST_SOURCES} ${MINIUPNPC_SOURCES} ${MBEDTLS_SOURCES} host/host_loader.c host/host_main.m host/host_controls.m host/host_import.m host/host_orientation.m host/host_startup_error.m
     "${HALO_ROOT}/port/macos/native/HaloMapDownloads.m" "${HALO_ROOT}/port/apple/host_gl_diagnostics.c" "${HALO_ROOT}/port/apple/host_graphics.c" "${HALO_ROOT}/port/apple/host_debug.m"
     "${HALO_ROOT}/port/apple/host_metalfx.m" "${HALO_ROOT}/port/apple/host_shader_cache.m"
     "${HALO_ROOT}/port/apple/game_store.m" "${HALO_ROOT}/port/apple/xiso.c"

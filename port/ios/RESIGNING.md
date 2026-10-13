@@ -5,7 +5,7 @@ iOS/iPadOS 26+ and a profile granting Extended Virtual Addressing; a paid
 development team was required in upstream testing. Start with a device IPA
 provided by the builder, or build one using [the iOS build instructions](README.md)
 and `tools/ios_package.py`. Download the unsigned device IPA and re-signing kit from the
-[PR #1 testing release](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261012). The release is built from
+[PR #1 testing release](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261013). The release is built from
 `apple/ios-installer`, not the private branding branch. GitHub Actions does not
 yet publish an unsigned IPA automatically. A simulator app cannot run on an iPhone.
 
@@ -99,6 +99,30 @@ adding that file does not grant the capability: the profile must contain it.
 If a sideloader cannot provision or preserve it, use the script above with an
 appropriate profile. Installation alone is not proof of a working runtime.
 This is a manually re-signable test artifact, not an AltStore PAL listing.
+
+## LiveContainer and memory reservation errors
+
+A reported iPhone 17 Pro Max / iOS 26.0 LiveContainer launch failed with
+`Guest arena reservation: (os/kern) invalid address` after ISO import. This
+happens before the game image starts, not while parsing the ISO. Re-importing
+or reinstalling the same image does not change process address-space limits.
+
+[LiveContainer documents](https://github.com/LiveContainer/LiveContainer#limitations)
+that guest entitlements are not applied to its host process. Granting Extended
+Virtual Addressing to the Halo guest therefore does not prove the hosting
+process has it. The file-picker workaround does not grant memory capabilities.
+The error is consistent with a missing process capability or an incompatible
+address-space layout; the log alone does not distinguish them.
+
+Try the standalone installation described above with a profile authorizing
+Extended Virtual Addressing. LiveContainer remains unverified even if its host
+is entitled: the required address range must also be available. Do not change
+the compiled runtime's fixed base address as a signing workaround.
+
+The startup preflight now checks memory before importing an ISO. Failures show
+a scrollable native screen with **Copy details** and **Close**, and log the
+requested address/size and kernel result in `Documents/save/halo.log` (or the
+existing legacy save directory). Existing imports and saves are preserved.
 
 ## Build it yourself
 
