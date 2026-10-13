@@ -755,23 +755,31 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     [window center];
     [window makeKeyAndOrderFront:nil];
     [bar startAnimation:nil];
-    __block BOOL finished = NO, installed = NO;
+    __block BOOL installed = NO;
     __block NSError *installError = nil;
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    CFRunLoopRef loop = CFRunLoopGetMain();
     HaloForkUpdater *updater = self.forkUpdater;
+    /* This window is opened from the main queue. A block queued there does
+       not run until this method returns, so the download wakes this loop
+       directly. */
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         installed = [updater installDownload:download expectedBuild:build error:&installError
             progress:^(unsigned long long received, unsigned long long total) {
-            dispatch_async(dispatch_get_main_queue(), ^{
+            CFRunLoopPerformBlock(loop, kCFRunLoopDefaultMode, ^{
                 status.stringValue = total
                     ? [NSString stringWithFormat:@"%llu of %llu MB", received >> 20, total >> 20]
                     : [NSString stringWithFormat:@"%llu MB", received >> 20];
                 bar.indeterminate = !total;
                 if (total) { [bar stopAnimation:nil]; bar.maxValue = 100; bar.doubleValue = 100.0 * received / total; }
             });
+            CFRunLoopWakeUp(loop);
         }];
-        dispatch_async(dispatch_get_main_queue(), ^{ finished = YES; });
+        dispatch_semaphore_signal(done);
     });
-    while (!finished) [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+    while (dispatch_semaphore_wait(done, DISPATCH_TIME_NOW) != 0)
+        [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+    [NSRunLoop.currentRunLoop runUntilDate:[NSDate date]];
     [bar stopAnimation:nil];
     [window close];
     self.forkUpdateBusy = NO;
