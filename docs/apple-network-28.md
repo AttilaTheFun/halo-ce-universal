@@ -116,3 +116,24 @@ changes.
 | `5a7c655a60555215864391433716ddd966ba3079` | Testing branch review fixes | Partial: protocol 28, map-download timeout/admission fixes and safe co-op spawn/teleport positions. Exclude unrelated menu-coordinate and shield-HUD edits. |
 | `3d67397cdd3c9ee1515b62cf5a8168cf3def0730` | Record the wire format at network version 28 (#253) | Adopt: version-28 wire manifest. |
 | `c6a2f9004bb182ac6c11fa0fe902d59f3a7cfcb4` | Record the map sharing messages and the sizes of the wire format's arrays (#253) | Adopt: include map-sharing structs and array-size definitions in the wire manifest/checker. |
+
+## Menu integration correction (builds iOS 24 / macOS 17)
+
+The first protocol-28 release contained `platform="desktop android"` on the
+map-sharing widget. This branch's runtime XML reader accepts a single platform
+name; the invalid value rejected the entire custom menu set and fell back to
+Xbox menus, hiding the server browser. The live Mac network test bypassed this
+menu path and therefore did not establish browser usability. Removing the
+unnecessary platform attribute restores the shared widget on both platforms.
+The XML validation now matches the runtime's single-value rule.
+
+With the corrected guest image, an iPhone simulator loaded 1006 menu widgets.
+Opening Multiplayer's Server Browser displayed 35 public servers, ordered by
+joinable population (38 players on the first listing at capture time).
+An XCTest-driven simulator check confirmed landscape application geometry
+with portrait, landscape-left and landscape-right device orientations, plus
+background/resume. The scene's launch-side lock was removed so the two supported
+landscape orientations can follow rotation. Device and simulator builds passed;
+physical-device rotation has not yet been retested. Screenshot pixel dimensions
+alone are not an orientation assertion: XCTest image orientation metadata may
+leave raw image dimensions portrait even when the app frame is landscape.
