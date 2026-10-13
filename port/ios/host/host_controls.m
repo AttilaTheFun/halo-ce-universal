@@ -1,6 +1,7 @@
 #include "../../apple/host_debug.h"
 /* UIKit controls feed a standard SDL gamepad. The first hardware controller
-   shares player one with touch; additional hardware controllers keep their ports. */
+   shares player one with touch by default. Optional separate-player mode keeps
+   touch on player one and gives hardware controllers their own ports. */
 #import <UIKit/UIKit.h>
 #include <SDL3/SDL.h>
 #include "host.h"
@@ -10,6 +11,7 @@
 static SDL_Joystick *touch_joystick;
 static SDL_JoystickID touch_id, primary_hardware;
 static SDL_Gamepad *primary_gamepad;
+static BOOL separate_players;
 static NSString *const controllerChanged = @"HaloControllerChanged";
 
 static void button_state(int button, BOOL down) {
@@ -19,6 +21,7 @@ static void axis_state(int axis, float value) {
     if(touch_joystick) SDL_SetJoystickVirtualAxis(touch_joystick,axis,(Sint16)(fmaxf(-1,fminf(1,value))*32767));
 }
 void host_ios_touch_initialize(void) {
+    separate_players=[NSUserDefaults.standardUserDefaults boolForKey:@"HaloSeparateTouchPlayer"];
     SDL_VirtualJoystickDesc desc;
     SDL_INIT_INTERFACE(&desc);
     desc.type=SDL_JOYSTICK_TYPE_GAMEPAD;
@@ -50,7 +53,7 @@ int host_ios_gamepads(uint32_t *out,int capacity) {
     }
     if(capacity>0 && touch_id)out[used++]=touch_id;
     for(int i=0;i<count;i++) {
-        if(ids[i]==touch_id || ids[i]==primary_hardware)continue;
+        if(ids[i]==touch_id || (!separate_players && ids[i]==primary_hardware))continue;
         if(used<capacity)out[used++]=ids[i];
     }
     SDL_free(ids);return used;
@@ -62,7 +65,7 @@ int host_ios_gamepad_type(SDL_Gamepad *pad) {
 int host_ios_gamepad_axis(SDL_Gamepad *pad,int axis) {
     if(halo_debug_is_presented())return 0;
     int value=SDL_GetGamepadAxis(pad,axis);
-    if(SDL_GetGamepadID(pad)==touch_id && primary_hardware) {
+    if(SDL_GetGamepadID(pad)==touch_id && !separate_players && primary_hardware) {
         int physical=SDL_GetGamepadAxis(primary_gamepad,axis);
         if(abs(physical)>abs(value))value=physical;
     }
@@ -71,7 +74,7 @@ int host_ios_gamepad_axis(SDL_Gamepad *pad,int axis) {
 int host_ios_gamepad_button(SDL_Gamepad *pad,int button) {
     if(halo_debug_is_presented())return 0;
     return SDL_GetGamepadButton(pad,button) ||
-        (SDL_GetGamepadID(pad)==touch_id && primary_hardware &&
+        (SDL_GetGamepadID(pad)==touch_id && !separate_players && primary_hardware &&
          SDL_GetGamepadButton(primary_gamepad,button));
 }
 void host_ios_touch_reset(void) {
@@ -192,7 +195,7 @@ void host_ios_touch_focus(void) {[activeControls becomeFirstResponder];}
 }
 - (void)controllerChanged {
     BOOL connected=primary_hardware!=0;
-    [self setControlsHidden:connected];
+    [self setControlsHidden:connected && !separate_players];
 }
 - (void)setControlsHidden:(BOOL)hidden {
     [self reset];

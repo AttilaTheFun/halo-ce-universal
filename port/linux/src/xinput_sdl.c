@@ -807,6 +807,7 @@ a button held across the change would be pressed again on the other port
 (the B that leaves a profile screen leaving the game as player 1's) */
 static SDL_Gamepad *port_gamepad(SDL_Gamepad *gamepads[PORT_COUNT], int count, int port)
 {
+#ifndef HALO_IOS
 	if (count == 1)
 	{
 		BOOL split = pc_menu_split_players() != 0;
@@ -816,6 +817,9 @@ static SDL_Gamepad *port_gamepad(SDL_Gamepad *gamepads[PORT_COUNT], int count, i
 		if (lone_gamepad_split)
 			return port == 1 ? gamepads[0] : NULL;
 	}
+#endif
+    /* iOS always has a touch controller in port 0, even without hardware.
+       It has no keyboard-only player to leave behind on this port. */
 	return port < count ? gamepads[port] : NULL;
 }
 

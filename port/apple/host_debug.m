@@ -249,7 +249,7 @@ static void exportReport(UIViewController *presenter) {
 - (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController {
     (void)presentationController;debugController=nil;host_ios_touch_focus();
 }
-- (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {(void)table;(void)section;return 9;}
+- (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {(void)table;(void)section;return 10;}
 - (UITableViewCell *)tableView:(UITableView *)table cellForRowAtIndexPath:(NSIndexPath *)path {
     (void)table;UITableViewCell *cell=[[UITableViewCell alloc]initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.detailTextLabel.numberOfLines=0;
@@ -294,6 +294,12 @@ static void exportReport(UIViewController *presenter) {
         cell.textLabel.text=@"Smooth motion";cell.detailTextLabel.text=@"Interpolate rendered motion as in the earlier Apple build. Simulation stays at 30 Hz. Relaunch to apply.";
         [toggle addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];cell.accessoryView=toggle;break;
     }
+    case 9: {
+        UISwitch *toggle=[UISwitch new];toggle.tag=9;toggle.on=[settings boolForKey:@"HaloSeparateTouchPlayer"];
+        cell.textLabel.text=@"Touch as a separate player";
+        cell.detailTextLabel.text=@"Touch controls stay visible for player 1; controllers join as other players. Use Add Player in the lobby. Relaunch to apply.";
+        [toggle addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];cell.accessoryView=toggle;break;
+    }
     case 7:cell.textLabel.text=@"Clear recorded diagnostics";cell.detailTextLabel.text=@"Start a fresh measurement for your next play session.";break;
     }
     return cell;
@@ -303,6 +309,7 @@ static void exportReport(UIViewController *presenter) {
 }
 - (void)changed:(UISwitch *)sender {
     NSUserDefaults *settings=NSUserDefaults.standardUserDefaults;
+    if(sender.tag==9)[settings setBool:sender.on forKey:@"HaloSeparateTouchPlayer"];
     if(sender.tag==8)[settings setBool:sender.on forKey:@"HaloInterpolation"];
     if(sender.tag==3){halo_metalfx_set_enabled(sender.on);[settings setBool:sender.on forKey:@"HaloMetalFX"];}
     if(sender.tag==4){showFPS=sender.on;fpsLabel.hidden=!showFPS;[settings setBool:sender.on forKey:@"HaloFPSOverlay"];}

@@ -43,13 +43,23 @@ Touch controls hide when a physical controller connects, and return on
 disconnect. The primary hardware controller shares player one with the touch
 controller; additional controllers retain separate slots. D-pad buttons support
 menu navigation. Flashlight and grenade-switch labels match the default game
-bindings. Mac uses its existing keyboard/mouse/controller path without touch.
+bindings.
+
+For touch plus a controller as **different players**, shake to open settings,
+enable **Touch as a separate player**, then relaunch. Touch remains player one
+and stays visible; the first hardware controller becomes player two. Create or
+join a multiplayer lobby, choose **Add Player**, and use the additional
+controller to select its profile. This also permits the second controller's
+profile selection in **Co-op Campaign**. With the option off (the default),
+connecting a controller still hides touch controls. Hardware split-screen
+play has not yet been verified on a physical device with this revision.
+
+Mac uses its existing keyboard/mouse/controller path without touch.
 
 Shake the phone/tablet for the settings modal. It offers optional MetalFX
 spatial upscaling, bounded shader-stall recording and a share sheet for reports.
-The shared upstream renderer now owns Metal presentation; our old native
-OpenGL ES fallback and separate WebKit room-code transport are retired rather
-than layering an older renderer/network protocol over it. The in-game browser
+The graphics settings select Metal (ANGLE) or native OpenGL ES, with a relaunch
+to change renderer. The separate WebKit room-code transport remains retired. The in-game browser
 uses upstream's current native/browser networking. The default renderer is
 Metal and MetalFX remains off unless explicitly enabled.
 
