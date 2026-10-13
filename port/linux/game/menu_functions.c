@@ -3616,8 +3616,10 @@ static void lobby_browser_update(struct widget_instance *list)
 		}
 		else if (!lobby_browser.count)
 		{
-			usnprintf(text, NUMBEROF(text) - 1, L"%s", now - lobby_browser.begin_time < LOBBY_BROWSER_LOOK_TIME ?
-				L"Looking for public games..." : L"No public games found");
+			if (now - lobby_browser.begin_time < LOBBY_BROWSER_LOOK_TIME)
+				usnprintf(text, NUMBEROF(text) - 1, L"Looking for public games...");
+			else
+				usnprintf(text, NUMBEROF(text) - 1, L"No public games for network version %d", HALO_PORT_NETWORK_VERSION);
 		}
 		else if (chosen < lobby_browser.count)
 		{

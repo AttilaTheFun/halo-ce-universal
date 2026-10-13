@@ -143,8 +143,8 @@ struct p2p_listing
 	unsigned char signing_key[P2P_LISTING_SIGNING_KEY_SIZE];
 	unsigned char sealed_token[P2P_LISTING_SEALED_TOKEN_SIZE];
 };
-/* a copy of the public games found, in the order shown (the most players
-first; then those not failed, the open ones, by name); returns their count */
+/* a copy of public games: joinable games first, then most players, then
+failed/open status and name; returns their count */
 int p2p_lobby_games(struct p2p_listing *games, int maximum_count);
 /* a game the browser could not join: kept, marked failed, for this run */
 void p2p_lobby_mark_failed(const unsigned char *identifier);

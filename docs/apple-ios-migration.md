@@ -25,7 +25,7 @@ The old branch has a local backup and bundle before it is retired.
 | Mac disc imports | Retain a SHA-256-verified private ISO/XISO beside extracted maps; store that private image path so later launches and community tooling do not depend on the selected external file. |
 | Existing saves/imports | Preserve old branch Documents/save and generation store, plus innerhat's previous extracted-map and save paths. IDs/accounts must remain unchanged for in-place updates. |
 | iPad, touch and controller handling | Enable universal device family, bring over touch layout/D-pad/primary-controller routing and landscape handling. Correct the earlier swapped flashlight/grenade labels. |
-| Metal / OpenGL switch | Use upstream's shared Metal renderer. The old native OpenGL ES fallback is intentionally retired; no nonfunctional renderer switch is displayed. |
+| Metal / OpenGL switch | Metal remains the default; native OpenGL ES was restored with explicit driver dispatch and EAGL window framebuffer handling. Both are selected in the persisted shake menu. |
 | MetalFX and shader diagnostics | Adapt optional MetalFX, bounded ANGLE blob cache and shareable source/timing reports to the upstream context. Separate Mac graphics window; shake modal on iOS. |
 | Mac menus, audio during menus, Quit | Retain upstream's native menu/audio integration rather than overwrite it with the older host. |
 | Mouse sensitivity | Carry over 1–100, default 20 (0.10 multiplier), preserving existing config units and vertical SAME. Expand matching menu capacities to 128. |
@@ -67,3 +67,7 @@ retail fidelity or network interoperability with older deployed clients.
 Mac importer regression checks also delete the original selected ISO and verify
 that the retained image, extracted maps and reloaded preferences remain usable.
 Failed imports leave the previous selection untouched.
+
+## Current networking
+
+See [protocol 28 and discovery validation](apple-network-28.md).

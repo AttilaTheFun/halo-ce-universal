@@ -25,6 +25,10 @@ add_executable(Halo MACOSX_BUNDLE ${HOST_SOURCES} ${MINIUPNPC_SOURCES} ${MBEDTLS
     "${HALO_ROOT}/port/macos/host/entry.s" "${HALO_BUILD}/host/host_import_table.c"
     "${HALO_BUILD}/embed/guest_image.s")
 target_sources(Halo PRIVATE Assets.xcassets)
+# Internet discovery reads this beside config.toml; host_main installs the default.
+target_sources(Halo PRIVATE "${HALO_ROOT}/port/assets/network/brokers.txt")
+set_source_files_properties("${HALO_ROOT}/port/assets/network/brokers.txt"
+    PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 set_source_files_properties(Assets.xcassets PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 target_compile_definitions(Halo PRIVATE HALO_IOS=1 HALO_MACOS=1 HALO_APPLE_GRAPHICS=1 _DARWIN_C_SOURCE=1)
 target_compile_definitions(Halo PRIVATE MINIUPNP_STATICLIB MINIUPNPC_SET_SOCKET_TIMEOUT

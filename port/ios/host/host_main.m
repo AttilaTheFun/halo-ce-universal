@@ -113,6 +113,15 @@ int main(int argc, char **argv) {
         snprintf(save_root, sizeof(save_root), "%s", saves.fileSystemRepresentation);
         freopen([[saves stringByAppendingPathComponent:@"halo.log"] fileSystemRepresentation], "w", stderr);
         setbuf(stderr, NULL);
+        // Refresh the shipped default; custom broker files use a separate
+        // network.brokers_file path and remain untouched.
+        NSURL *brokers = [NSBundle.mainBundle URLForResource:@"brokers" withExtension:@"txt"];
+        NSError *brokerError = nil;
+        NSData *brokerData = brokers ? [NSData dataWithContentsOfURL:brokers options:0 error:&brokerError] : nil;
+        if (!brokerData || ![brokerData writeToFile:[saves stringByAppendingPathComponent:@"brokers.txt"]
+                                         options:NSDataWritingAtomic error:&brokerError])
+            host_logf(HOST_LOG_ERROR, "Cannot install server discovery brokers: %s",
+                      brokerError.localizedDescription.UTF8String ?: "bundled brokers.txt is missing");
         // A sandbox-relative shortcut for opt-in device frame profiling.
         const char *profile = getenv("HALO_PERF_LOG");
         if (profile && !strcmp(profile, "1"))
