@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "HaloPreferences.h"
+#import "HaloUpdates.h"
 #include <assert.h>
 #include <sys/stat.h>
 
@@ -236,6 +237,47 @@ int main(int argc, const char **argv) {
             assert(!HaloUpdateConfigurationIsValid(@{@"SUFeedURL":url, @"SUPublicEDKey":key}));
         assert(!HaloUpdateConfigurationIsValid(@{}));
         assert(!HaloUpdateConfigurationIsValid(@{@"SUFeedURL":@"https://example.com/feed.xml", @"SUPublicEDKey":@"invalid"}));
+        assert(HaloForkUpdateBuildFromTag(@"test-v0.3.0-net28-mac16") == 16);
+        assert([HaloForkUpdateAssetName(@"test-v0.3.0-net28-mac16")
+            isEqual:@"OpenCE-macos-arm64-net28-mac16.dmg"]);
+        assert(HaloForkUpdateBuildFromTag(@"build-70") == 0);
+        assert(HaloForkUpdateAssetName(@"test-v0.3.0-net28-mac16-extra") == nil);
+        NSString *mac16 = @"https://github.com/innerhat-dev/OpenCE/releases/download/test-v0.3.0-net28-mac16/OpenCE-macos-arm64-net28-mac16.dmg";
+        assert(HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac16", mac16));
+        assert(!HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac16",
+            @"https://example.com/OpenCE-macos-arm64-net28-mac16.dmg"));
+        assert(!HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac17", mac16));
+        assert(HaloForkUpdateBuildFromTag(@"test-v0.3.0-net28-ios3") == 0);
+        assert(HaloForkUpdateAssetName(@"test-v0.3.0-net28-ios3") == nil);
+        NSString *mac17 = @"https://github.com/innerhat-dev/OpenCE/releases/download/test-v0.3.0-net28-mac17/OpenCE-macos-arm64-net28-mac17.dmg";
+        NSArray *releases = @[
+            @{@"tag_name": @"test-v0.3.0-net28-ios9", @"draft": @NO, @"prerelease": @NO,
+              @"assets": @[@{@"name": @"OpenCE-ios.ipa", @"browser_download_url": @"https://github.com/innerhat-dev/OpenCE/releases/download/test-v0.3.0-net28-ios9/OpenCE-ios.ipa"}]},
+            @{@"tag_name": @"test-v0.3.0-net28-mac17", @"draft": @NO, @"prerelease": @YES,
+              @"assets": @[@{@"name": @"OpenCE-macos-arm64-net28-mac17.dmg", @"browser_download_url": mac17}]},
+            @{@"tag_name": @"test-v0.3.0-net28-mac16", @"draft": @NO, @"prerelease": @NO,
+              @"assets": @[@{@"name": @"OpenCE-macos-arm64-net28-mac16.dmg", @"browser_download_url": mac16}]},
+        ];
+        NSString *chosenTag = nil;
+        NSString *chosenURL = nil;
+        assert(HaloForkNewestMacRelease(releases, &chosenTag, &chosenURL) == 16);
+        assert([chosenTag isEqual:@"test-v0.3.0-net28-mac16"]);
+        assert([chosenURL isEqual:mac16]);
+        assert(HaloForkNewestMacRelease(@[@{@"tag_name": @"test-v0.3.0-net28-ios9"}], nil, nil) == 0);
+        NSString *controlsText = @"[display]\nmenus = \"pc\"\n\n[update]\nauto = true\n";
+        assert(HaloConfigAutomaticUpdates(controlsText));
+        assert(HaloConfigAutomaticUpdates(@""));
+        assert(!HaloConfigAutomaticUpdates(HaloConfigSetAutomaticUpdates(controlsText, NO)));
+        NSString *rewritten = HaloConfigSetAutomaticUpdates(controlsText, NO);
+        assert([rewritten containsString:@"menus = \"pc\""]);
+        assert([rewritten containsString:@"auto = false"]);
+        assert(![rewritten containsString:@"auto = true"]);
+        assert(HaloConfigSuppressesUpdatePrompt(@"[debug]\nhidden_window = true\n"));
+        assert(HaloConfigSuppressesUpdatePrompt(@"[debug]\nexit_after = 5.0\n"));
+        assert(HaloConfigSuppressesUpdatePrompt(@"[debug]\nnetwork_test = \"join\"\n"));
+        assert(!HaloConfigSuppressesUpdatePrompt(@"[debug]\nnetwork_test = \"\"\n"));
+        assert([HaloConfigUpdateAnswer(@"[debug]\nupdate_answer = \"never\"\n") isEqual:@"never"]);
+        assert(HaloConfigUpdateAnswer(@"") == nil);
         migrationFixtures(test, valid, image);
         puts("Map validation, XISO import, failed-import rollback, persistent preferences and update configuration passed");
     }

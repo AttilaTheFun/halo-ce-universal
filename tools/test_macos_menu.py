@@ -56,6 +56,7 @@ def native_preferences():
     flags = ["-arch", "arm64", "-mmacosx-version-min=14.0", "-O2", "-Wall", "-Wextra",
              "-DHALO_MACOS=1", "-Iport/macos/native", "-Iport/linux/src"]
     sources = ["port/macos/tests/menu_preferences.m", "port/macos/native/HaloPreferences.m",
+               "port/macos/native/HaloUpdates.m",
                "port/linux/src/xiso.c", "port/macos/host/posix_files.c"]
     objects = []
     for source in sources:

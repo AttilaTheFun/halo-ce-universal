@@ -1,12 +1,17 @@
 #import <Cocoa/Cocoa.h>
 #import <Sparkle/Sparkle.h>
 #import "HaloPreferences.h"
+#import "HaloUpdates.h"
 #import "HaloMapDownloads.h"
 #import "HaloMapPackages.h"
 #include <SDL3/SDL.h>
 #include "host_menu.h"
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef HALO_MAC_UPDATE_BUILD
+#define HALO_MAC_UPDATE_BUILD 0
+#endif
 
 @interface HaloMenu : NSObject <NSApplicationDelegate, NSMenuDelegate, NSMenuItemValidation,
                                SPUUpdaterDelegate, SPUStandardUserDriverDelegate>
@@ -23,6 +28,8 @@
 @property(nonatomic, strong) NSButton *packageImportButton;
 @property(nonatomic, copy) NSString *packageStatus;
 @property(nonatomic, strong) SPUStandardUpdaterController *updater;
+@property(nonatomic, strong) HaloForkUpdater *forkUpdater;
+@property(nonatomic) BOOL forkUpdateBusy;
 @property(nonatomic, strong) id previousDelegate;
 @property(nonatomic) BOOL gameRunning;
 @property(nonatomic) BOOL waitingForUpdate;
@@ -233,7 +240,8 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     if (self.importing) return NO;
     if (entry.action == @selector(showGame:)) return self.gameRunning;
     if (entry.action == @selector(toggleFullscreen:)) return self.gameRunning;
-    if (entry.action == @selector(checkUpdates:)) return self.updater.updater.canCheckForUpdates && !self.pendingInstall;
+    if (entry.action == @selector(checkUpdates:))
+        return (self.forkUpdater || self.updater.updater.canCheckForUpdates) && !self.pendingInstall && !self.forkUpdateBusy;
     return YES;
 }
 - (void)updateSystemChrome {
@@ -323,9 +331,12 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     self.automaticUpdatesButton = [NSButton checkboxWithTitle:@"Automatically check for updates"
                                                                   target:self action:@selector(automaticUpdates:)];
     self.automaticUpdatesButton.frame = NSMakeRect(24, 78, 472, 24);
-    self.automaticUpdatesButton.enabled = self.updater != nil;
+    self.automaticUpdatesButton.enabled = self.forkUpdater != nil || self.updater != nil;
     [content addSubview:self.automaticUpdatesButton];
-    if (!self.updater) label(content, @"Updates aren’t available for this build.", NSMakeRect(24, 58, 472, 17), YES).font = [NSFont systemFontOfSize:11];
+    if (self.forkUpdater)
+        label(content, @"Checks the latest Mac release from this fork.", NSMakeRect(24, 58, 472, 17), YES).font = [NSFont systemFontOfSize:11];
+    else if (!self.updater)
+        label(content, @"Updates aren’t available for this build.", NSMakeRect(24, 58, 472, 17), YES).font = [NSFont systemFontOfSize:11];
     button(content, @"Advanced Settings…", @selector(openConfig:), NSMakeRect(20, 14, 185, 32));
     NSButton *done = button(content, @"Done", @selector(closeSettings:), NSMakeRect(401, 14, 95, 32));
     done.keyEquivalent = @"\r";
@@ -360,7 +371,10 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     self.dataLabel.toolTip = self.dataLabel.stringValue;
     self.sourceLabel.stringValue = self.preferences.isoPath ? [@"Disc image: " stringByAppendingString:self.preferences.isoPath] : @"Using an extracted maps folder";
     self.sourceLabel.toolTip = self.preferences.isoPath;
-    self.automaticUpdatesButton.state = self.updater.updater.automaticallyChecksForUpdates ? NSControlStateValueOn : NSControlStateValueOff;
+    if (self.forkUpdater)
+        self.automaticUpdatesButton.state = self.forkUpdater.automatic ? NSControlStateValueOn : NSControlStateValueOff;
+    else
+        self.automaticUpdatesButton.state = self.updater.updater.automaticallyChecksForUpdates ? NSControlStateValueOn : NSControlStateValueOff;
     self.communityDownloadsButton.state = self.preferences.communityDownloadsEnabled ? NSControlStateValueOn : NSControlStateValueOff;
     self.downloadsLabel.stringValue = self.packageStatus ?: self.mapDownloads.statusText ?: @"Map hosting is not configured for this build.";
     self.downloadsLabel.toolTip = self.downloadsLabel.stringValue;
@@ -392,6 +406,12 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     if (self.gameRunning && !self.quitting) host_sdl_show_game();
 }
 - (void)automaticUpdates:(NSButton *)sender {
+    if (self.forkUpdater) {
+        NSError *error = nil;
+        if (![self.forkUpdater setAutomatic:sender.state == NSControlStateValueOn error:&error]) showError(error);
+        [self refreshSettings];
+        return;
+    }
     self.updater.updater.automaticallyChecksForUpdates = sender.state == NSControlStateValueOn;
 }
 - (void)communityDownloads:(NSButton *)sender {
@@ -652,7 +672,121 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 - (void)checkUpdates:(id)sender {
     (void)sender;
     host_sdl_release_mouse();
+    if (self.forkUpdater) { [self startForkUpdateCheckQuiet:NO]; return; }
     [self.updater checkForUpdates:self];
+}
+- (void)startForkUpdateCheckQuiet:(BOOL)quiet {
+    if (!self.forkUpdater || self.forkUpdateBusy || self.quitting) return;
+    NSString *answer = quiet ? [self.forkUpdater updateAnswer] : nil;
+    if (quiet && !answer.length && (![self.forkUpdater automatic] || [self.forkUpdater suppressesPrompt])) return;
+    if (quiet && answer.length && ![answer isEqualToString:@"yes"]) {
+        if ([answer isEqualToString:@"never"]) {
+            NSError *error = nil;
+            [self.forkUpdater setAutomatic:NO error:&error];
+        }
+        return;
+    }
+    self.forkUpdateBusy = YES;
+    __weak HaloMenu *weakSelf = self;
+    [self.forkUpdater checkQuiet:quiet completion:^(NSError *error, NSString *tag, NSURL *download, long build) {
+        HaloMenu *strong = weakSelf;
+        if (!strong) return;
+        strong.forkUpdateBusy = NO;
+        if (strong.quitting) return;
+        if (quiet && !answer.length && (![strong.forkUpdater automatic] || [strong.forkUpdater suppressesPrompt])) return;
+        if (error || !download) {
+            if (!quiet) {
+                NSAlert *alert = [[NSAlert alloc] init];
+                alert.messageText = error ? @"OpenCE could not check for an update" : @"OpenCE is up to date";
+                alert.informativeText = error.localizedDescription ?: @"This is the latest Mac release from this fork.";
+                [alert runModal];
+            }
+            return;
+        }
+        strong.availableVersion = [NSString stringWithFormat:@"mac %ld", build];
+        if (quiet && [answer isEqualToString:@"yes"])
+            [strong installForkUpdate:download build:build];
+        else
+            [strong offerForkUpdate:tag download:download build:build];
+    }];
+}
+- (void)offerForkUpdate:(NSString *)tag download:(NSURL *)download build:(long)build {
+    (void)tag;
+    BOOL fullscreen = self.gameRunning && host_sdl_is_fullscreen();
+    if (fullscreen) host_sdl_set_fullscreen(0);
+    host_sdl_release_mouse();
+    [NSApp activateIgnoringOtherApps:YES];
+    NSAlert *question = [[NSAlert alloc] init];
+    question.messageText = @"A new version of OpenCE is available";
+    question.informativeText = [NSString stringWithFormat:
+        @"Mac %ld is available. This is mac %d.\n\nDo you want to update? The game will close and start the new version.",
+        build, HALO_MAC_UPDATE_BUILD];
+    [question addButtonWithTitle:@"Yes"];
+    [question addButtonWithTitle:@"No"];
+    [question addButtonWithTitle:@"Do not ask again"];
+    NSModalResponse answer = [question runModal];
+    if (answer == NSAlertThirdButtonReturn) {
+        NSAlert *confirm = [[NSAlert alloc] init];
+        confirm.messageText = @"Stop asking about new versions?";
+        confirm.informativeText = @"To ask again, set auto = true in the [update] section of config.toml.";
+        [confirm addButtonWithTitle:@"Yes"];
+        [confirm addButtonWithTitle:@"No"];
+        if ([confirm runModal] == NSAlertFirstButtonReturn) {
+            NSError *error = nil;
+            if (![self.forkUpdater setAutomatic:NO error:&error]) showError(error);
+        }
+    } else if (answer == NSAlertFirstButtonReturn) {
+        [self installForkUpdate:download build:build];
+    }
+    if (fullscreen && !self.quitting) host_sdl_set_fullscreen(1);
+}
+- (void)installForkUpdate:(NSURL *)download build:(long)build {
+    self.forkUpdateBusy = YES;
+    NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 420, 120)
+        styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
+    window.title = @"Updating OpenCE";
+    window.releasedWhenClosed = NO;
+    label(window.contentView, @"Downloading the new version.", NSMakeRect(24, 72, 372, 22), NO);
+    NSTextField *status = label(window.contentView, @"Starting the download.", NSMakeRect(24, 48, 372, 20), YES);
+    NSProgressIndicator *bar = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(24, 24, 372, 18)];
+    bar.style = NSProgressIndicatorStyleBar;
+    bar.indeterminate = YES;
+    [window.contentView addSubview:bar];
+    [window center];
+    [window makeKeyAndOrderFront:nil];
+    [bar startAnimation:nil];
+    __block BOOL finished = NO, installed = NO;
+    __block NSError *installError = nil;
+    HaloForkUpdater *updater = self.forkUpdater;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        installed = [updater installDownload:download expectedBuild:build error:&installError
+            progress:^(unsigned long long received, unsigned long long total) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                status.stringValue = total
+                    ? [NSString stringWithFormat:@"%llu of %llu MB", received >> 20, total >> 20]
+                    : [NSString stringWithFormat:@"%llu MB", received >> 20];
+                bar.indeterminate = !total;
+                if (total) { [bar stopAnimation:nil]; bar.maxValue = 100; bar.doubleValue = 100.0 * received / total; }
+            });
+        }];
+        dispatch_async(dispatch_get_main_queue(), ^{ finished = YES; });
+    });
+    while (!finished) [NSRunLoop.currentRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+    [bar stopAnimation:nil];
+    [window close];
+    self.forkUpdateBusy = NO;
+    if (!installed) {
+        showError(installError ?: [NSError errorWithDomain:@"HaloForkUpdate" code:1
+            userInfo:@{NSLocalizedDescriptionKey: @"The update could not be installed."}]);
+        return;
+    }
+    if (self.gameRunning) {
+        self.quitting = YES;
+        [self closeSettings:nil];
+        host_sdl_request_quit();
+        return;
+    }
+    exit(EXIT_SUCCESS);
 }
 - (BOOL)supportsGentleScheduledUpdateReminders { return YES; }
 - (BOOL)standardUserDriverShouldHandleShowingScheduledUpdate:(SUAppcastItem *)update andInImmediateFocus:(BOOL)focus {
@@ -729,13 +863,19 @@ int host_menu_prepare(const char *support, const char *fallback, char *data, siz
         menu = [[HaloMenu alloc] init];
         menu.previousDelegate = NSApp.delegate;
         NSApp.delegate = menu;
-        if (HaloUpdateConfigurationIsValid(NSBundle.mainBundle.infoDictionary))
+        if (HALO_MAC_UPDATE_BUILD <= 0 && HaloUpdateConfigurationIsValid(NSBundle.mainBundle.infoDictionary))
             menu.updater = [[SPUStandardUpdaterController alloc] initWithStartingUpdater:YES updaterDelegate:menu userDriverDelegate:menu];
         [menu buildMenus];
         [NSApp finishLaunching];
         NSURL *supportDirectory = [NSURL fileURLWithPath:@(support) isDirectory:YES];
         if (![menu migrateSupportIfNeeded:supportDirectory]) return 0;
         menu.preferences = [[HaloPreferences alloc] initWithSupportDirectory:supportDirectory];
+        if (HALO_MAC_UPDATE_BUILD > 0) {
+            NSURL *config = [supportDirectory URLByAppendingPathComponent:@"config.toml"];
+            menu.forkUpdater = [[HaloForkUpdater alloc] initWithBuild:HALO_MAC_UPDATE_BUILD
+                configURL:config bundleURL:NSBundle.mainBundle.bundleURL];
+            [menu startForkUpdateCheckQuiet:YES];
+        }
         NSString *selected = menu.preferences.dataPath;
         const char *override = getenv("HALO_DATA_ROOT");
         if (override && *override) selected = @(override);

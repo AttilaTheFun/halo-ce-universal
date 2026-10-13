@@ -66,7 +66,20 @@ def build_plugin():
         "-o", BUILD / "guest_rebase.dylib", "-isysroot", sdk, *flags)
 
 
-def build_host():
+def resolve_update_build(explicit):
+    """This app's Mac release number. A newer tag on innerhat-dev/OpenCE is offered.
+    Zero does not look. The guest updater does not run in this build."""
+    if explicit is None:
+        raw = os.environ.get("HALO_MAC_UPDATE_BUILD", "0")
+        if not re.fullmatch(r"\d+", raw):
+            raise RuntimeError("HALO_MAC_UPDATE_BUILD must be a whole number")
+        explicit = int(raw)
+    if explicit < 0:
+        raise RuntimeError("The Mac update build must be zero or greater")
+    return explicit
+
+
+def build_host(update_build):
     native_metal = RENDERER == "metal"
     sparkle = setup_sparkle()
     obj_dir = BUILD / "host-obj"
@@ -90,6 +103,7 @@ def build_host():
              f"-I{SDL / 'include'}",
              *([] if native_metal else [f"-I{GL}"]),
              *(["-DHALO_MACOS_NATIVE_METAL=1"] if native_metal else []),
+             f"-DHALO_MAC_UPDATE_BUILD={update_build}",
              f"-I{MINIUPNPC_DIR / 'include'}", f"-I{MINIUPNPC_DIR / 'src'}", *MINIUPNPC_DEFINES]
     sources = sorted((ROOT / "port/macos/host").glob("*.c"))
     if native_metal:
@@ -176,7 +190,8 @@ def update_configuration(config):
             "SUScheduledCheckInterval": 86400}
 
 
-def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION, build=APP_BUILD, content_tools=None):
+def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION, build=APP_BUILD,
+            content_tools=None, update_build=0):
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
         if not update_configuration(configuration):
@@ -186,7 +201,8 @@ def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION,
     destination = BUILD / (APP_NAME + ".app")
     with tempfile.TemporaryDirectory(prefix=".halo-package-", dir=BUILD) as temporary:
         staged = Path(temporary) / destination.name
-        package_into(staged, data_root, sign_identity=sign_identity, release=release, version=version, build=build, content_tools=content_tools)
+        package_into(staged, data_root, sign_identity=sign_identity, release=release, version=version, build=build,
+                     content_tools=content_tools, update_build=update_build)
         # A fresh bundle prevents old development resources entering a release.
         # Preserve the previous build, including a running executable's inode.
         backup = None
@@ -203,7 +219,7 @@ def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION,
     print(f"Built {destination}")
 
 
-def package_into(app, data_root, *, sign_identity, release, version, build, content_tools=None):
+def package_into(app, data_root, *, sign_identity, release, version, build, content_tools=None, update_build=0):
     contents = app / "Contents"
     macos = contents / "MacOS"
     frameworks = contents / "Frameworks"
@@ -279,6 +295,8 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
         "NSHighResolutionCapable": True,
         "NSHumanReadableCopyright": "Local experimental Apple Silicon port",
     }
+    if update_build > 0:
+        info["OpenCEMacUpdateBuild"] = update_build
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
         updates = update_configuration(configuration)
@@ -297,9 +315,10 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     except (OSError, subprocess.CalledProcessError):
         revision = "unknown"
     guest_hash = hashlib.sha256((resources / "halo_guest.elf").read_bytes()).hexdigest()
+    update_line = f"Update build: {update_build}\n" if update_build > 0 else ""
     (resources / "BuildInfo.txt").write_text(
         f"{APP_NAME} {version} (build {build})\n"
-        f"Source: {revision}\nGuest SHA-256: {guest_hash}\n")
+        f"Source: {revision}\nGuest SHA-256: {guest_hash}\n{update_line}")
     licenses = resources / "Licenses"
     licenses.mkdir(exist_ok=True)
     for source, name in (
@@ -458,6 +477,8 @@ def main():
     parser.add_argument("--sign-identity", default="-")
     parser.add_argument("--version", default=APP_VERSION)
     parser.add_argument("--build-number", default=APP_BUILD)
+    parser.add_argument("--update-build", type=int, default=None,
+                        help="Offer a newer Mac release from innerhat-dev/OpenCE. 0 does not look.")
     parser.add_argument("--content-tools", type=Path, metavar="TOOLCHAIN_DIRECTORY",
                         help="Opt in to reviewed Invader helpers for local community package import")
     parser.add_argument("--install", nargs="?", const=Path("/Applications"), type=Path,
@@ -476,6 +497,8 @@ def main():
     if args.plugin_only:
         build_plugin()
         return
+    update_build = resolve_update_build(args.update_build)
+    print(f"Fork updates: {'mac ' + str(update_build) if update_build else 'off'}")
     if not args.host_only:
         llvm_bin = ROOT / "build/macos/toolchain/bin"
         require(llvm_bin / "llvm-ar")
@@ -488,9 +511,10 @@ def main():
         run(*configure)
         ninja = shutil.which("ninja") or str(ROOT / "build/macos/toolchain/venv/bin/ninja")
         run(ninja, "-j", args.jobs, "macos_guest")
-    build_host()
+    build_host(update_build)
     package(None if args.no_data_path or args.release else args.data_root,
-            sign_identity=args.sign_identity, release=args.release, version=args.version, build=args.build_number, content_tools=args.content_tools)
+            sign_identity=args.sign_identity, release=args.release, version=args.version, build=args.build_number,
+            content_tools=args.content_tools, update_build=update_build)
     if args.install:
         install_app(BUILD / (APP_NAME + ".app"), args.install)
 
