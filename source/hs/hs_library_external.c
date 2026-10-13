@@ -176,7 +176,12 @@ void hs_print(
 	(0x4b8970 +0x0c pushes it as terminal_printf's format), so a '%' in it,
 	from a scenario script or typed at the console, read arguments that
 	were never passed */
-	terminal_printf(global_real_argb_green, "%s", message);
+	/* Scenario scripts print music cues and other development chatter.
+	Keep it in debug.txt, but respect the same screen filter as engine logs.
+	Explicit console commands still show their requested output. */
+	error(_error_log, "%s", message);
+	if (terminal_shows(terminal_command_running ? _terminal_message_serious : _terminal_message_chatter))
+		terminal_printf(global_real_argb_green, "%s", message);
 
 	return;
 }
