@@ -1,5 +1,9 @@
 #import <Foundation/Foundation.h>
 
+/* The line drawn between the shield and the weapon. Empty means nothing to show. */
+int halo_fork_update_notice(char *out, size_t capacity);
+void halo_fork_update_set_notice(const char *text);
+
 /* The Mac release number in a fork tag such as test-v0.3.0-net28-mac16.
    Zero when the tag is not one of those releases. An iOS tag is zero. */
 long HaloForkUpdateBuildFromTag(NSString *tag);
@@ -10,6 +14,14 @@ BOOL HaloForkUpdateDownloadIsTrusted(NSString *tag, NSString *url);
    can be the newest tag; it is not this app. Drafts and prereleases are
    skipped. Returns 0 when the list has no Mac disk image. */
 long HaloForkNewestMacRelease(NSArray *releases, NSString **tag, NSString **url);
+/* update.txt beside debug.txt. Nil when this launch has no game data folder. */
+NSURL *HaloForkUpdateHistoryURL(NSURL *dataDirectory);
+/* The sentence update.txt keeps. The date is added when the line is written. */
+NSString *HaloForkUpdateHistoryNote(long fromBuild, long toBuild, BOOL installed);
+/* True when update.txt already records this Mac build as the one now installed. */
+BOOL HaloForkUpdateHistoryRecordsBuild(NSString *text, long build);
+/* Appends one line when this build is not already the installed one. */
+void HaloForkUpdateRecordInstalledBuild(NSURL *dataDirectory, long build);
 
 /* update.auto in config.toml. Missing means yes, which is the game's default. */
 BOOL HaloConfigAutomaticUpdates(NSString *text);
@@ -30,6 +42,6 @@ NSString *HaloConfigUpdateAnswer(NSString *text);
 - (void)checkQuiet:(BOOL)quiet completion:(void (^)(NSError *error, NSString *tag, NSURL *download, long build))completion;
 /* Downloads that disk image, checks it, and leaves a helper that replaces this
    app after this process exits. The caller then quits. */
-- (BOOL)installDownload:(NSURL *)download expectedBuild:(long)build error:(NSError **)error
-               progress:(void (^)(unsigned long long received, unsigned long long total))progress;
+- (BOOL)installDownload:(NSURL *)download expectedBuild:(long)build historyDirectory:(NSURL *)historyDirectory
+    error:(NSError **)error progress:(void (^)(unsigned long long received, unsigned long long total))progress;
 @end

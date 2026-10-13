@@ -1,8 +1,11 @@
 #import "HaloUpdates.h"
 #include <fcntl.h>
+#include <pthread.h>
 #include <spawn.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 @interface HaloForkUpdater () <NSURLSessionTaskDelegate, NSURLSessionDownloadDelegate>
@@ -123,6 +126,55 @@ static NSString *macDownloadURL(NSDictionary *release) {
         if ([item[@"name"] isEqual:asset]) found = item[@"browser_download_url"];
     }
     return HaloForkUpdateDownloadIsTrusted(tag, found) ? found : nil;
+}
+
+NSURL *HaloForkUpdateHistoryURL(NSURL *dataDirectory) {
+    if (![dataDirectory isKindOfClass:NSURL.class] || !dataDirectory.path.length) return nil;
+    return [dataDirectory URLByAppendingPathComponent:@"update.txt"];
+}
+
+NSString *HaloForkUpdateHistoryNote(long fromBuild, long toBuild, BOOL installed) {
+    if (installed)
+        return [NSString stringWithFormat:@"mac %ld replaced by mac %ld.", fromBuild, toBuild];
+    return [NSString stringWithFormat:@"mac %ld stayed in place. mac %ld did not install.", fromBuild, toBuild];
+}
+
+BOOL HaloForkUpdateHistoryRecordsBuild(NSString *text, long build) {
+    if (build <= 0 || ![text isKindOfClass:NSString.class]) return NO;
+    NSString *installed = [NSString stringWithFormat:@"mac %ld installed.", build];
+    NSString *replaced = [NSString stringWithFormat:@"replaced by mac %ld.", build];
+    return [text containsString:installed] || [text containsString:replaced];
+}
+
+static NSString *historyStamp(void) {
+    time_t now = time(NULL);
+    struct tm local;
+    char buffer[32];
+    /* Same clock text debug.txt uses, so the two files can be read together. */
+    if (!localtime_r(&now, &local) || !strftime(buffer, sizeof(buffer), "%m.%d.%y %H:%M:%S", &local))
+        return @"";
+    return [NSString stringWithUTF8String:buffer] ?: @"";
+}
+
+void HaloForkUpdateRecordInstalledBuild(NSURL *dataDirectory, long build) {
+    NSURL *history = HaloForkUpdateHistoryURL(dataDirectory);
+    NSString *text, *line;
+    NSData *bytes;
+    NSFileHandle *handle;
+    if (!history || HaloForkUpdateHistoryRecordsBuild(
+            [NSString stringWithContentsOfURL:history encoding:NSUTF8StringEncoding error:nil], build))
+        return;
+    text = [NSString stringWithFormat:@"mac %ld installed.", build];
+    line = [NSString stringWithFormat:@"%@  %@\n", historyStamp(), text];
+    bytes = [line dataUsingEncoding:NSUTF8StringEncoding];
+    if (!bytes) return;
+    if (![NSFileManager.defaultManager fileExistsAtPath:history.path])
+        [NSFileManager.defaultManager createFileAtPath:history.path contents:nil attributes:nil];
+    handle = [NSFileHandle fileHandleForWritingToURL:history error:nil];
+    if (!handle) return;
+    [handle seekToEndOfFile];
+    [handle writeData:bytes];
+    [handle closeFile];
 }
 
 long HaloForkNewestMacRelease(NSArray *releases, NSString **tagOut, NSString **urlOut) {
@@ -386,8 +438,8 @@ NSString *HaloConfigUpdateAnswer(NSString *text) {
     return text;
 }
 
-- (BOOL)installDownload:(NSURL *)download expectedBuild:(long)build error:(NSError **)error
-               progress:(void (^)(unsigned long long, unsigned long long))progress {
+- (BOOL)installDownload:(NSURL *)download expectedBuild:(long)build historyDirectory:(NSURL *)historyDirectory
+    error:(NSError **)error progress:(void (^)(unsigned long long, unsigned long long))progress {
     /* path is /innerhat-dev/OpenCE/releases/download/<tag>/<asset> */
     NSArray<NSString *> *parts = [download.path componentsSeparatedByString:@"/"];
     NSString *tag = parts.count >= 2 ? parts[parts.count - 2] : nil;
@@ -468,17 +520,29 @@ NSString *HaloConfigUpdateAnswer(NSString *text) {
         if (error) *error = updateFailure(@"The downloaded app is not the Mac release that was announced.");
         return NO;
     }
-    return [self handOffStagedApp:app error:error];
+    return [self handOffStagedApp:app historyURL:HaloForkUpdateHistoryURL(historyDirectory)
+        toBuild:build error:error];
 }
 
-- (BOOL)handOffStagedApp:(NSURL *)app error:(NSError **)error {
+- (BOOL)handOffStagedApp:(NSURL *)app historyURL:(NSURL *)historyURL toBuild:(long)toBuild error:(NSError **)error {
     /* This process is about to quit. The swap has to keep running after that,
        or it would be killed while the installed app was half replaced. */
     NSURL *script = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:
         [[NSUUID UUID].UUIDString stringByAppendingPathExtension:@"sh"]]];
     /* The new app is checked under its real name, then the installed one is
-       moved aside. If the new one cannot take its place, the old one comes back. */
+       moved aside. If the new one cannot take its place, the old one comes back.
+       update.txt sits beside debug.txt. Each install adds a line. */
+    NSString *replaced = HaloForkUpdateHistoryNote(self.build, toBuild, YES);
+    NSString *kept = HaloForkUpdateHistoryNote(self.build, toBuild, NO);
     NSString *body = @"#!/bin/sh\nset -eu\n"
+        "log=$4\n"
+        "ok=$5\n"
+        "bad=$6\n"
+        "note() {\n"
+        "  [ -n \"$log\" ] || return 0\n"
+        "  printf '%s  %s\\n' \"$(date '+%m.%d.%y %H:%M:%S')\" \"$1\" >> \"$log\" || true\n"
+        "}\n"
+        "fail() { note \"$bad\"; exit 1; }\n"
         "while kill -0 \"$1\" 2>/dev/null; do sleep 0.2; done\n"
         "sleep 0.5\n"
         "parent=$(dirname \"$3\")\n"
@@ -486,29 +550,31 @@ NSString *HaloConfigUpdateAnswer(NSString *text) {
         "previous=\"$3.previous\"\n"
         "rm -rf \"$holding\" \"$previous\"\n"
         "mkdir -p \"$holding\"\n"
-        "ditto \"$2\" \"$holding/OpenCE.app\"\n"
+        "ditto \"$2\" \"$holding/OpenCE.app\" || fail\n"
         "xattr -dr com.apple.quarantine \"$holding/OpenCE.app\" || true\n"
-        "codesign --verify --deep --strict \"$holding/OpenCE.app\"\n"
-        "mv \"$3\" \"$previous\"\n"
-        "if ! mv \"$holding/OpenCE.app\" \"$3\"; then mv \"$previous\" \"$3\"; exit 1; fi\n"
+        "codesign --verify --deep --strict \"$holding/OpenCE.app\" || fail\n"
+        "mv \"$3\" \"$previous\" || fail\n"
+        "if ! mv \"$holding/OpenCE.app\" \"$3\"; then mv \"$previous\" \"$3\" || true; fail; fi\n"
+        "note \"$ok\"\n"
         "rm -rf \"$previous\" \"$holding\" \"$(dirname \"$2\")\"\n"
         "open \"$3\"\n"
         "rm -f \"$0\"\n";
     if (![[body dataUsingEncoding:NSUTF8StringEncoding] writeToURL:script options:NSDataWritingAtomic error:error]) return NO;
     chmod(script.path.fileSystemRepresentation, 0700);
-    NSURL *log = [_configURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"update.log"];
     posix_spawn_file_actions_t actions;
     posix_spawnattr_t attr;
     posix_spawn_file_actions_init(&actions);
     posix_spawnattr_init(&attr);
     posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETSID);
     posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0);
-    posix_spawn_file_actions_addopen(&actions, 1, log.path.fileSystemRepresentation, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    posix_spawn_file_actions_addopen(&actions, 2, log.path.fileSystemRepresentation, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    posix_spawn_file_actions_addopen(&actions, 1, "/dev/null", O_WRONLY, 0);
+    posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0);
     char pidText[32];
     snprintf(pidText, sizeof(pidText), "%d", getpid());
+    NSString *logPath = historyURL.path ?: @"";
     char *argv[] = { "sh", (char *)script.path.fileSystemRepresentation, pidText,
-        (char *)app.path.fileSystemRepresentation, (char *)_bundleURL.path.fileSystemRepresentation, NULL };
+        (char *)app.path.fileSystemRepresentation, (char *)_bundleURL.path.fileSystemRepresentation,
+        (char *)logPath.fileSystemRepresentation, (char *)replaced.UTF8String, (char *)kept.UTF8String, NULL };
     pid_t child = 0;
     int spawned = posix_spawn(&child, "/bin/sh", &actions, &attr, argv, environ);
     posix_spawn_file_actions_destroy(&actions);
@@ -520,3 +586,26 @@ NSString *HaloConfigUpdateAnswer(NSString *text) {
     return YES;
 }
 @end
+
+static pthread_mutex_t notice_lock = PTHREAD_MUTEX_INITIALIZER;
+static char notice_text[160];
+
+void halo_fork_update_set_notice(const char *text) {
+    pthread_mutex_lock(&notice_lock);
+    if (!text || !text[0]) notice_text[0] = 0;
+    else snprintf(notice_text, sizeof(notice_text), "%s", text);
+    pthread_mutex_unlock(&notice_lock);
+}
+
+int halo_fork_update_notice(char *out, size_t capacity) {
+    if (!out || capacity < 2) return 0;
+    pthread_mutex_lock(&notice_lock);
+    if (!notice_text[0]) {
+        pthread_mutex_unlock(&notice_lock);
+        out[0] = 0;
+        return 0;
+    }
+    snprintf(out, capacity, "%s", notice_text);
+    pthread_mutex_unlock(&notice_lock);
+    return 1;
+}

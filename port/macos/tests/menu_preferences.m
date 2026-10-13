@@ -2,6 +2,7 @@
 #import "HaloPreferences.h"
 #import "HaloUpdates.h"
 #include <assert.h>
+#include <string.h>
 #include <sys/stat.h>
 
 static unsigned progressCalls;
@@ -264,6 +265,28 @@ int main(int argc, const char **argv) {
         assert([chosenTag isEqual:@"test-v0.3.0-net28-mac16"]);
         assert([chosenURL isEqual:mac16]);
         assert(HaloForkNewestMacRelease(@[@{@"tag_name": @"test-v0.3.0-net28-ios9"}], nil, nil) == 0);
+        NSURL *dataRoot = [test URLByAppendingPathComponent:@"game-data" isDirectory:YES];
+        NSURL *history = HaloForkUpdateHistoryURL(dataRoot);
+        assert([history.lastPathComponent isEqual:@"update.txt"]);
+        assert([history.path hasSuffix:@"/game-data/update.txt"]);
+        assert(HaloForkUpdateHistoryURL(nil) == nil);
+        assert([HaloForkUpdateHistoryNote(18, 19, YES) isEqual:@"mac 18 replaced by mac 19."]);
+        assert([HaloForkUpdateHistoryNote(18, 19, NO) isEqual:@"mac 18 stayed in place. mac 19 did not install."]);
+        char notice[64];
+        halo_fork_update_set_notice("Mac 19 is available.");
+        assert(halo_fork_update_notice(notice, sizeof(notice)));
+        assert(strcmp(notice, "Mac 19 is available.") == 0);
+        halo_fork_update_set_notice(NULL);
+        assert(!halo_fork_update_notice(notice, sizeof(notice)));
+        assert(HaloForkUpdateHistoryRecordsBuild(@"10.13.26 17:29:01  mac 18 replaced by mac 19.\n", 19));
+        assert(!HaloForkUpdateHistoryRecordsBuild(@"10.13.26 17:29:01  mac 18 replaced by mac 19.\n", 18));
+        assert(!HaloForkUpdateHistoryRecordsBuild(@"10.13.26 17:29:01  mac 18 stayed in place. mac 19 did not install.\n", 19));
+        [NSFileManager.defaultManager createDirectoryAtURL:dataRoot withIntermediateDirectories:YES attributes:nil error:nil];
+        HaloForkUpdateRecordInstalledBuild(dataRoot, 18);
+        HaloForkUpdateRecordInstalledBuild(dataRoot, 18);
+        NSString *recorded = [NSString stringWithContentsOfURL:history encoding:NSUTF8StringEncoding error:nil];
+        assert([recorded hasSuffix:@"  mac 18 installed.\n"]);
+        assert([[recorded componentsSeparatedByString:@"mac 18 installed."] count] == 2);
         NSString *controlsText = @"[display]\nmenus = \"pc\"\n\n[update]\nauto = true\n";
         assert(HaloConfigAutomaticUpdates(controlsText));
         assert(HaloConfigAutomaticUpdates(@""));

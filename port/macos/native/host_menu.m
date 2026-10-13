@@ -6,6 +6,7 @@
 #import "HaloMapPackages.h"
 #include <SDL3/SDL.h>
 #include "host_menu.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,6 +30,7 @@
 @property(nonatomic, copy) NSString *packageStatus;
 @property(nonatomic, strong) SPUStandardUpdaterController *updater;
 @property(nonatomic, strong) HaloForkUpdater *forkUpdater;
+@property(nonatomic, strong) NSTimer *updateTimer;
 @property(nonatomic) BOOL forkUpdateBusy;
 @property(nonatomic, strong) id previousDelegate;
 @property(nonatomic) BOOL gameRunning;
@@ -672,10 +674,21 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 - (void)checkUpdates:(id)sender {
     (void)sender;
     host_sdl_release_mouse();
-    if (self.forkUpdater) { [self startForkUpdateCheckQuiet:NO]; return; }
+    if (self.forkUpdater) { [self startForkUpdateCheckQuiet:NO announce:YES]; return; }
     [self.updater checkForUpdates:self];
 }
-- (void)startForkUpdateCheckQuiet:(BOOL)quiet {
+- (void)startUpdateWatch {
+    if (self.updateTimer) return;
+    /* While the game is open, after the check at launch. A dialog would take
+       the screen, so this one only leaves a line on the HUD. */
+    __weak HaloMenu *weakSelf = self;
+    self.updateTimer = [NSTimer timerWithTimeInterval:15 * 60 repeats:YES block:^(NSTimer *timer) {
+        (void)timer;
+        [weakSelf startForkUpdateCheckQuiet:YES announce:NO];
+    }];
+    [NSRunLoop.mainRunLoop addTimer:self.updateTimer forMode:NSRunLoopCommonModes];
+}
+- (void)startForkUpdateCheckQuiet:(BOOL)quiet announce:(BOOL)announce {
     if (!self.forkUpdater || self.forkUpdateBusy || self.quitting) return;
     NSString *answer = quiet ? [self.forkUpdater updateAnswer] : nil;
     if (quiet && !answer.length && (![self.forkUpdater automatic] || [self.forkUpdater suppressesPrompt])) return;
@@ -690,11 +703,13 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     __weak HaloMenu *weakSelf = self;
     [self.forkUpdater checkQuiet:quiet completion:^(NSError *error, NSString *tag, NSURL *download, long build) {
         HaloMenu *strong = weakSelf;
+        char notice[64];
         if (!strong) return;
         strong.forkUpdateBusy = NO;
         if (strong.quitting) return;
         if (quiet && !answer.length && (![strong.forkUpdater automatic] || [strong.forkUpdater suppressesPrompt])) return;
         if (error || !download) {
+            if (!error) halo_fork_update_set_notice(NULL);
             if (!quiet) {
                 NSAlert *alert = [[NSAlert alloc] init];
                 alert.messageText = error ? @"OpenCE could not check for an update" : @"OpenCE is up to date";
@@ -703,7 +718,10 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
             }
             return;
         }
+        snprintf(notice, sizeof(notice), "Mac %ld is available.", build);
+        halo_fork_update_set_notice(notice);
         strong.availableVersion = [NSString stringWithFormat:@"mac %ld", build];
+        if (!announce) return;
         if (quiet && [answer isEqualToString:@"yes"])
             [strong installForkUpdate:download build:build];
         else
@@ -760,11 +778,14 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     dispatch_semaphore_t done = dispatch_semaphore_create(0);
     CFRunLoopRef loop = CFRunLoopGetMain();
     HaloForkUpdater *updater = self.forkUpdater;
+    NSString *dataPath = self.launchDataPath.length ? self.launchDataPath : self.preferences.dataPath;
+    NSURL *historyDirectory = dataPath.length ? [NSURL fileURLWithPath:dataPath isDirectory:YES] : nil;
     /* This window is opened from the main queue. A block queued there does
        not run until this method returns, so the download wakes this loop
        directly. */
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        installed = [updater installDownload:download expectedBuild:build error:&installError
+        installed = [updater installDownload:download expectedBuild:build historyDirectory:historyDirectory
+            error:&installError
             progress:^(unsigned long long received, unsigned long long total) {
             CFRunLoopPerformBlock(loop, kCFRunLoopDefaultMode, ^{
                 status.stringValue = total
@@ -882,7 +903,8 @@ int host_menu_prepare(const char *support, const char *fallback, char *data, siz
             NSURL *config = [supportDirectory URLByAppendingPathComponent:@"config.toml"];
             menu.forkUpdater = [[HaloForkUpdater alloc] initWithBuild:HALO_MAC_UPDATE_BUILD
                 configURL:config bundleURL:NSBundle.mainBundle.bundleURL];
-            [menu startForkUpdateCheckQuiet:YES];
+            [menu startForkUpdateCheckQuiet:YES announce:YES];
+            [menu startUpdateWatch];
         }
         NSString *selected = menu.preferences.dataPath;
         const char *override = getenv("HALO_DATA_ROOT");
@@ -908,6 +930,8 @@ int host_menu_prepare(const char *support, const char *fallback, char *data, siz
         /* Development overrides apply to this launch; chooser actions save the
            next launch's selection without changing the current game's files. */
         menu.launchDataPath = valid.path;
+        if (HALO_MAC_UPDATE_BUILD > 0)
+            HaloForkUpdateRecordInstalledBuild(valid, HALO_MAC_UPDATE_BUILD);
         NSURL *downloadConfiguration = [NSBundle.mainBundle URLForResource:@"map-downloads" withExtension:@"json"];
         NSData *downloadSettings = downloadConfiguration ? [NSData dataWithContentsOfURL:downloadConfiguration] : nil;
         NSDictionary *downloadConfig = downloadSettings ? [NSJSONSerialization JSONObjectWithData:downloadSettings options:0 error:nil] : nil;
