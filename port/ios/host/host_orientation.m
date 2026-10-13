@@ -12,15 +12,12 @@
 @interface SDLUIKitSceneDelegate : NSObject <UIWindowSceneDelegate>
 @end
 
-static BOOL landscape_lock(UIViewController *controller) {
-    /* Don't lock a transient portrait scene before the geometry request has
-       completed. The scene callback updates this preference after rotation. */
-    return UIInterfaceOrientationIsLandscape(controller.viewIfLoaded.window.windowScene.interfaceOrientation);
-}
-
+/* Restrict the allowed orientations without locking the scene to whichever
+   landscape side happened to win at launch. A scene lock also prevents the
+   other supported landscape orientation from following the user's rotation. */
 #define HALO_LANDSCAPE_PREFERENCES \
 - (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation { return UIInterfaceOrientationLandscapeRight; } \
-- (BOOL)prefersInterfaceOrientationLocked { return landscape_lock(self); }
+- (BOOL)prefersInterfaceOrientationLocked { return NO; }
 
 @implementation HaloLandscapeController
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations { return UIInterfaceOrientationMaskLandscape; }
@@ -56,15 +53,6 @@ HALO_LANDSCAPE_PREFERENCES
 }
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
 - (void)windowScene:(UIWindowScene *)scene didUpdateEffectiveGeometry:(UIWindowSceneGeometry *)previousGeometry API_AVAILABLE(ios(26.0)) {
-    BOOL wasLandscape=UIInterfaceOrientationIsLandscape(previousGeometry.interfaceOrientation);
-    BOOL isLandscape=UIInterfaceOrientationIsLandscape(scene.effectiveGeometry.interfaceOrientation);
-    if (wasLandscape != isLandscape) {
-        for (UIWindow *window in scene.windows) {
-            UIViewController *controller=window.rootViewController;
-            while (controller.presentedViewController) controller=controller.presentedViewController;
-            [controller setNeedsUpdateOfPrefersInterfaceOrientationLocked];
-        }
-    }
     CGSize size=scene.effectiveGeometry.coordinateSpace.bounds.size;
     host_logf(HOST_LOG_INFO,"scene geometry %.0fx%.0f orientation=%ld locked=%d",
         size.width,size.height,(long)scene.effectiveGeometry.interfaceOrientation,
