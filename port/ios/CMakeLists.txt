@@ -75,7 +75,7 @@ endif()
 
 # License texts ship with the code; retail game images never do.
 set(LICENSE_INPUTS
-    "LICENSE.md" "libs/d3d8/LICENSE.GPL-3.0" "port/macos/licenses/ANGLE.txt"
+    "LICENSE.md" "port/macos/licenses/ANGLE.txt"
     "build/android/third_party/SDL3/LICENSE.txt"
     "build/android/third_party/musl-1.2.5/COPYRIGHT"
     "port/third_party/kcp/LICENSE" "port/third_party/miniupnpc/LICENSE"
