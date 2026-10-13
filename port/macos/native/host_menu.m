@@ -336,7 +336,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     self.automaticUpdatesButton.enabled = self.forkUpdater != nil || self.updater != nil;
     [content addSubview:self.automaticUpdatesButton];
     if (self.forkUpdater)
-        label(content, @"Checks this fork for a newer Mac release.", NSMakeRect(24, 58, 472, 17), YES).font = [NSFont systemFontOfSize:11];
+        label(content, @"Looks on this fork for a newer Mac release.", NSMakeRect(24, 58, 472, 17), YES).font = [NSFont systemFontOfSize:11];
     else if (!self.updater)
         label(content, @"Updates aren’t available for this build.", NSMakeRect(24, 58, 472, 17), YES).font = [NSFont systemFontOfSize:11];
     button(content, @"Advanced Settings…", @selector(openConfig:), NSMakeRect(20, 14, 185, 32));
