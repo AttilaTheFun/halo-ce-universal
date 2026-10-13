@@ -4,8 +4,10 @@ Use an Apple Silicon Mac with Xcode 26+ and Python 3. This runtime requires
 iOS/iPadOS 26+ and a profile granting Extended Virtual Addressing; a paid
 development team was required in upstream testing. Start with a device IPA
 provided by the builder, or build one using [the iOS build instructions](README.md)
-and `tools/ios_package.py`. This branch does not yet publish an unsigned IPA
-artifact in GitHub Actions. A simulator app cannot run on an iPhone.
+and `tools/ios_package.py`. Download the unsigned device IPA and re-signing kit from the
+[PR #1 testing release](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261012). The release is built from
+`apple/ios-installer`, not the private branding branch. GitHub Actions does not
+yet publish an unsigned IPA automatically. A simulator app cannot run on an iPhone.
 
 The script signs locally using a certificate/private key already in your
 Keychain and a provisioning profile issued for your account. It does not
@@ -40,11 +42,12 @@ you use your own account.
 
 ## Sign and install
 
-Check out `apple/ios-installer` from `AttilaTheFun/halo-ce-universal`.
-From its root, run:
+Extract `OpenCE-iOS-resigning-kit.zip` and run the command below from its
+folder. Alternatively, check out `apple/ios-installer` from
+`AttilaTheFun/halo-ce-universal` and run it from the repository root:
 
 ```sh
-./tools/ios_resign.sh ~/Downloads/Halo-CE-iOS-unsigned.ipa \
+./tools/ios_resign.sh ~/Downloads/OpenCE-iOS-PR1-unsigned.ipa \
   --identity 'Apple Development: Your Name (IDENTITY_ID)' \
   --profile ~/Downloads/embedded.mobileprovision \
   --bundle-id com.yourname.haloce \
@@ -82,10 +85,35 @@ device limits differ from paid developer membership. Back up saves before
 uninstalling. Do not upload your signed IPA/profile or private key to this
 repository; they contain your signing/device information.
 
-The script has been checked against the CI-produced unsigned IPA using a
-local development identity, including nested framework and app signature
-verification. Personal Team provisioning and third-party sideloading tools
-have not been tested for this port.
+## AltStore / similar sideloaders
+
+Do not assume that a free Apple ID plus AltStore Classic will run this build.
+The runtime requires `com.apple.developer.kernel.extended-virtual-addressing`;
+the provisioning profile must authorize it and the re-signer must retain it.
+Our tested setup uses a paid Apple Developer team. Personal Team provisioning
+and third-party sideloaders have not been validated for this port.
+
+The unsigned IPA has no embedded profile or code signature. The kit includes
+`Required-entitlements.plist` for tools that accept an entitlement file, but
+adding that file does not grant the capability: the profile must contain it.
+If a sideloader cannot provision or preserve it, use the script above with an
+appropriate profile. Installation alone is not proof of a working runtime.
+This is a manually re-signable test artifact, not an AltStore PAL listing.
+
+## Build it yourself
+
+```sh
+git clone --branch apple/ios-installer https://github.com/AttilaTheFun/halo-ce-universal.git
+cd halo-ce-universal
+```
+
+Follow [the build instructions](README.md#build), supplying your own team and
+unique bundle ID. Source builds need the same Extended Virtual Addressing
+capability; compiling locally does not remove that requirement.
+
+The public IPA is checked by re-signing it locally and verifying the nested
+framework and app signatures and required entitlement. This does not establish
+compatibility with every device or signing service.
 
 Apple references: [signing setup](https://developer.apple.com/documentation/xcode/running-your-app-on-simulated-or-physical-devices),
 [provisioning profiles](https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles),

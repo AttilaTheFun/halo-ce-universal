@@ -66,7 +66,7 @@ def main():
         parser.error('Select one installed signing identity whose certificate is included in the profile. '
                      'Use security find-identity -v -p codesigning to list identities.')
     identity = matches[0][0]
-    # This app needs no privileged capabilities. Do not inherit unrelated
+    # Keep the required memory capability, but do not inherit unrelated
     # entitlements from the old signature or grant every profile entitlement.
     entitlements = {'application-identifier': app_id,
                     'com.apple.developer.kernel.extended-virtual-addressing': True,

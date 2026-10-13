@@ -9,6 +9,14 @@ Subsequent launches reuse it. Existing imports/saves from our earlier branch
 and existing innerhat `Documents/GameData/maps` installations remain readable
 when the same bundle ID and account are used. Different IDs have separate data.
 
+## Download a test IPA
+
+[Download the unsigned IPA and re-signing kit](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261012) for this PR.
+Follow [the re-signing guide](RESIGNING.md). A profile granting Extended Virtual
+Addressing is required; free-account AltStore installation is not a tested path.
+You supply your own game image on first launch. No device ID needs to be sent
+to the maintainer when you use your own signing account.
+
 ## Build
 
 Follow [Apple build setup](../../docs/apple-build.md). LLVM 22, full Xcode,
