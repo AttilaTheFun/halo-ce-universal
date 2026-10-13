@@ -2202,6 +2202,9 @@ static void ui_point_from_window(float wx,float wy,int centered,short *x,short *
 }
 int halo_ui_pointer_update(int menus_active,struct halo_ui_pointer *pointer) {
     struct platform_ui_pointer state;
+    /* the scores after a game, and the menus, take Enter as A. That mapping
+    follows this flag (keyboard_gamepad). The pointer alone does not. */
+    platform_menus_set_active(menus_active!=0);
     platform_ui_pointer_set_active(menus_active!=0);
     if (!menus_active || !device.ready || !platform_ui_pointer_read(&state)) return 0;
     memset(pointer,0,sizeof(*pointer));

@@ -2394,8 +2394,11 @@ void hs_evaluate_begin_random(
 			*argument_count += 1;
 		}
 
+		/* port: a long holds LONG_BITS choices, so a list of that many
+		fits. The check was <, which halted a map whose begin_random
+		uses every bit of that word. */
 		match_assert("c:\\halo\\source\\hs\\hs_library_internal_runtime.h", 0x50,
-			*argument_count<LONG_BITS);
+			*argument_count<=LONG_BITS);
 
 		csmemset(evaluated, 0, BIT_VECTOR_SIZE_IN_BYTES(*argument_count));
 	}
