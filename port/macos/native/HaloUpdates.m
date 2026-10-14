@@ -531,7 +531,9 @@ NSString *HaloConfigUpdateAnswer(NSString *text) {
         [[NSUUID UUID].UUIDString stringByAppendingPathExtension:@"sh"]]];
     /* The new app is checked under its real name, then the installed one is
        moved aside. If the new one cannot take its place, the old one comes back.
-       update.txt sits beside debug.txt. Each install adds a line. */
+       update.txt sits beside debug.txt. Each install adds a line.
+       The question leaves the window windowed. A normal open can restore
+       that frame, so the new app is opened fresh. */
     NSString *replaced = HaloForkUpdateHistoryNote(self.build, toBuild, YES);
     NSString *kept = HaloForkUpdateHistoryNote(self.build, toBuild, NO);
     NSString *body = @"#!/bin/sh\nset -eu\n"
@@ -557,7 +559,8 @@ NSString *HaloConfigUpdateAnswer(NSString *text) {
         "if ! mv \"$holding/OpenCE.app\" \"$3\"; then mv \"$previous\" \"$3\" || true; fail; fi\n"
         "note \"$ok\"\n"
         "rm -rf \"$previous\" \"$holding\" \"$(dirname \"$2\")\"\n"
-        "open \"$3\"\n"
+        "sleep 0.4\n"
+        "open -F \"$3\"\n"
         "rm -f \"$0\"\n";
     if (![[body dataUsingEncoding:NSUTF8StringEncoding] writeToURL:script options:NSDataWritingAtomic error:error]) return NO;
     chmod(script.path.fileSystemRepresentation, 0700);

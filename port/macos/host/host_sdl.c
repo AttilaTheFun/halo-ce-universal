@@ -213,7 +213,8 @@ uint32_t host_sdl_create_window(const char *title, int width, int height, int64_
                   (mode & SDL_WINDOW_FULLSCREEN) ? "borderless fullscreen" : "windowed");
 #else
         host_logf(HOST_LOG_INFO, "Metal drawable %dx%d (%s)", w, h,
-                  (mode & SDL_WINDOW_FULLSCREEN) ? "borderless fullscreen" : "windowed");
+                  (SDL_GetWindowFlags(metal_window) & SDL_WINDOW_FULLSCREEN)
+                      ? "borderless fullscreen" : "windowed");
 #endif
     }
     return handle_new(_handle_window, metal_window);

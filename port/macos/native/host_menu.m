@@ -275,7 +275,8 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 }
 - (void)applicationDidBecomeActive:(NSNotification *)notification {
     (void)notification;
-    [self updateSystemChrome];
+    /* The window may have been created before this app was active. */
+    host_menu_window_changed();
 }
 - (void)refreshFullscreen {
     self.fullscreenButton.state = (self.gameRunning ? host_sdl_is_fullscreen() : !self.preferences.windowed)
@@ -852,6 +853,9 @@ void host_menu_style_window(void *window) {
     if (!native) return;
     native.titleVisibility = NSWindowTitleHidden;
     native.titlebarAppearsTransparent = YES;
+    /* The update question leaves a windowed frame. Restoring it would undo
+       the saved fullscreen choice on the next launch. */
+    native.restorable = NO;
     native.styleMask |= NSWindowStyleMaskFullSizeContentView;
     native.movableByWindowBackground = NO;
     [native standardWindowButton:NSWindowCloseButton].hidden = YES;
@@ -946,7 +950,19 @@ int host_menu_prepare(const char *support, const char *fallback, char *data, siz
     }
 }
 void host_menu_begin_game(void) { menu.gameRunning = YES; [menu refreshFullscreen]; }
-void host_menu_window_changed(void) { [menu refreshFullscreen]; }
+void host_menu_window_changed(void) {
+    /* open from the update helper can create the window before the app is
+       active, and macOS then leaves fullscreen undone. A windowed choice
+       (HALO_WINDOWED) stays windowed. */
+    static int applying;
+    const char *windowed = SDL_getenv("HALO_WINDOWED");
+    if (!applying && !(windowed && SDL_atoi(windowed)) && !host_sdl_is_fullscreen()) {
+        applying = 1;
+        host_sdl_set_fullscreen(1);
+        applying = 0;
+    }
+    [menu refreshFullscreen];
+}
 void host_menu_finish_game(int exit_code) {
     @autoreleasepool {
         menu.quitting = YES;
