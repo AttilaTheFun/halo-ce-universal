@@ -9,7 +9,8 @@ remain the baseline; an upstream change is not accepted merely because it is new
 ## Apple migration and current networking
 
 The current Apple contribution inherits innerhat `036b9fe6` (protocol 26),
-then selectively integrates protocol 28 and discovery fixes. See the
+then selectively integrates protocol 28 and discovery fixes, followed by
+[protocol 29 and map-sharing fixes](apple-network-29.md). See the
 [Apple network review](apple-network-28.md) for source revisions, decisions and
 validation. The historical review below describes the earlier fork baseline.
 

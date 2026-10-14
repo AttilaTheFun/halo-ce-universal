@@ -1,5 +1,8 @@
 # Apple server discovery and protocol 28
 
+Superseded for current builds by [protocol 29](apple-network-29.md). This record
+describes the preceding integration and its validation.
+
 The Apple baseline is innerhat `036b9fe609bdba518711464ce24d2a2d9a3d7caf` (protocol 26).
 This targeted update uses OpenCommunityEdition/OpenCE `b1ef7f7e` (protocol 28),
 with the original authors retained on cherry-picked commits. It does not merge
