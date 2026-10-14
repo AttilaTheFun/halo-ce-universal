@@ -1,10 +1,22 @@
 # iPhone development build
 
-This port targets iPhone 17 Pro Max, arm64, iOS 26.0 or later. It uses the
-existing game and Xbox SDK inputs from the local Mac setup. The renderer uses
-ANGLE's Metal backend and inherits the Mac vertex-upload and occlusion-query
-fixes. The first build uses the display's landscape aspect ratio at a 480-pixel
-internal height, scaled to the native drawable.
+Native ARM64 iOS/iPadOS 26+ build using innerhat's signed ILP32 runtime and
+ANGLE Metal renderer. Both iPhone and iPad are supported by the app bundle.
+No game data is packaged: first launch presents **Choose Halo ISO** in Files.
+Import validates supported original Xbox PAL/NTSC-US maps, verifies a retained
+private image by SHA-256 readback, and atomically publishes the new map cache.
+Subsequent launches reuse it. Existing imports/saves from our earlier branch
+and existing innerhat `Documents/GameData/maps` installations remain readable
+when the same bundle ID and account are used. Different IDs have separate data.
+
+## Download a test IPA
+
+[Download the unsigned IPA and re-signing kit](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261013) for this PR.
+Follow [the re-signing guide](RESIGNING.md). Source builds starting at build 17
+no longer require Extended Virtual Addressing. Free-account AltStore and
+LiveContainer installation remain unverified; older downloads still require it.
+You supply your own game image on first launch. No device ID needs to be sent
+to the maintainer when you use your own signing account.
 
 ## Build
 
@@ -38,8 +50,10 @@ This compiles the game, builds SDL and the native host, and asks Xcode to
 provision/sign with your local account. Game data is imported in the app. No signing identity is
 provided by this repository. Outputs:
 
-- `build/ios/device/Release-iphoneos/Halo.app`
-- `build/ios/device/HaloIOS.xcodeproj` (select the **Halo** scheme)
+The runtime reserves an OS-selected aligned virtual arena without Extended
+Virtual Addressing or Increased Memory Limit. No JIT entitlement is used. A development
+or Ad Hoc profile must cover the installing device. See the [IPA re-signing
+guide](RESIGNING.md) for a locally held identity/profile workflow.
 
 Omit `--sign` and `--team` for an unsigned compile check. To use the Xcode UI,
 open the generated project, choose your team under Signing & Capabilities,

@@ -67,8 +67,7 @@ def main():
         build_plugin()
         return
     for platform in (['simulator', 'device'] if args.platform == 'both' else [args.platform]):
-        # The device image sits above iOS's GPU carveout. The simulator image
-        # uses the Mac arena. One image cannot boot in both places.
+        # Keep platform artifacts separate, even though both use a dynamic arena.
         os.environ['HALO_IOS_SIMULATOR'] = '1' if platform == 'simulator' else '0'
         guest = ROOT / ('build/ios-simulator' if platform == 'simulator' else 'build/ios')
         if not args.host_only:
