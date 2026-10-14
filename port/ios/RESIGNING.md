@@ -5,7 +5,7 @@ iOS/iPadOS 26+. Build 17 and newer choose their guest arena dynamically and
 do not request Extended Virtual Addressing or Increased Memory Limit. Start with a device IPA
 provided by the builder, or build one using [the iOS build instructions](README.md)
 and `tools/ios_package.py`. Download the unsigned device IPA and re-signing kit from the
-[PR #1 testing release](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261013). The release is built from
+[PR #1 testing release](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261014). The release is built from
 `apple/ios-installer`, not the private branding branch. GitHub Actions does not
 yet publish an unsigned IPA automatically. A simulator app cannot run on an iPhone.
 

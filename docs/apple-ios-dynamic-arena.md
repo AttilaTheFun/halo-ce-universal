@@ -43,6 +43,11 @@ not imported; our existing LLVM signed-image pass now derives the base from SP.
 - The simulator runs under macOS's address-space rules and selected 448 GiB.
   It cannot validate unentitled physical-iOS allocation or LiveContainer.
   Low fixed-address probes on this Mac correctly failed on occupied mappings.
-- Physical-device and LiveContainer gameplay/performance remain to be tested.
+- Physical iPhone 15 Pro on iOS 27.0.1: installed and launched standalone build
+  25 without a debugger; signature verification confirmed neither Extended
+  Virtual Addressing nor Increased Memory Limit. The OS selected 448 GiB,
+  all 227 imports resolved, Metal/MetalFX initialized and the main menu loaded.
+  This establishes startup on that device, not iOS 26 or LiveContainer support.
+- Physical gameplay/performance and LiveContainer remain to be tested.
   A normal process must still have a sufficiently large aligned free region;
   this implementation cannot guarantee a suitable hole in every host process.

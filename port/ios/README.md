@@ -11,10 +11,10 @@ when the same bundle ID and account are used. Different IDs have separate data.
 
 ## Download a test IPA
 
-[Download the unsigned IPA and re-signing kit](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261013) for this PR.
+[Download the unsigned IPA and re-signing kit](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261014) for this PR.
 Follow [the re-signing guide](RESIGNING.md). Source builds starting at build 17
 no longer require Extended Virtual Addressing. Free-account AltStore and
-LiveContainer installation remain unverified; older downloads still require it.
+LiveContainer installation remain unverified; builds up to 16 still require it.
 You supply your own game image on first launch. No device ID needs to be sent
 to the maintainer when you use your own signing account.
 
