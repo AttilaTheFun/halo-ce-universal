@@ -59,7 +59,7 @@ that page. This Mac tree is built from that source and has to be rebuilt here.
    [join the multiplayer playtest](docs/playtesting.md#play-together).
 
 Mac first launch imports a disc or offers to manage a copy of your maps.
-Data, saves, and settings live in `~/Library/Application Support/Halo OG/`.
+Data, saves, and settings live in `~/Library/Application Support/OpenCE/`.
 Prior `Halo CE Universal` data is copied where needed, preserving the old folder
 and existing files. External map folders can remain selected.
 [Data management details](docs/macos-menu-and-releases.md#independently-supplied-data).

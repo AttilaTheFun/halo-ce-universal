@@ -131,7 +131,7 @@ static void migrationFixtures(NSURL *test, NSURL *valid, NSURL *image) {
     const char *previousOverride = getenv("HALO_SAVE_ROOT");
     NSString *savedOverride = previousOverride ? @(previousOverride) : nil;
     setenv("HALO_SAVE_ROOT", test.fileSystemRepresentation, 1);
-    NSURL *canonical = [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Halo OG"] isDirectory:YES];
+    NSURL *canonical = [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/OpenCE"] isDirectory:YES];
     assert(!HaloSupportDirectoryNeedsMigration(canonical));
     if (savedOverride) setenv("HALO_SAVE_ROOT", savedOverride.UTF8String, 1);
     else unsetenv("HALO_SAVE_ROOT");

@@ -117,7 +117,7 @@ def build_ui_test():
         shutil.copy2(original / "Resources" / name, resources / name)
     with (original / "Info.plist").open("rb") as stream:
         minimum = plistlib.load(stream)["LSMinimumSystemVersion"]
-    info = {"CFBundleExecutable":"menu-ui", "CFBundleIdentifier":"local.halo.ce.menu-tests", "CFBundleName":"Halo OG Menu Test",
+    info = {"CFBundleExecutable":"menu-ui", "CFBundleIdentifier":"local.halo.ce.menu-tests", "CFBundleName":"OpenCE Menu Test",
             "CFBundlePackageType":"APPL", "CFBundleVersion":"1", "CFBundleShortVersionString":"1.0",
             "CFBundleIconFile":"AppIcon.icns", "LSMinimumSystemVersion":minimum}
     (app / "Contents/Info.plist").write_bytes(plistlib.dumps(info))
@@ -153,7 +153,7 @@ def native_menu_loop():
     executable.parent.mkdir(parents=True, exist_ok=True)
     (app / 'Contents/Info.plist').write_bytes(plistlib.dumps({
         'CFBundleExecutable': 'menu-loop', 'CFBundleIdentifier': 'local.halo.ce.menu-loop-tests',
-        'CFBundleName': 'Halo OG Menu Loop', 'CFBundlePackageType': 'APPL',
+        'CFBundleName': 'OpenCE Menu Loop', 'CFBundlePackageType': 'APPL',
         'CFBundleVersion': '1', 'CFBundleShortVersionString': '1.0'}))
     subprocess.run(["clang", *objects, f"-L{SDL / 'lib'}", "-lSDL3", f"-F{egl}",
                     "-framework", "libEGL", f"-F{sparkle}", "-framework", "Sparkle", "-framework", "Cocoa",

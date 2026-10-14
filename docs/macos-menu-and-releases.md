@@ -39,10 +39,11 @@ an ad hoc signature with no certificate authority or team identifier. The app
 uses the generic `local.halo.ce-universal` bundle identifier. Third-party helper
 identifiers and capability entitlements remain those of the pinned dependency.
 The app's displayed name is **OpenCE** and its bundle identifier remains stable.
-The canonical data directory is `~/Library/Application Support/Halo OG/`.
-Prior files are copied from `~/Library/Application Support/Halo CE Universal/`
-without deleting the original files or replacing files already in the new directory.
-Existing Halo OG settings take precedence. Copied settings point to copied managed
+The canonical data directory is `~/Library/Application Support/OpenCE/`.
+Prior files are copied from `~/Library/Application Support/Halo OG/`, or from
+`Halo CE Universal` when that is the only older folder, without deleting the
+original files or replacing files already in the new directory.
+Existing OpenCE settings take precedence. Copied settings point to copied managed
 data when that selection is complete; a conflicting selection continues using
 its intact legacy path. External game folders remain selected in place.
 If migration cannot complete, the app reports the error and stops launch so it
@@ -156,7 +157,7 @@ works). Nothing is downloaded or uploaded by this selection. Disc imports copy
 maps to a fresh directory in:
 
 ```text
-~/Library/Application Support/Halo OG/Game Data/<import-id>/maps/
+~/Library/Application Support/OpenCE/Game Data/<import-id>/maps/
 ```
 
 Header checks require a supported Xbox release, including `ui.map` and `a10.map`.

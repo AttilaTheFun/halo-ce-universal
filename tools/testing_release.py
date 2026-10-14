@@ -190,7 +190,7 @@ def release_notes(record):
             "See macos-README.txt for the required macOS version and first-launch instructions. "
             f"Linux requires the [32-bit runtime dependencies]({source}/port/linux/README.md#requirements).\n\n"
             "On Mac, choosing a maps folder offers **Copy and Manage**. Managed maps, saves "
-            "and preferences persist in `~/Library/Application Support/Halo OG/` across app updates. "
+            "and preferences persist in `~/Library/Application Support/OpenCE/` across app updates. "
             "With original Xbox NTSC 2276 data selected, opt into **Download approved community maps "
             "in the background** in Settings to get the hosted Downrush map. Downloads default off.\n\n"
             f"For manual setup on any platform, download [downrush.map]({DOWNRUSH_URL}) "

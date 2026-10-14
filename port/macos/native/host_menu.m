@@ -122,10 +122,9 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 
 @implementation HaloMenu
 - (BOOL)migrateSupportIfNeeded:(NSURL *)support {
-    if (!HaloSupportDirectoryNeedsMigration(support)) return YES;
+    NSURL *legacy = HaloLegacySupportDirectory();
+    if (!HaloSupportDirectoryNeedsMigration(support) || !legacy) return YES;
     self.importing = YES;
-    NSURL *parent = [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support"] isDirectory:YES];
-    NSURL *legacy = [parent URLByAppendingPathComponent:@"Halo CE Universal" isDirectory:YES];
     NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 520, 150)
         styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
     window.title = @"Preparing OpenCE Data";

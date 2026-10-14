@@ -171,8 +171,8 @@ publication can promote those audited CI outputs to a GitHub prerelease with
 tagged direct download links, without personal signing credentials or game data.
 The Mac download is `Halo-OG-macos-arm64.dmg` containing `OpenCE.app`.
 The bundle identifier remains stable. The app copies prior data from
-`~/Library/Application Support/Halo CE Universal/` into the canonical
-`~/Library/Application Support/Halo OG/` directory, preserving original files
+`~/Library/Application Support/Halo OG/` into the canonical
+`~/Library/Application Support/OpenCE/` directory, preserving original files
 and any files already present in the new directory.
 
 Device signing settings belong in your local Xcode account and ignored build

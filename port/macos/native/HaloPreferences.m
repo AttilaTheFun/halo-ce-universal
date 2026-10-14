@@ -308,14 +308,28 @@ static BOOL migrationCompleted(NSURL *legacy, NSURL *destination) {
         [record[@"completed"] isEqual:@YES] && [record[@"source_path"] isEqual:legacy.path] &&
         [record[@"destination_path"] isEqual:destination.path];
 }
+static NSURL *supportParent(void) {
+    return [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support"] isDirectory:YES];
+}
+static BOOL supportDirectoryExists(NSURL *directory) {
+    struct stat info;
+    return directory && !lstat(directory.fileSystemRepresentation, &info) && S_ISDIR(info.st_mode);
+}
+NSURL *HaloLegacySupportDirectory(void) {
+    NSURL *parent = supportParent();
+    NSURL *previous = [parent URLByAppendingPathComponent:@"Halo OG" isDirectory:YES];
+    if (supportDirectoryExists(previous)) return previous;
+    NSURL *older = [parent URLByAppendingPathComponent:@"Halo CE Universal" isDirectory:YES];
+    return supportDirectoryExists(older) ? older : nil;
+}
 BOOL HaloSupportDirectoryNeedsMigration(NSURL *directory) {
     if (getenv("HALO_SAVE_ROOT")) return NO;
-    NSURL *parent = [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support"] isDirectory:YES];
-    NSURL *canonical = [parent URLByAppendingPathComponent:@"Halo OG" isDirectory:YES].URLByStandardizingPath.URLByResolvingSymlinksInPath;
+    NSURL *canonical = [supportParent() URLByAppendingPathComponent:@"OpenCE" isDirectory:YES].URLByStandardizingPath.URLByResolvingSymlinksInPath;
     if (![directory.URLByStandardizingPath.URLByResolvingSymlinksInPath.path isEqual:canonical.path]) return NO;
-    NSURL *legacy = [parent URLByAppendingPathComponent:@"Halo CE Universal" isDirectory:YES];
-    struct stat info;
-    return !lstat(legacy.fileSystemRepresentation, &info) && !migrationCompleted(legacy, directory);
+    /* The finished record stores the standardized paths. Compare those, or a
+       completed copy looks unfinished and the launch window returns. */
+    NSURL *legacy = HaloLegacySupportDirectory().URLByStandardizingPath;
+    return legacy && !migrationCompleted(legacy, directory.URLByStandardizingPath);
 }
 static BOOL migrationConflict(NSString *relative, NSArray<NSString *> *conflicts, BOOL descendants) {
     for (NSString *conflict in conflicts) {
@@ -420,16 +434,16 @@ BOOL HaloMigrateLegacySupportDirectory(NSURL *legacy, NSURL *destination, xiso_p
     if (lstat(legacy.fileSystemRepresentation, &info) || !S_ISDIR(info.st_mode) ||
         [legacy.path isEqual:destination.path] || [destination.path hasPrefix:[legacy.path stringByAppendingString:@"/"]] ||
         [legacy.path hasPrefix:[destination.path stringByAppendingString:@"/"]]) {
-        if (error) *error = failure(@"The legacy Application Support location must be a real folder separate from Halo OG. No original data was changed.");
+        if (error) *error = failure(@"The legacy Application Support location must be a real folder separate from OpenCE. No original data was changed.");
         return NO;
     }
     if ((!lstat(destination.fileSystemRepresentation, &info) && !S_ISDIR(info.st_mode)) ||
         ![NSFileManager.defaultManager createDirectoryAtURL:destination withIntermediateDirectories:YES attributes:nil error:error]) {
-        if (error && !*error) *error = failure(@"The Halo OG data location is not a writable real folder. The legacy files remain available.");
+        if (error && !*error) *error = failure(@"The OpenCE data location is not a writable real folder. The legacy files remain available.");
         return NO;
     }
     if (!lstat(migrationRecordURL(destination).fileSystemRepresentation, &info)) {
-        if (error) *error = failure(@"An unrecognized migration record already exists in Halo OG. It was preserved; migration cannot safely continue.");
+        if (error) *error = failure(@"An unrecognized migration record already exists in OpenCE. It was preserved; migration cannot safely continue.");
         return NO;
     }
     NSURL *staging = [destination URLByAppendingPathComponent:[@".migration-" stringByAppendingString:NSUUID.UUID.UUIDString] isDirectory:YES];
@@ -445,6 +459,8 @@ BOOL HaloMigrateLegacySupportDirectory(NSURL *legacy, NSURL *destination, xiso_p
         NSURL *source = item[@"source"];
         NSString *relative = item[@"relative"];
         if ([relative isEqual:@"macos-settings.json"] && ![item[@"directory"] boolValue] && ![item[@"link"] boolValue]) { settingsSource = item; continue; }
+        /* The old record names the previous destination. This copy writes its own. */
+        if ([relative isEqual:@"legacy-migration.json"] || [relative hasPrefix:@"legacy-migration-failed-"]) continue;
         if (migrationConflict(relative, conflicts, NO)) continue;
         NSURL *target = [destination URLByAppendingPathComponent:relative];
         BOOL exists = !lstat(target.fileSystemRepresentation, &info);
@@ -484,7 +500,7 @@ BOOL HaloMigrateLegacySupportDirectory(NSURL *legacy, NSURL *destination, xiso_p
             NSData *bytes = [NSData dataWithContentsOfURL:target options:0 error:error];
             id decoded = bytes ? [NSJSONSerialization JSONObjectWithData:bytes options:0 error:error] : nil;
             success = [decoded isKindOfClass:NSDictionary.class];
-            if (!success && error && !*error) *error = failure(@"Existing Halo OG settings are invalid. They were preserved; the game will not silently start with empty settings.");
+            if (!success && error && !*error) *error = failure(@"Existing OpenCE settings are invalid. They were preserved; the game will not silently start with empty settings.");
             if (success) [records addObject:@{@"path":@"macos-settings.json", @"action":@"existing-settings-preserved"}];
         } else {
             NSData *bytes = [NSData dataWithContentsOfURL:settingsSource[@"source"] options:0 error:error];

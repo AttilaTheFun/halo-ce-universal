@@ -28,6 +28,9 @@ BOOL HaloUpdateConfigurationIsValid(NSDictionary *info);
 /* Launch migration is eligible only for the canonical default support folder,
    never a HALO_SAVE_ROOT override. The copy helper is separately fixtureable.
    Existing destination files/settings and the complete legacy tree survive. */
+/* Earlier Mac builds stored this tree under Halo OG, and before that under
+   Halo CE Universal. Nil when neither folder is present. */
+NSURL *HaloLegacySupportDirectory(void);
 BOOL HaloSupportDirectoryNeedsMigration(NSURL *directory);
 BOOL HaloMigrateLegacySupportDirectory(NSURL *legacy, NSURL *destination,
     void (*progress)(void *, const char *, unsigned long long, unsigned long long),

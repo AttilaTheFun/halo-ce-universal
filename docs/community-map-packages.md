@@ -24,7 +24,7 @@ with `tools/macos_build.py --content-tools <reviewed-toolchain-directory>`.
 That build exposes **Settings → Import Community Package…**. Import runs
 extraction and compilation in the background using the active session's
 original data, then registers a verified map in
-`~/Library/Application Support/Halo OG/Community Maps/maps/`. A local receipt
+`~/Library/Application Support/OpenCE/Community Maps/maps/`. A local receipt
 allows verified maps to be reused after restart without downloading, including
 when HTTPS hosting is unconfigured or community downloads are off. Local
 receipt identity takes precedence over an HTTP catalog entry with the same ID;

@@ -82,13 +82,13 @@ menu dimming and flat backgrounds cover the whole display.
 Saves, cache files, `config.toml`, and `halo.log` are under:
 
 ```text
-~/Library/Application Support/Halo OG/
+~/Library/Application Support/OpenCE/
 ```
 
 On first launch, prior settings, saves and managed game data are copied from
-`~/Library/Application Support/Halo CE Universal/`. The original files remain
-in place, and existing files under Halo OG are preserved. The bundle identifier
-remains stable.
+`~/Library/Application Support/Halo OG/`, or from `Halo CE Universal` when
+that is the only older folder. The original files remain in place, and
+existing files under OpenCE are preserved. The bundle identifier remains stable.
 
 Keyboard/mouse controls:
 
@@ -118,7 +118,7 @@ See [native settings](../../docs/native-settings.md) for live Audio/Video option
 in the main and pause menus.
 
 All keyboard/controller actions and mouse buttons can be changed in the
-`[bindings]` section of `~/Library/Application Support/Halo OG/config.toml`.
+`[bindings]` section of `~/Library/Application Support/OpenCE/config.toml`.
 The first launch adds any missing bindings with their defaults, preserving
 existing settings, bindings and comments. Quit Halo, edit the file, and restart
 to apply changes. These bindings emit Xbox controller buttons, so an in-game

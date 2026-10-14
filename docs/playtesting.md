@@ -30,8 +30,8 @@ Requires Apple Silicon and macOS 26 or later. Use the minimum recorded in
 
 Use **OpenCE → Settings…** or the menu-bar helmet for fullscreen, map selection,
 download status, and **Open Saves Folder**. Data lives in
-`~/Library/Application Support/Halo OG/`. First launch copies old
-`Halo CE Universal` data where needed, preserving old and existing files. A
+`~/Library/Application Support/OpenCE/`. First launch copies an older
+Application Support folder where needed, preserving old and existing files. A
 copy failure stops launch with an explanation so you can correct it and retry.
 
 **Escape** pauses/releases the mouse; **F12** releases or recaptures it.

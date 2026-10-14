@@ -35,7 +35,7 @@ images remain user-imported data. No import/join operation uploads user data.
 The canonical macOS location is outside the app bundle:
 
 ```text
-~/Library/Application Support/Halo OG/
+~/Library/Application Support/OpenCE/
   macos-settings.json            data/source-image paths, display/download consent
   config.toml                    existing advanced game settings
   <existing saves/profiles/cache/logs>
@@ -49,8 +49,8 @@ The canonical macOS location is outside the app bundle:
     Downloads/<hash>-<UUID>.partial
 ```
 
-On first launch the app copies the legacy `Halo CE Universal` Application
-Support tree into `Halo OG`, including settings, profiles, saves and maps.
+On first launch the app copies the previous Application
+Support tree into `OpenCE`, including settings, profiles, saves and maps.
 Original files and existing destination files are preserved. Managed selections
 are repointed only after their copied targets are complete. A copy failure
 stops launch with an error so an empty new directory cannot hide prior settings.

@@ -127,7 +127,7 @@ int main(int argc, const char **argv) {
             SDL_Quit();
             return 0;
         }
-        assert(host_sdl_create_window("Halo OG Menu Test", 640, 480, 0));
+        assert(host_sdl_create_window("OpenCE Menu Test", 640, 480, 0));
         host_menu_begin_game();
         if (argc == 4) {
             check_main_loop(argv[3], argv[2]);
