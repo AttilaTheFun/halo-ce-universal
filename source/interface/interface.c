@@ -105,6 +105,7 @@ symbols in this file:
 #include "units/unit_definitions.h"
 #include "units/units.h"
 #include "map_share.h" /* port: port/linux/game/map_share.c */
+#include "fork_update_notice.h" /* port: port/linux/game/fork_update_notice.c */
 
 /* ---------- constants */
 
@@ -382,6 +383,8 @@ void interface_draw_fullscreen_overlays(
 	cinematic_render();
 	interface_splitscreen_render();
 	hud_render_timer();
+	/* port: a newer Mac release, in the same place in a game and in the menus */
+	fork_update_notice_render();
 	/* port: a map's download (port/linux/game/map_share.c) */
 	map_share_render();
 	terminal_draw();

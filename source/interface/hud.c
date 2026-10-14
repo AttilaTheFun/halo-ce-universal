@@ -85,7 +85,6 @@ symbols in this file:
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "../../port/linux/game/performance_options.h"
 #endif
-#include "../../port/linux/game/fork_update_notice.h"
 #include "game/game_globals.h"
 #include "game/players.h"
 #include "interface/hud.h"
@@ -1436,8 +1435,6 @@ void hud_draw_screen(
 				hud_show_action_response(player_index);
 				hud_play_unit_sounds(player, hud_scripted_globals->show_hud);
 				hud_render_unit_interface(player);
-				/* port: a Mac update, between the shield and the weapon */
-				fork_update_notice_render();
 				hud_render_nav_points(render.local_player_index);
 				hud_render_damage_indicators(render.local_player_index);
 			}
