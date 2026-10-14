@@ -54,7 +54,7 @@ int halo_debug_frame_limit(void) {return frameLimit;}
 void halo_debug_configure_launch(void) {
 #ifdef HALO_IOS
     NSUserDefaults *settings=NSUserDefaults.standardUserDefaults;
-    [settings registerDefaults:@{@"HaloRenderHeight":@720,@"HaloFrameLimit":@60,@"HaloFPSOverlay":@NO,@"HaloInterpolation":@YES}];
+    [settings registerDefaults:@{@"HaloRenderHeight":@720,@"HaloFrameLimit":@60,@"HaloFPSOverlay":@NO,@"HaloInterpolation":@NO}];
     int height=(int)[settings integerForKey:@"HaloRenderHeight"];
     if (!height) {
         CGSize pixels=UIScreen.mainScreen.nativeBounds.size;
