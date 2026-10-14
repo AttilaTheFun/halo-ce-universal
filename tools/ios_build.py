@@ -67,8 +67,7 @@ def main():
         build_plugin()
         return
     for platform in (['simulator', 'device'] if args.platform == 'both' else [args.platform]):
-        # Device code uses a 448-GB arena above iOS's GPU carveout. The simulator's
-        # signed image uses the Mac's 1-TB arena; never reuse it on a device.
+        # Keep platform artifacts separate, even though both use a dynamic arena.
         os.environ['HALO_IOS_SIMULATOR'] = '1' if platform == 'simulator' else '0'
         guest = ROOT / ('build/ios-simulator' if platform == 'simulator' else 'build/ios')
         if not args.host_only:

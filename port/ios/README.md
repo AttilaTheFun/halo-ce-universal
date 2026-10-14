@@ -12,8 +12,9 @@ when the same bundle ID and account are used. Different IDs have separate data.
 ## Download a test IPA
 
 [Download the unsigned IPA and re-signing kit](https://github.com/AttilaTheFun/halo-ce-universal/releases/tag/apple-ios-pr1-20261013) for this PR.
-Follow [the re-signing guide](RESIGNING.md). A profile granting Extended Virtual
-Addressing is required; free-account AltStore installation is not a tested path.
+Follow [the re-signing guide](RESIGNING.md). Source builds starting at build 17
+no longer require Extended Virtual Addressing. Free-account AltStore and
+LiveContainer installation remain unverified; older downloads still require it.
 You supply your own game image on first launch. No device ID needs to be sent
 to the maintainer when you use your own signing account.
 
@@ -39,9 +40,8 @@ belong in this repository. `--no-bundle-maps` remains accepted for compatibility
 but map bundling has been removed. `--host-only` is suitable only when reusing an
 unchanged guest image. Any game/compiler/bridge change requires the normal build.
 
-The signed device runtime reserves a virtual arena above iOS's guard region.
-Its profile must grant **Extended Virtual Addressing**; upstream testing found
-Personal Teams could not provision it. No JIT entitlement is used. A development
+The runtime reserves an OS-selected aligned virtual arena without Extended
+Virtual Addressing or Increased Memory Limit. No JIT entitlement is used. A development
 or Ad Hoc profile must cover the installing device. See the [IPA re-signing
 guide](RESIGNING.md) for a locally held identity/profile workflow.
 
