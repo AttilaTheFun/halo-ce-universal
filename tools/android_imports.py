@@ -22,6 +22,9 @@ def main():
     ios = "--ios" in arguments
     if ios:
         arguments.remove("--ios")
+    simulator = "--simulator" in arguments
+    if simulator:
+        arguments.remove("--simulator")
     host_table = None
     if arguments[0] == "--host-table":
         host_table = arguments[1]
@@ -45,7 +48,7 @@ def main():
         if ios:
             out += [f"\tmovz w16, #:abs_g0_nc:__host_import_table+{offset}",
                     f"\tmovk w16, #:abs_g1_nc:__host_import_table+{offset}",
-                    "\torr x16, x16, #0x400000000", "\tldr x16, [x16]"]
+                    f"\torr x16, x16, #{'0x10000000000' if simulator else '0x7000000000'}", "\tldr x16, [x16]"]
         else:
             out += [f"\tadrp x16, __host_import_table+{offset}",
                     f"\tldr x16, [x16, :lo12:__host_import_table+{offset}]"]

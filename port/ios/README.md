@@ -34,8 +34,8 @@ python3 tools/ios_build.py --platform device --sign \
   --team YOUR_TEAM_ID --bundle-id com.yourname.halo
 ```
 
-This compiles the game, builds SDL and the native host, packages the maps, and
-asks Xcode to provision/sign with your local account. No signing identity is
+This compiles the game, builds SDL and the native host, and asks Xcode to
+provision/sign with your local account. Game data is imported in the app. No signing identity is
 provided by this repository. Outputs:
 
 - `build/ios/device/Release-iphoneos/Halo.app`
@@ -68,11 +68,10 @@ at build time. Alternatively, use Xcode's Run button. The default bundle ID is
 `local.halo.ce-universal.ios`; choose your own for device provisioning to avoid
 registration conflicts.
 
-The default local build includes `assets/maps` (roughly 1.8 GB). Use
-`--no-bundle-maps` to omit them, open the app once, then copy your `maps` folder
-into its `Documents/GameData/` through Finder file sharing or Files → On My iPhone
-→ Halo. Reopen the app after copying. It prefers `Documents/GameData/maps` over
-bundled maps. Saves, `config.toml` and `halo.log` are in `Library/Application Support/Halo`
+The app does not include game data. On first launch it asks for your own Xbox
+disc image (`.iso` or `.xiso`) and keeps the extracted maps in the app's
+Documents folder. An older `Documents/GameData/maps` folder is still used when
+it is already there. Saves, `config.toml` and `halo.log` are in `Documents/save`
 inside the app container. Do not publish the app bundle or local signing logs.
 
 For multiplayer on a physical phone, see [Mac and iPhone System Link](../../docs/apple-multiplayer.md).
@@ -151,7 +150,8 @@ The ELF is an intermediate build artifact, not runtime-loaded executable code.
 No JIT, writable executable mapping or runtime instruction patching is used.
 
 The LLVM adapter materializes original game addresses and translates data
-accesses into a separate non-executable arena at `0x400000000`. Only the span
+accesses into a separate non-executable arena at `0x7000000000` on a device.
+The simulator uses the Mac arena at `0x10000000000`. Only the span
 below guest address `0x90000000` is reserved (2.25 GB of virtual space); actual
 memory is committed as used. Indirect calls add an immutable code-image delta.
 Native callbacks use the same translation. Thread-local control blocks are

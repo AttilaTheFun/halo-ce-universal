@@ -69,7 +69,9 @@ int host_memory_initialize(uint32_t image_base, uint32_t image_size) {
     kern_return_t error =
         vm_allocate(mach_task_self(), &address, HALO_ARENA_SIZE, VM_FLAGS_FIXED);
     if (error != KERN_SUCCESS) {
-        host_logf(HOST_LOG_ERROR, "Guest arena reservation: %s", mach_error_string(error));
+        host_logf(HOST_LOG_ERROR, "Guest arena reservation at 0x%llx, size 0x%llx: %s (kern=%d)",
+            (unsigned long long)HALO_MACOS_BIAS, (unsigned long long)HALO_ARENA_SIZE,
+            mach_error_string(error), error);
         vm_address_t occupied = HALO_MACOS_BIAS;
         vm_size_t length = 0;
         vm_region_basic_info_data_64_t info;

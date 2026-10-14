@@ -238,8 +238,9 @@ def android_configure_inputs() -> List[Path]:
 def generate_android_build(n: Writer, sln: Any) -> None:
     macos = getattr(sln, "macos", False)
     ios = getattr(sln, "ios", False)
+    ios_simulator = ios and os.environ.get("HALO_IOS_SIMULATOR") == "1"
     native_metal = macos and not ios and getattr(sln, "macos_renderer", "angle") == "metal"
-    build_root = Path("build/ios") if ios else Path("build/macos-metal") if native_metal else Path("build/macos") if macos else BUILD
+    build_root = (Path("build/ios-simulator") if ios_simulator else Path("build/ios")) if ios else Path("build/macos-metal") if native_metal else Path("build/macos") if macos else BUILD
     config_path = LINUX_DIR / "port.json"
     if not config_path.is_file() or not (PORT_DIR / "host").is_dir():
         return
@@ -292,6 +293,8 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     config: Dict[str, Any] = json.loads(config_path.read_text(encoding="utf-8"))
 
     guest_cc = getattr(sln, "android_guest_cc", None) or "clang"
+    if ios_simulator:
+        guest_cc += " --simulator"
 
     guest_dir = build_root / "guest"
     obj_dir = guest_dir / "obj"
@@ -386,11 +389,13 @@ def generate_android_build(n: Writer, sln: Any) -> None:
                 implicit=[Path("tools/macos_metal_imports.py")])
         host_imports_list = filtered_imports
     platform_imports = [Path("port/macos/host_imports.list")] if macos else []
+    if ios:
+        platform_imports.append(Path("port/ios/host_imports.list"))
     if native_metal:
         platform_imports.append(Path("port/macos/metal_imports.list"))
     n.rule(
         name="android_imports",
-        command=f"{python} tools/android_imports.py {'--ios ' if ios else ''}--host-table {host_table_c} {imports_s} $in",
+        command=f"{python} tools/android_imports.py {'--ios ' if ios else ''}{'--simulator ' if ios_simulator else ''}--host-table {host_table_c} {imports_s} $in",
         description="ANDROID IMPORTS",
     )
     n.build(outputs=[imports_s, host_table_c], rule="android_imports",
@@ -427,7 +432,7 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     tool_implicit = [Path("tools/android_asm_convert.py"), *generated_headers]
     if macos or ios:
         platform = "ios" if ios else "macos"
-        renderer_argument = " --renderer metal" if native_metal else " --renderer angle"
+        renderer_argument = "" if ios else (" --renderer metal" if native_metal else " --renderer angle")
         n.rule(name="macos_rebase_plugin", command=f"{python} tools/{platform}_build.py{renderer_argument} --plugin-only",
                description="MACOS COMPILER PASS")
         plugin = build_root / "guest_rebase.dylib"

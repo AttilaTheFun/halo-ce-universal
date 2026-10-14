@@ -13,7 +13,7 @@ def run(*args):
 def normalized_ir(path, bias):
     text = path.read_text().split('\n', 1)[1]  # ModuleID contains the temporary filename.
     for offset in (0, 0xff0000):
-        text = text.replace(str(bias + offset), str(0x400000000 + offset))
+        text = text.replace(str(bias + offset), str(0x7000000000 + offset))
     return text
 
 def main():
@@ -28,7 +28,7 @@ def main():
         run(sys.executable, 'tools/ios_guest_cc.py', '--mac-check', '--target=arm64_32-apple-watchos',
             '-mcpu=cortex-a53', '-O2', '-ffreestanding', '-fno-stack-protector', '-fno-unwind-tables',
             '-fno-asynchronous-unwind-tables', '-S', source, '-o', str(base) + '.darwin.s')
-        if normalized_ir(Path(str(device) + '.darwin.rebased.ll'), 0x400000000) != normalized_ir(Path(str(base) + '.darwin.rebased.ll'), 0x10000000000):
+        if normalized_ir(Path(str(device) + '.darwin.rebased.ll'), 0x7000000000) != normalized_ir(Path(str(base) + '.darwin.rebased.ll'), 0x10000000000):
             raise RuntimeError('Mac signed-image lowering differs from device IR beyond the arena address')
         run(sys.executable, 'tools/android_asm_convert.py', str(base) + '.darwin.s', str(base) + '.s')
         run(LLVM / 'clang', '--target=aarch64-linux-android', '-c', str(base) + '.s', '-o', str(base) + '.o')

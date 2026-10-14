@@ -29,6 +29,10 @@ Conventions carried over from the Xbox:
 #ifdef HALO_MACOS
 #include "../../macos/renderer_config.h"
 #endif
+#ifdef HALO_IOS
+extern int host_ios_metalfx_present(unsigned int texture, unsigned int width, unsigned int height,
+    unsigned int output_width, unsigned int output_height);
+#endif
 
 #include <SDL3/SDL.h>
 
@@ -2649,12 +2653,9 @@ void halo_vertex_shader_lighting(unsigned long handle)
 
 	if (!object || !object->instructions)
 		return;
-	if (!nv2a_vertex_shader_lighting(object->instructions, object->instruction_count, &object->lighting))
-	{
-		memset(&object->lighting, 0, sizeof(object->lighting));
-		platform_log("GPU: vertex shader %lu is not lit as the pixel shader would light it: lit for each vertex",
-			object->id);
-	}
+	/* The GLSL translator does not yet name the lighting registers, so these
+	   draws stay lit for each vertex. */
+	memset(&object->lighting, 0, sizeof(object->lighting));
 }
 
 void WINAPI D3DDevice_DeleteVertexShader(DWORD handle)
@@ -2758,7 +2759,7 @@ static GLuint vertex_shader_get(struct vertex_shader_object *program, BOOL immed
 	if (!*shader && !(program->shaders_tried & tried))
 	{
 		char *source = nv2a_vertex_shader_to_glsl(program->instructions, program->instruction_count,
-			immediate ? 0 : device.vertex_shader->packed_mask, lit ? &program->lighting : NULL);
+			immediate ? 0 : device.vertex_shader->packed_mask);
 
 		program->shaders_tried |= tried;
 		*shader = xgpu_compile_shader(GL_VERTEX_SHADER, source, "vertex");
@@ -5764,6 +5765,11 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 		}
 		x = (window_width - width) / 2;
 		y = (window_height - height) / 2;
+#ifdef HALO_IOS
+		if (!host_ios_metalfx_present(back_buffer->target.texture, back_buffer->target.gl_width,
+			back_buffer->target.gl_height, (unsigned int)width, (unsigned int)height))
+#endif
+		{
 		/* Creating an FBO binds both read and draw targets. Resolve it before
 		   selecting the window, including on the first/loading frame. */
 		read_framebuffer = framebuffer_get(back_buffer->target.texture, 0);
@@ -5776,6 +5782,7 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 		/* row 0 of the render target is the top of the picture */
 		glBlitFramebuffer(0, 0, (GLint)back_buffer->target.gl_width, (GLint)back_buffer->target.gl_height,
 			x, y + height, x + width, y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		}
 		platform_video_swap();
 		gl_check_errors("present");
 		xgpu_gl_state_invalidate();
