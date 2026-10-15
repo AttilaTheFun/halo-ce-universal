@@ -363,8 +363,14 @@ its name alone beside it, has its name given back as the map lists find it.
   map, bitmaps.map, sounds.map and loc.map it lacks) instead of leaving, if
   `network.map_download` lets it. Its players wait to join until the host's settings
   have named the map, and for a game in progress until it is downloaded; in
-  the lobby they join at once, and the host's start waits for the machine to
-  precache the map, as it waits for any machine.
+  the lobby they join at once. A host that starts while a machine is still
+  downloading starts the others without it: the machine's players are held
+  out of the game, and so is any player it asks for meanwhile (a machine
+  whose download began in the lobby does not know the game has started),
+  and the machine joins the game in progress once the map is there. A
+  client told to start before its download is done (by a host of an earlier
+  build) puts the start off until the map is there, rather than loading a
+  map it does not have yet (the damaged disc error, which stops the game).
 - **The offer.** A host that shares maps (`network.map_share`) hashes the
   map, and the resource maps the map needs (its tag index says which: a tag
   whose entry's word at 0x18 is set is held whole by bitmaps.map for a
@@ -482,7 +488,11 @@ its name alone beside it, has its name given back as the map lists find it.
      and delete theirs to match. A client that has loaded asks for all the
      host's objects and is told when it has them; from then on it deletes
      any such object the host has not told it of, and nothing but the
-     host's word deletes the host's.
+     host's word deletes the host's. That word deletes a CTF flag or an
+     oddball too, which the game itself never deletes. Another delete that
+     reaches one (a late join, or a view) keeps the flag: deleting it there
+     halted. The client takes the host's flag out of its carrier's hands,
+     and the goal its game type shows at it goes with it.
    - The objects placed when the map loads are placed alike everywhere:
      the host's word finds a client's already there. Past loading, a
      client's own objects (projectiles, effects: what only it sees) take
