@@ -85,6 +85,8 @@ Saves, cache files, `config.toml`, and `halo.log` are under:
 ~/Library/Application Support/OpenCE/
 ```
 
+[Runtime files](../../docs/macos-runtime-files.md) lists every directory and file the installed app and a running game use.
+
 On first launch, prior settings, saves and managed game data are copied from
 `~/Library/Application Support/Halo OG/`, or from `Halo CE Universal` when
 that is the only older folder. The original files remain in place, and
