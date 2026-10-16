@@ -527,7 +527,10 @@ its name alone beside it, has its name given back as the map lists find it.
    rest is on the ground, so it lies limp again where it stops instead of
    keeping the pose of its fall in the air. A client puts its copies there, and the difference is
    drawn fading over a few ticks (`render_interpolation.c`) instead of a
-   jump. A vehicle no player drives is carried between those updates along
+   jump, on the 30 Hz frame as well as between ticks. Its facing moves
+   halfway toward the host's on that update, unless the turn is large or
+   this machine drives the unit, so a light aimed from it does not swing
+   across the shot. A vehicle no player drives is carried between those updates along
    the positions the host sent, a recording's lifepod as well as a Pelican.
    Its physics velocity swings about that path, so the carry steps from
    one of those positions to the next, and a jump further than a step of
