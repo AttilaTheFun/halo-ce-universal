@@ -15,7 +15,13 @@ Usage: android_asm_convert.py input.s output.s
 import re
 import sys
 
-IDENT = re.compile(r'"[^"]*"|[A-Za-z_.$][\w.$]*')
+# a quoted name (its escapes kept: \" does not end it) or a plain one
+IDENT = re.compile(r'"(?:[^"\\]|\\.)*"|[A-Za-z_.$][\w.$]*')
+
+# directives whose operands are string literals, the same in both
+# syntaxes: they go through as they are, never renamed as symbols (data
+# starting with "_" would lose that byte)
+STRING_DIRECTIVES = {".ascii", ".asciz", ".string"}
 
 DROP_DIRECTIVES = {
     ".subsections_via_symbols", ".build_version", ".watchos_version_min",
@@ -88,17 +94,6 @@ class Converter:
         return name
 
     def operands(self, text: str) -> str:
-        # Clang emits constant bytes as .ascii strings. An underscore in that
-        # data is a real 0x5F, and a quote is written as \". Hide the literals
-        # before identifier rewriting: a broken string match otherwise treats
-        # the underscore as a Mach-O symbol prefix and deletes it.
-        literals = []
-
-        def hide(match):
-            literals.append(match.group(0))
-            return f"<<<{len(literals) - 1}>>>"
-
-        text = re.sub(r'"(?:\\.|[^"\\])*"', hide, text)
         # relocation operators first
         text = re.sub(r'([\w.$"]+)@GOTPAGE\b', r"\1", text)
         text = re.sub(r'([\w.$"]+)@PAGE\b', r"\1", text)
@@ -115,8 +110,7 @@ class Converter:
             return self.sym(tok)
         # rename identifiers outside :lo12: markers
         parts = re.split(r'(:lo12:)', text)
-        text = "".join(p if p == ":lo12:" else IDENT.sub(repl, p) for p in parts)
-        return re.sub(r"<<<(\d+)>>>", lambda m: literals[int(m.group(1))], text)
+        return "".join(p if p == ":lo12:" else IDENT.sub(repl, p) for p in parts)
 
     def emit(self, s: str):
         self.out.append(s)
@@ -228,6 +222,9 @@ class Converter:
             return
         if op == ".align":
             self.emit(f"\t.p2align {args}")
+            return
+        if op in STRING_DIRECTIVES:
+            self.emit(f"\t{op} {args}")
             return
         if op.startswith("."):
             self.emit(f"\t{op} {self.operands(args)}" if args else f"\t{op}")
