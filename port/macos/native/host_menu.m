@@ -896,7 +896,7 @@ int host_menu_prepare(const char *support, const char *fallback, char *data, siz
         menu.previousDelegate = NSApp.delegate;
         NSApp.delegate = menu;
         if (HALO_MAC_UPDATE_BUILD <= 0 && HaloUpdateConfigurationIsValid(NSBundle.mainBundle.infoDictionary))
-            menu.updater = [[SPUStandardUpdaterController alloc] initWithStartingUpdater:YES updaterDelegate:menu userDriverDelegate:menu];
+            menu.updater = [[SPUStandardUpdaterController alloc] initWithStartingUpdater:NO updaterDelegate:menu userDriverDelegate:menu];
         [menu buildMenus];
         [NSApp finishLaunching];
         NSURL *supportDirectory = [NSURL fileURLWithPath:@(support) isDirectory:YES];
@@ -906,8 +906,6 @@ int host_menu_prepare(const char *support, const char *fallback, char *data, siz
             NSURL *config = [supportDirectory URLByAppendingPathComponent:@"config.toml"];
             menu.forkUpdater = [[HaloForkUpdater alloc] initWithBuild:HALO_MAC_UPDATE_BUILD
                 configURL:config bundleURL:NSBundle.mainBundle.bundleURL];
-            [menu startForkUpdateCheckQuiet:YES announce:YES];
-            [menu startUpdateWatch];
         }
         NSString *selected = menu.preferences.dataPath;
         const char *override = getenv("HALO_DATA_ROOT");
@@ -933,8 +931,15 @@ int host_menu_prepare(const char *support, const char *fallback, char *data, siz
         /* Development overrides apply to this launch; chooser actions save the
            next launch's selection without changing the current game's files. */
         menu.launchDataPath = valid.path;
-        if (HALO_MAC_UPDATE_BUILD > 0)
+        /* The disc or maps question uses this run loop. An update dialog
+           before that covers it, and a first launch has no game data yet. */
+        if (HALO_MAC_UPDATE_BUILD > 0) {
             HaloForkUpdateRecordInstalledBuild(valid, HALO_MAC_UPDATE_BUILD);
+            [menu startForkUpdateCheckQuiet:YES announce:YES];
+            [menu startUpdateWatch];
+        } else if (menu.updater) {
+            [menu.updater startUpdater];
+        }
         NSURL *downloadConfiguration = [NSBundle.mainBundle URLForResource:@"map-downloads" withExtension:@"json"];
         NSData *downloadSettings = downloadConfiguration ? [NSData dataWithContentsOfURL:downloadConfiguration] : nil;
         NSDictionary *downloadConfig = downloadSettings ? [NSJSONSerialization JSONObjectWithData:downloadSettings options:0 error:nil] : nil;
