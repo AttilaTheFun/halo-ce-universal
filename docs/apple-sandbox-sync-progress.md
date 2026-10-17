@@ -360,3 +360,13 @@ including an alias resolved to it, before any snapshot read. ASan/UBSan tests
 passed for both paths plus the full existing save suite. This avoids an accidental
 picker selection snapshotting this running game's files without quiescence.
 The source app still must be closed as the import prompt instructs.
+
+## Re-signing cloud capability preservation
+
+Fixed ios_resign.py silently discarding CloudKit entitlements while retaining
+HaloCloudContainer. Cloud-enabled IPAs now require an explicit database
+environment and profile authorization for the exact configured container and
+CloudKit; unrelated profile capabilities are not copied. A separate explicit
+--disable-cloud-saves option makes a re-signed copy local-only. Six synthetic
+configuration tests and command-line help check passed. No real profile/account
+was changed and no signed IPA was produced. Build 34 session 1301 remains live.

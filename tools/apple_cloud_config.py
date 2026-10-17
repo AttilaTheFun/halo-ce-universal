@@ -17,3 +17,33 @@ def validate_cloud_config(container, entitlements, *, sandbox=False):
         raise ValueError('CloudKit is absent from the entitlements')
     if sandbox and values.get('com.apple.security.app-sandbox') is not True:
         raise ValueError('Mac cloud builds must retain App Sandbox')
+
+
+def cloud_resigning_entitlements(container, allowed, environment):
+    """Use only the configured container, with an explicitly chosen database.
+
+    Re-signing cannot silently switch between development and production saves.
+    This checks profile authorization; it does not create a CloudKit container.
+    """
+    if not container:
+        if environment:
+            raise ValueError('This IPA has no configured iCloud container')
+        return {}
+    if environment not in ('Development', 'Production'):
+        raise ValueError('A cloud-enabled IPA requires --cloud-environment Development or Production; use the same environment as the original build')
+    containers = allowed.get('com.apple.developer.icloud-container-identifiers', [])
+    if not isinstance(containers, list) or container not in containers:
+        raise ValueError('The profile does not authorize this IPA’s iCloud container; use a matching profile or explicitly --disable-cloud-saves')
+    services = allowed.get('com.apple.developer.icloud-services', [])
+    if not isinstance(services, list) or 'CloudKit' not in services:
+        raise ValueError('The profile does not authorize CloudKit')
+    environments = allowed.get('com.apple.developer.icloud-container-environment', [])
+    if isinstance(environments, str):
+        environments = [environments]
+    if not isinstance(environments, list) or environment not in environments:
+        raise ValueError('The profile does not authorize the selected CloudKit environment')
+    return {
+        'com.apple.developer.icloud-container-identifiers': [container],
+        'com.apple.developer.icloud-services': ['CloudKit'],
+        'com.apple.developer.icloud-container-environment': environment,
+    }
