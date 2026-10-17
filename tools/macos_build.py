@@ -110,7 +110,7 @@ def build_host(update_build):
         sources = [source for source in sources if source.name not in ("host_gl.c", "host_gl_bridge.c", "host_perf.c")]
     sources += sorted((ROOT / "port/macos/host").glob("*.mm"))
     sources += sorted((ROOT / "port/macos/native").glob("*.m"))
-    sources += [ROOT / "port/apple/save_snapshot.m", ROOT / "port/apple/save_restore.m"]
+    sources += [ROOT / "port/apple/save_snapshot.m", ROOT / "port/apple/save_restore.m", ROOT / "port/apple/save_checkpoint.m"]
     sources += [ROOT / "port/linux/src/xiso.c", ROOT / "port/linux/src/posix_dtls.c"]
     sources += miniupnpc_sources()
     sources += sorted((mbedtls / "library").glob("*.c"))

@@ -620,6 +620,9 @@ void game_state_write_to_persistent_storage(
 	HANDLE file;
 	unsigned long checksum;
 	unsigned long bytes_written;
+#if defined(HALO_MACOS)
+    boolean stored = TRUE;
+#endif
 
 	file = game_state_open_persistent_storage(NULL);
 	if (file != INVALID_HANDLE_VALUE)
@@ -651,11 +654,20 @@ void game_state_write_to_persistent_storage(
 				FALSE,
 				csprintf(temporary, "failed to write to persistent storage (#%d)",
 					GetLastError()));
+#if defined(HALO_MACOS)
+            stored = FALSE;
+#endif
 			delete_persistent_storage();
 		}
 
 		memcpy(buffer, saved_header, header_size);
 		CloseHandle(file);
+#if defined(HALO_MACOS)
+        if (stored) {
+            extern void halo_save_checkpoint_committed(void);
+            halo_save_checkpoint_committed();
+        }
+#endif
 	}
 
 	return;

@@ -146,6 +146,7 @@ int main(int argc, char **argv) {
         if (![files fileExistsAtPath:[data stringByAppendingPathComponent:@"maps/ui.map"]])
             host_fatal("Copy your Xbox Halo maps folder into OpenCE's GameData folder using Files or Finder, then reopen the app.");
     }
+    halo_save_checkpoint_configure(save_root, data_root);
     host_install_signal_handlers();
     setenv("HALO_DATA_ROOT", data_root, 1); setenv("HALO_SAVE_ROOT", save_root, 1);
     const SDL_DisplayMode *display = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay());
