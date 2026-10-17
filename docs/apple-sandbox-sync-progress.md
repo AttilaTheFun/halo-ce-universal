@@ -349,3 +349,14 @@ window. No cloud account request is introduced for unconfigured builds.
 Syntax checks passed with macOS and iPhoneOS SDKs. Snapshot/restore regression
 suite passed again. Rendered picker interaction, provider-file access, migration
 from real old app containers and post-import gameplay are not yet verified.
+
+Build 34 is live as session 1301, log /tmp/halo-ios34-build.log. It recompiles
+the guest and host for both simulator and device. Do not start a concurrent
+full Mac build: configure.py writes the same root build.ninja for each target.
+Mac rebuild with the picker remains pending until this job is terminal.
+
+Save import now explicitly rejects selecting the current active save root,
+including an alias resolved to it, before any snapshot read. ASan/UBSan tests
+passed for both paths plus the full existing save suite. This avoids an accidental
+picker selection snapshotting this running game's files without quiescence.
+The source app still must be closed as the import prompt instructs.

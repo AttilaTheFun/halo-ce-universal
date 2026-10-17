@@ -134,6 +134,11 @@ static BOOL writeImport(NSData *bytes, NSURL *url, NSError **error) {
         syncURL(url, error) && syncURL(url.URLByDeletingLastPathComponent, error);
 }
 BOOL halo_save_import_queue(NSURL *selected, NSString *compatibility, NSURL *root, NSError **error) {
+    // The current game may still be writing this tree. Import is for a
+    // stopped older app, never a snapshot of our own active save directory.
+    if ([selected.URLByResolvingSymlinksInPath.URLByStandardizingPath.path
+            isEqual:root.URLByResolvingSymlinksInPath.URLByStandardizingPath.path])
+        return failure(error, @"These are this app’s active saves. Choose the older app’s save folder instead.");
     // Snapshot reads are bounded and reject links in persistent save paths.
     NSData *bytes = halo_save_snapshot_create(selected, compatibility, error);
     NSDictionary *record = bytes ? halo_save_snapshot_decode(bytes, compatibility, error) : nil;
