@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "save_snapshot.h"
+#import "save_restore.h"
 #include "save_runtime.h"
 #include "cloud_runtime.h"
 #include <fcntl.h>
@@ -41,5 +42,15 @@ void halo_save_checkpoint_committed(void) {
         if (ok) halo_cloud_checkpoint_ready();
         // This is a local candidate, not an acknowledged cloud revision. The
         // account-aware coordinator must compare it with the remote head.
+    }
+}
+
+int halo_save_import_before_launch(char *message, size_t capacity) {
+    @autoreleasepool {
+        NSError *error = nil;
+        BOOL ok = checkpointRoot && halo_save_import_apply(checkpointCompatibility,
+            [NSURL fileURLWithPath:checkpointRoot isDirectory:YES], &error);
+        if (!ok && capacity) snprintf(message, capacity, "%s", error.localizedDescription.UTF8String ?: "Could not import saved progress.");
+        return ok;
     }
 }
