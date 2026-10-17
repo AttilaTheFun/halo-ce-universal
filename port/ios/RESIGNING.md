@@ -133,3 +133,18 @@ compatibility with every device or signing service.
 Apple references: [signing setup](https://developer.apple.com/documentation/xcode/running-your-app-on-simulated-or-physical-devices),
 [provisioning profiles](https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles),
 and [nested signatures and DER entitlements](https://developer.apple.com/documentation/xcode/using-the-latest-code-signature-format).
+
+### Cloud-enabled IPAs
+
+For an IPA built with iCloud saves, supply `--cloud-environment Development`
+or `--cloud-environment Production`, matching the original build and your other
+clients. These are separate save databases. The profile must explicitly authorize
+the IPA's configured container, CloudKit service, and selected environment. The
+script grants only those capabilities and refuses a mismatched profile before
+signing; it does not register accounts, containers, or devices.
+
+When re-signing under an account that cannot access that container, you can
+explicitly use `--disable-cloud-saves` to make your copy local-only. This removes
+the cloud configuration from the new IPA without modifying the input IPA or
+imported game files. It does not migrate existing saves between cloud accounts.
+An ordinary IPA with no configured cloud container needs neither option.
