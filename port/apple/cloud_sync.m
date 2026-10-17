@@ -141,7 +141,19 @@
 - (void)keepLocal {
     if (![self canAct]) return;
     NSData *local = [self candidate];
-    if (local) [self upload:local];
+    if (!local) return;
+    // Keeping this device also replaces somebody's progress: retain the
+    // observed cloud revision locally before issuing its conditional update.
+    // A server-side race still fails through the transport's change-tag check.
+    if (self.remoteBytes && ![[self snapshotID:local] isEqual:[self snapshotID:self.remoteBytes]]) {
+        NSError *error = nil;
+        NSURL *backup = [[self.stateURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"Conflicts"]
+            URLByAppendingPathComponent:[[self snapshotID:self.remoteBytes] stringByAppendingPathExtension:@"plist"]];
+        if (![self writeData:self.remoteBytes to:backup error:&error]) {
+            [self announce:@"localError" error:error]; return;
+        }
+    }
+    [self upload:local];
 }
 - (void)useCloud {
     if (![self canAct] || !self.remoteBytes) return;

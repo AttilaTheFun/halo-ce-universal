@@ -130,6 +130,20 @@ int main(void) { @autoreleasepool {
     db.saveError = [NSError errorWithDomain:CKErrorDomain code:CKErrorServerRecordChanged userInfo:nil];
     [sync keepLocal]; waitSync(sync);
     assert([sync.status isEqual:@"syncError"]);
+    NSURL *remoteBackup = [[device URLByAppendingPathComponent:@"Cloud Saves/Conflicts"]
+        URLByAppendingPathComponent:[halo_save_snapshot_decode(fifth, @"game-1", nil)[@"snapshot"] stringByAppendingPathExtension:@"plist"]];
+    assert([[NSData dataWithContentsOfURL:remoteBackup] isEqual:fifth]);
+    // If the backup cannot be persisted, Keep This Device must not overwrite
+    // the remote revision, even when the server would accept the upload.
+    NSURL *conflictDirectory = remoteBackup.URLByDeletingLastPathComponent;
+    NSURL *heldBackups = [device URLByAppendingPathComponent:@"held-backups"];
+    assert([fm moveItemAtURL:conflictDirectory toURL:heldBackups error:nil]);
+    assert([@"not a directory" writeToURL:conflictDirectory atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    writes = db.writes;
+    [sync keepLocal]; waitSync(sync);
+    assert([sync.status isEqual:@"localError"] && db.writes == writes);
+    assert([fm removeItemAtURL:conflictDirectory error:nil]);
+    assert([fm moveItemAtURL:heldBackups toURL:conflictDirectory error:nil]);
     db.saveError = nil;
     [sync synchronize]; waitSync(sync); assert([sync.status isEqual:@"conflict"]);
     [sync useCloud]; assert([sync.status isEqual:@"synced"]);
