@@ -1,5 +1,59 @@
 # Build on Apple Silicon
 
+## Sandbox/iCloud branch status
+
+The current `apple/sandbox-sync` development branch builds **Halo.app**, with
+`com.LoganShire.Halo` supplied explicitly for internal builds. It uses native
+Metal on Mac and supports native Metal on iPhone/iPad. The older workflow below
+is inherited upstream documentation and has not yet been reconciled with this
+branch; its OpenCE names, ANGLE-only description and unsandboxed save paths do
+not describe these internal builds.
+
+Build the current local products without account provisioning:
+
+```sh
+export HALO_MACOS_LLVM_BIN="$(brew --prefix llvm@22)/bin"
+python3 tools/macos_build.py --renderer metal --no-data-path \
+  --bundle-id com.LoganShire.Halo --installer-managed \
+  --build-number NEXT_BUILD --jobs 3 --install
+python3 tools/ios_build.py --platform both --bundle-id com.LoganShire.Halo \
+  --build-number NEXT_BUILD --jobs 3
+```
+
+Replace `NEXT_BUILD` with a new integer. Run the builds sequentially: both
+configure the root Ninja file. Mac packaging enables App Sandbox by default;
+these commands produce an ad-hoc Mac app and unsigned iOS device app, not
+Installer-ready releases. The simulator product is signed for local testing.
+
+First launch asks for an original Xbox ISO/XISO using the system picker. The
+importer copies and hashes the image, verifies the retained copy and extracts
+validated maps before publishing the import. It does not establish ownership
+or certify an image against a retail hash database. Neither image nor maps are
+bundled in the app.
+
+On iOS/iPadOS, new imports are `Documents/game-<UUID>/disc.iso` and saves are
+`Documents/save/` in the app container. On sandboxed macOS, Foundation resolves
+Application Support inside the app container; the app uses its `Halo/`
+subdirectory, with retained images under `Game Data/<UUID>/disc.iso`.
+iOS app deletion removes its container; simply deleting a macOS app can leave
+its container behind. Offloading an iOS app also preserves its data.
+
+Save synchronization code uses CloudKit's private database, with ISO-hash-based
+compatibility and explicit conflict choices. It is **not enabled or verified
+against a live account in the current builds**. A shared Apple developer team,
+CloudKit container and matching provisioned entitlements are required on every
+platform. No Enterprise/In-House signing identity has been found on this Mac.
+Do not publish these local products as cloud-enabled releases.
+
+The save snapshot includes persistent profiles/checkpoints and campaign/profile
+selection, excluding the image, extracted maps and transient caches. Importing
+old saves uses an explicit folder picker from the iCloud Saves panel and applies
+the queued snapshot on next launch, preserving a backup. Cross-device campaign
+continuation still needs live acceptance testing; backend tests are insufficient.
+
+See [current verification record](apple-sandbox-sync-progress.md) and
+[upstream review](upstream-review-2026-10-17.md) for remaining release gates.
+
 Start here for both macOS and iPhone. All commands run on an Apple Silicon Mac
 from the repository root unless stated otherwise. The Mac game runs natively;
 the iPhone build also uses native ARM code and ANGLE's Metal renderer.
