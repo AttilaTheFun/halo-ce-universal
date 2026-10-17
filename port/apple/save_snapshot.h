@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 
 /* Call only while guest save I/O is quiescent. A snapshot contains persistent
-   Xbox profiles/checkpoints, never the working z/savegame.bin or map caches.
+   Xbox profiles/checkpoints and last profile/campaign selection, never the working z/savegame.bin or map caches.
    The caller supplies the game-data compatibility ID and retains conflicts. */
 NSData *halo_save_snapshot_create(NSURL *saveRoot, NSString *compatibility, NSError **error);
 NSDictionary *halo_save_snapshot_decode(NSData *data, NSString *compatibility, NSError **error);

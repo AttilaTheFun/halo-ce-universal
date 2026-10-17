@@ -33,7 +33,11 @@ static void checkpoint(void) {
     if (cut && ++step == atoi(cut)) _exit(86);
 #endif
 }
-static NSArray *prefixes(void) { return @[@"u/UDATA", @"z/saved"]; }
+static NSArray *prefixes(void) { return @[@"u/UDATA", @"z/saved", @"z/lastprof.txt", @"z/last_solo.txt"]; }
+static BOOL targetType(NSURL *url, NSUInteger index) {
+    struct stat st;
+    return !lstat(url.fileSystemRepresentation, &st) && (index < 2 ? S_ISDIR(st.st_mode) : S_ISREG(st.st_mode));
+}
 static NSURL *transaction(NSURL *root) { return [root URLByAppendingPathComponent:@".halo-save-restore"]; }
 static BOOL writeState(NSDictionary *state, NSURL *txn, NSError **error) {
     NSURL *url = [txn URLByAppendingPathComponent:@"state.plist"];
@@ -50,19 +54,20 @@ BOOL halo_save_restore_recover(NSURL *root, NSError **error) {
     NSDictionary *state = [NSDictionary dictionaryWithContentsOfURL:stateURL];
     // No journal means preparation was interrupted before any live path moved.
     if (!exists(stateURL)) return [fm removeItemAtURL:txn error:error];
-    if (![state[@"version"] isEqual:@1] || ![state[@"hadOriginal"] isKindOfClass:NSArray.class] ||
-        [state[@"hadOriginal"] count] != prefixes().count ||
+    NSArray *targets = [state[@"version"] isEqual:@1] ? [prefixes() subarrayWithRange:NSMakeRange(0, 2)] : prefixes();
+    if ((! [state[@"version"] isEqual:@1] && ![state[@"version"] isEqual:@2]) || ![state[@"hadOriginal"] isKindOfClass:NSArray.class] ||
+        [state[@"hadOriginal"] count] != targets.count ||
         ![state[@"committed"] isKindOfClass:NSNumber.class])
         return failure(error, @"The save restore journal is invalid; original saves were retained.");
     for (id value in state[@"hadOriginal"])
         if (![value isKindOfClass:NSNumber.class]) return failure(error, @"Invalid save restore journal.");
     if (![state[@"committed"] boolValue]) {
-        for (NSUInteger i = 0; i < prefixes().count; i++) {
-            NSURL *live = [root URLByAppendingPathComponent:prefixes()[i]];
+        for (NSUInteger i = 0; i < targets.count; i++) {
+            NSURL *live = [root URLByAppendingPathComponent:targets[i]];
             NSURL *old = [txn URLByAppendingPathComponent:[NSString stringWithFormat:@"old-%lu", (unsigned long)i]];
             if (!directory(live.URLByDeletingLastPathComponent)) return failure(error, @"The save directory changed during restore.");
             if (exists(old)) {
-                if (!directory(old)) return failure(error, @"Invalid saved backup directory.");
+                if (!targetType(old, i)) return failure(error, @"Invalid saved backup directory.");
                 if (exists(live) && ![fm removeItemAtURL:live error:error]) return NO;
                 if (!move(old, live, error)) return NO;
             } else if (![state[@"hadOriginal"][i] boolValue] && exists(live)) {
@@ -83,7 +88,7 @@ BOOL halo_save_restore(NSData *snapshot, NSString *compatibility, NSURL *root, N
         NSURL *live = [root URLByAppendingPathComponent:prefix];
         NSURL *parent = live.URLByDeletingLastPathComponent;
         if (!exists(parent) && ![fm createDirectoryAtURL:parent withIntermediateDirectories:NO attributes:nil error:error]) return NO;
-        if (!directory(parent) || (exists(live) && !directory(live)))
+        if (!directory(parent) || (exists(live) && !targetType(live, [prefixes() indexOfObject:prefix])))
             return failure(error, @"Save restore does not follow symbolic links.");
         [had addObject:@(exists(live))];
     }
@@ -91,7 +96,7 @@ BOOL halo_save_restore(NSData *snapshot, NSString *compatibility, NSURL *root, N
     if (![fm createDirectoryAtURL:txn withIntermediateDirectories:NO attributes:@{NSFilePosixPermissions:@0700} error:error]) return NO;
     NSURL *stage = halo_save_snapshot_stage(snapshot, compatibility, txn, error);
     if (!stage) { [fm removeItemAtURL:txn error:nil]; return NO; }
-    for (NSString *prefix in prefixes()) {
+    for (NSString *prefix in [prefixes() subarrayWithRange:NSMakeRange(0, 2)]) {
         NSURL *new = [stage URLByAppendingPathComponent:prefix];
         if (![fm createDirectoryAtURL:new withIntermediateDirectories:YES attributes:nil error:error]) return NO;
     }
@@ -99,7 +104,7 @@ BOOL halo_save_restore(NSData *snapshot, NSString *compatibility, NSURL *root, N
     NSDirectoryEnumerator *entries = [fm enumeratorAtURL:stage includingPropertiesForKeys:nil options:0 errorHandler:nil];
     for (NSURL *url in entries) if (!syncURL(url, error)) return NO;
     if (!syncURL(stage, error)) return NO;
-    NSMutableDictionary *state = [@{@"version":@1, @"hadOriginal":had, @"committed":@NO} mutableCopy];
+    NSMutableDictionary *state = [@{@"version":@2, @"hadOriginal":had, @"committed":@NO} mutableCopy];
     if (!writeState(state, txn, error) || !syncURL(root, error)) return NO;
     checkpoint();
     for (NSUInteger i = 0; i < prefixes().count; i++) {
@@ -107,7 +112,8 @@ BOOL halo_save_restore(NSData *snapshot, NSString *compatibility, NSURL *root, N
         NSURL *old = [txn URLByAppendingPathComponent:[NSString stringWithFormat:@"old-%lu", (unsigned long)i]];
         if ([had[i] boolValue] && !move(live, old, error)) return NO;
         checkpoint();
-        if (!move([stage URLByAppendingPathComponent:prefixes()[i]], live, error)) return NO;
+        NSURL *incoming = [stage URLByAppendingPathComponent:prefixes()[i]];
+        if (exists(incoming) && !move(incoming, live, error)) return NO;
         checkpoint();
     }
     state[@"committed"] = @YES;

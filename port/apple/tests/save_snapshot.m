@@ -28,11 +28,13 @@ int main(int argc, char **argv) { @autoreleasepool {
     fixture_write(root, @"z/savegame.bin", @"TRANSIENT");
     fixture_write(root, @"game-private/disc.iso", @"RETAIL DATA");
     fixture_write(root, @"halo.log", @"PRIVATE LOG");
+    fixture_write(root, @"z/lastprof.txt", @"u:\\UDATA\\profile");
+    fixture_write(root, @"z/last_solo.txt", @"levels\\b30\\b30");
     NSError *error = nil;
     NSData *data = halo_save_snapshot_create(root, @"retail-2276-runtime-1", &error);
     assert(data && !error);
     NSDictionary *snapshot = halo_save_snapshot_decode(data, @"retail-2276-runtime-1", &error);
-    assert(snapshot && [snapshot[@"files"] count] == 2);
+    assert(snapshot && [snapshot[@"files"] count] == 4);
     assert(!halo_save_snapshot_decode(data, @"other-disc", &error));
     NSURL *staged = halo_save_snapshot_stage(data, @"retail-2276-runtime-1", root, &error);
     assert(staged);
@@ -80,11 +82,13 @@ int main(int argc, char **argv) { @autoreleasepool {
     assert(!halo_save_snapshot_create(root, @"retail-2276-runtime-1", &error));
     NSURL *archive = [root URLByAppendingPathComponent:@"snapshot.plist"];
     assert([data writeToURL:archive atomically:YES]);
-    for (int cut = 0; cut <= 6; cut++) {
+    for (int cut = 0; cut <= 10; cut++) {
         NSURL *live = [root URLByAppendingPathComponent:[NSString stringWithFormat:@"case-%d", cut]];
         fixture_write(live, @"u/UDATA/profile/savegame.bin", @"old checkpoint");
         fixture_write(live, @"z/saved/player_profiles/default/00.sav", @"old profile");
         fixture_write(live, @"z/cache000.map", @"untouched cache");
+        fixture_write(live, @"z/lastprof.txt", @"old selection");
+        fixture_write(live, @"z/last_solo.txt", @"old map");
         NSTask *task = [NSTask new];
         task.executableURL = [NSURL fileURLWithPath:[NSString stringWithUTF8String:argv[0]]];
         task.arguments = @[live.path, archive.path, @"retail-2276-runtime-1"];
@@ -95,13 +99,34 @@ int main(int argc, char **argv) { @autoreleasepool {
         assert(task.terminationStatus == (cut ? 86 : 0));
         assert(halo_save_restore_recover(live, &error));
         assert(halo_save_restore_recover(live, &error)); // recovery is idempotent
-        BOOL committed = cut == 0 || cut == 6;
+        BOOL committed = cut == 0 || cut == 10;
         NSString *checkpoint = [NSString stringWithContentsOfURL:[live URLByAppendingPathComponent:@"u/UDATA/profile/savegame.bin"] encoding:NSUTF8StringEncoding error:nil];
         NSString *profile = [NSString stringWithContentsOfURL:[live URLByAppendingPathComponent:@"z/saved/player_profiles/default/00.sav"] encoding:NSUTF8StringEncoding error:nil];
         assert([checkpoint isEqual:committed ? @"checkpoint" : @"old checkpoint"]);
         assert([profile isEqual:committed ? @"profile" : @"old profile"]);
+        assert([[NSString stringWithContentsOfURL:[live URLByAppendingPathComponent:@"z/lastprof.txt"] encoding:NSUTF8StringEncoding error:nil] isEqual:committed ? @"u:\\UDATA\\profile" : @"old selection"]);
+        assert([[NSString stringWithContentsOfURL:[live URLByAppendingPathComponent:@"z/last_solo.txt"] encoding:NSUTF8StringEncoding error:nil] isEqual:committed ? @"levels\\b30\\b30" : @"old map"]);
         assert([[NSString stringWithContentsOfURL:[live URLByAppendingPathComponent:@"z/cache000.map"] encoding:NSUTF8StringEncoding error:nil] isEqual:@"untouched cache"]);
     }
+    // Older two-directory journals must remain recoverable after upgrading.
+    NSURL *legacyRoot = [root URLByAppendingPathComponent:@"legacy-journal"];
+    fixture_write(legacyRoot, @"u/UDATA/file", @"replacement");
+    fixture_write(legacyRoot, @"z/saved/file", @"replacement");
+    fixture_write(legacyRoot, @".halo-save-restore/old-0/file", @"legacy original");
+    fixture_write(legacyRoot, @".halo-save-restore/old-1/file", @"legacy profile");
+    assert(([@{@"version":@1, @"hadOriginal":@[@YES,@YES], @"committed":@NO}
+        writeToURL:[legacyRoot URLByAppendingPathComponent:@".halo-save-restore/state.plist"] atomically:YES]));
+    assert(halo_save_restore_recover(legacyRoot, &error));
+    assert([[NSString stringWithContentsOfURL:[legacyRoot URLByAppendingPathComponent:@"u/UDATA/file"] encoding:NSUTF8StringEncoding error:nil] isEqual:@"legacy original"]);
+    NSMutableDictionary *withoutSelection = [snapshot mutableCopy];
+    NSMutableDictionary *olderFiles = [snapshot[@"files"] mutableCopy];
+    [olderFiles removeObjectsForKeys:@[@"z/lastprof.txt", @"z/last_solo.txt"]];
+    withoutSelection[@"files"] = olderFiles;
+    fixture_write(legacyRoot, @"z/lastprof.txt", @"wrong device profile");
+    fixture_write(legacyRoot, @"z/last_solo.txt", @"wrong device map");
+    assert(halo_save_restore(encode(withoutSelection), @"retail-2276-runtime-1", legacyRoot, &error));
+    assert(![fm fileExistsAtPath:[legacyRoot URLByAppendingPathComponent:@"z/lastprof.txt"].path]);
+    assert(![fm fileExistsAtPath:[legacyRoot URLByAppendingPathComponent:@"z/last_solo.txt"].path]);
     // A folder selected from an old app is copied now, applied only at the
     // next stopped-guest launch, with both source and prior local saves kept.
     NSURL *oldApp = [root URLByAppendingPathComponent:@"old-app"];
@@ -135,5 +160,5 @@ int main(int argc, char **argv) { @autoreleasepool {
     assert([fm createDirectoryAtURL:empty withIntermediateDirectories:YES attributes:nil error:nil]);
     assert(!halo_save_import_queue(empty, @"game-1", newApp, &error));
     assert([fm removeItemAtURL:root error:nil]);
-    puts("Snapshot and restore tests passed: six process-death recovery points, round-trip, cache/ISO exclusion, compatibility, corruption, traversal, collisions, and symlinks");
+    puts("Snapshot and restore tests passed: ten process-death recovery points, round-trip, cache/ISO exclusion, compatibility, corruption, traversal, collisions, and symlinks");
 } }
