@@ -199,3 +199,45 @@ the review chunk and need file-by-file completion. Do not infer approval from
 those commit names or from their presence in the inherited baseline.
 
 The roll-only predicate defect is corrected: compare both forward and up axes. `tools/test_remote_pose.py` extracts the production predicate and reproduced the failure before the fix; it now passes under ASan/UBSan for unchanged poses, roll, yaw, translation and a non-finite up axis. This validates change detection, not full network/render interpolation.
+
+### Protocol 29 community-map identity review completed
+
+Retain `9ca2ae94da4bcba8c9bed04893c058ccd145f2c0`; all seventeen changed
+files have now been inspected in full, including documentation and positive/
+mutation fixtures. This is a protocol change: names remain human-readable while
+the game record carries a nonzero version derived from the first four hash bytes.
+The loader selects that version rather than whichever same-name file it finds.
+Downloads keep an existing same-name map, using a hash suffix for another
+version; offers must match the advertised version. Old hash-suffixed files are
+renamed only when their actual hash matches, no unsuffixed file exists, and they
+are neither loaded nor being shared. Version lookups are invalidated when maps
+change and otherwise cached for one second; hashes are cached by path/size/time.
+
+The protocol bump is retained together with the lookup/offer/download changes,
+not as a stand-alone advertised number. Stock Xbox maps still advertise map
+version zero. Full piece hashes remain part of transfer validation, but the
+32-bit map version is not a collision-proof identity: do not repeat the upstream
+prose's absolute claim that two different versions can never meet. Files changed
+externally without changing size/time are another cache limitation. No change to
+weapons or simulation tick rate is introduced by this commit. These paths compile
+in current Apple builds, but the 32-bit harness and live community-map transfer
+still require execution in a suitable test environment.
+
+### Word comparisons and mixed Mac update
+
+Retain `c1081648517596845bcd62639f46ca27cf91dc2f` under the existing
+ILP32 guest build contract. The full diff and current call sites were inspected:
+inputs are DWORD arrays, shader keys have word alignment and word-multiple size,
+and both compared keys use the existing initialization path. The actual generated
+guest Ninja flags include `-fno-strict-aliasing`, as do Linux/Android/Windows
+build definitions. This closes the previously pending aliasing concern for these
+builds; it does not certify arbitrary strict-aliasing consumers. No new measured
+performance gain is claimed.
+
+The complete Metal resource/program indexing portion of `86193542` is now
+reviewed: retain bucket lookup with full-key equality, publishing resources in
+both indexes, and unindexing retired history resources. The later `c45870c2`
+menu resource invalidation remains required. The rest of the mixed commit is
+still under review (branding, UI, packaging and documentation); the review
+baseline is not advanced. Installer-managed builds must keep their own Halo
+identity and cannot inherit OpenCE release-label assumptions.
