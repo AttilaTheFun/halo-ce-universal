@@ -78,6 +78,15 @@ the host chooses the match's options. Use **Stock** for original-rule play.
 Timer announcements need a separate audio pack, not bundled with these builds.
 [PB Options](docs/performance-options.md) explains settings and compatibility.
 
+## Mods
+
+Mods are folders of Halo PC tag files, as the Halo Editing Kit and Invader
+write them, in `mods/` next to `maps/`: texture, sound and text packs that
+play over the maps' on your machine only, in any game. Each has a
+`mod.toml`. Every mod in the folder is on; the main menu's Mods turns them
+off and on and sets the order they load in.
+Refer to [docs/mods.md](docs/mods.md).
+
 The current network protocol is **20**. Older builds, including protocol 19, cannot join it.
 Enabled PB Options require compatible peers. For the first cross-platform
 tests, use matching OpenCE packages with PB Options off.
