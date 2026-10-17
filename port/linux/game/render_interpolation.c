@@ -791,7 +791,13 @@ static boolean pose_changed(
 		pose->latest_forward.j * object->object.forward.j +
 		pose->latest_forward.k * object->object.forward.k;
 
-	return !(dx * dx + dy * dy + dz * dz < 1.0e-8f) || !(dot > 0.9999f);
+	real up_dot = pose->latest_up.i * object->object.up.i +
+		pose->latest_up.j * object->object.up.j +
+		pose->latest_up.k * object->object.up.k;
+
+	/* A roll changes the up axis without moving or turning the forward axis. */
+	return !(dx * dx + dy * dy + dz * dz < 1.0e-8f) ||
+		!(dot > 0.9999f) || !(up_dot > 0.9999f);
 }
 
 /* after the tick's netcode moves. A campaign frame has no remote pose. */

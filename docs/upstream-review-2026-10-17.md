@@ -157,3 +157,45 @@ changes still need the untruncated remaining diff and dependency review.
 `c1081648` is fully inspected but not approved pending validation of word-access
 alignment/aliasing assumptions across the key's byte-array fields. The review
 baseline remains incomplete and must not be advanced or published as finished.
+
+### Network lifecycle and menu follow-up
+
+- `85afe26a0cd58a9d0d93b6d36258a8182b36749a`: retain. All fourteen file
+  diffs inspected, including sound fixtures and negative control. Host-directed
+  flag/ball deletion now clears client objectives and bypasses only the normal
+  protected-object deletion path. Downloading clients defer a start, checking
+  the map name and games-played generation before resuming; the server holds
+  requested players until their map is ready, deduplicating and bounding the
+  pending list. Loop tracks stop when their source is deleted even within the
+  same clock millisecond. No packet-layout change. Live CTF, interrupted download,
+  and audio tests remain pending; 32-bit fixtures cannot run on this macOS host.
+- `03285b910a61a2972aa83f4308cdc4dd7a5bad6f`: retain. Metal propagates
+  menu-active state for Enter-as-A; postgame map lists return to the main menu
+  when history is empty. The script evaluator accepts 32 choices, which fit its
+  existing 32-bit mask (choice indices remain 0 through 31). Actual full diff
+  and evaluator allocation/indexing inspected; live postgame navigation pending.
+- `864c636158d458009496504bb8e0ea54a236bacd`: retain. Fast network setup
+  and automated join resolve the selected port menu's lobby through the same
+  mapping as normal navigation. Full diff inspected; no simulation/wire change.
+- `fd277b0cfde833a15e231cd56c31f192ce4f1084` and
+  `fcbf29e3774cc45e8c6654f3353a175eab3d967d`: retain menu occlusion fix
+  and fixtures. Scenario title timers continue while menus hide their drawing;
+  gameplay without menus is unchanged. Full production and fixture diffs
+  inspected, including both mutation controls. Fixtures require the unavailable
+  32-bit runtime; no live Custom Edition title/menu comparison performed here.
+
+Completed the remaining `70afd39e` network-object and render-interpolation diffs.
+Retain its bounded host-sample interpolation for unsteered vehicles, replacing
+extrapolation and taking large jumps immediately. Remote render poses use
+quaternion blending; local-player poses and local campaign are excluded from
+that additional path. Simulation remains 30 Hz and packet layout is unchanged.
+Client vehicle positions now lag a host sample, so live collision/boarding and
+cutscene tests remain necessary. A new production-predicate regression exposed
+an omitted roll-only change: identical position/forward with different up axes
+is treated as unchanged. Correct this before considering the integration ready.
+
+`9ca2ae94` and `86193542` remain partially reviewed only; their outputs exceeded
+the review chunk and need file-by-file completion. Do not infer approval from
+those commit names or from their presence in the inherited baseline.
+
+The roll-only predicate defect is corrected: compare both forward and up axes. `tools/test_remote_pose.py` extracts the production predicate and reproduced the failure before the fix; it now passes under ASan/UBSan for unchanged poses, roll, yaw, translation and a non-finite up axis. This validates change detection, not full network/render interpolation.
