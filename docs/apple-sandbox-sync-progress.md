@@ -307,3 +307,9 @@ radius-based weapon-flare suppression/brightness heuristic pending Xbox visual
 evidence, following the inherited fidelity policy. Build 33 predates this reversal;
 new guest builds are required before release. The complete upstream ledger and
 public/internal branch update remain outstanding.
+
+Upstream review continued with six complete networking/rendering/menu diffs
+recorded in the 17 October ledger. The map-sharing hardening review is partial.
+Attempted 64 network harness cases; all stopped at missing 32-bit host-runtime
+link support, before execution. No harness is running. These tests still require
+a suitable supported execution environment; no VM was created for this attempt.
