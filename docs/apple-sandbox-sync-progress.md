@@ -208,3 +208,33 @@ local workflow with strict signature and BuildInfo verification. Source recorded
 62aaeb96. No launch, device interaction or Installer publication. The build
 contains checkpoint capture, not the later coordinator. Team signing and actual
 sandbox/runtime/cloud acceptance remain pending.
+
+## Runtime/cloud UI integration
+
+`cloud_runtime.m` now connects the coordinator to Apple startup, CKContainer
+account checks and the private database. It captures existing offline progress
+before a first cloud comparison, bounds startup network waiting, retries while
+running, and invalidates old callbacks/actions when the account changes. Cloud
+restores are followed by transaction recovery before guest entry. A failed local
+capture does not masquerade as an empty device eligible for cloud overwrite.
+Mac menu and iOS shake diagnostics expose iCloud Saves status/conflict controls.
+These flows require real account and UI testing; syntax checks passed against
+both macOS and iPhoneOS SDKs, not a claim of rendered UI acceptance.
+
+Cloud networking is explicitly opt-in via HaloCloudContainer. Build tools accept
+--cloud-container and --entitlements; Mac also requires an embedded profile.
+The requested container must appear in the supplied CloudKit entitlements, and
+sandboxed Mac builds retain App Sandbox. Positive/negative configuration checks
+passed. No account configuration was changed or external cloud request made.
+
+Mac host build 32 compiled and passed strict signature checks, then installed
+locally per workflow. Its cloud container is absent, so it reports unavailable
+rather than attempting unauthorized cloud access. It was not launched/published.
+
+The first iOS build found the new checkpoint hook missing from the separate iOS
+import list; fixed. Session 83382 failed and is terminal. Replacement combined
+simulator/device build is running as unified exec session 35836; log:
+/tmp/halo-ios-sandbox-build.log. The simulator guest linked and Xcode host
+configuration began. Poll that handle before retrying; do not duplicate builds.
+The running invocation predates the new --build-number flag and uses its default
+12; repackage with a current build number before any publication.

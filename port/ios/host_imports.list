@@ -3,3 +3,6 @@ halo_map_download_directory
 halo_map_download_request
 
 host_ios_metalfx_present
+
+# Persistent-save completion notification.
+halo_save_checkpoint_committed

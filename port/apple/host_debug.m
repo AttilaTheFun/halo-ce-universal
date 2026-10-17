@@ -1,3 +1,4 @@
+#include "cloud_runtime.h"
 /* Shader-source diagnostics are exportable data, never game maps or saves. */
 #if !defined(HALO_IOS)
 #import <AppKit/AppKit.h>
@@ -249,7 +250,7 @@ static void exportReport(UIViewController *presenter) {
 - (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController {
     (void)presentationController;debugController=nil;host_ios_touch_focus();
 }
-- (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {(void)table;(void)section;return 10;}
+- (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {(void)table;(void)section;return 11;}
 - (UITableViewCell *)tableView:(UITableView *)table cellForRowAtIndexPath:(NSIndexPath *)path {
     (void)table;UITableViewCell *cell=[[UITableViewCell alloc]initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.detailTextLabel.numberOfLines=0;
@@ -300,6 +301,7 @@ static void exportReport(UIViewController *presenter) {
         cell.detailTextLabel.text=@"Touch controls stay visible for player 1; controllers join as other players. Use Add Player in the lobby. Relaunch to apply.";
         [toggle addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];cell.accessoryView=toggle;break;
     }
+    case 10:cell.textLabel.text=@"iCloud Saves…";cell.detailTextLabel.text=@"Check sync status and resolve competing saved progress.";break;
     case 7:cell.textLabel.text=@"Clear recorded diagnostics";cell.detailTextLabel.text=@"Start a fresh measurement for your next play session.";break;
     }
     return cell;
@@ -316,6 +318,7 @@ static void exportReport(UIViewController *presenter) {
     if(sender.tag==5){atomic_store(&recording,sender.on);[drawnPrograms removeAllObjects];[settings setBool:sender.on forKey:@"HaloRecordShaderStalls"];}
 }
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)path {
+    if(path.row==10){ [table deselectRowAtIndexPath:path animated:YES]; halo_cloud_show_status(); return; }
     [table deselectRowAtIndexPath:path animated:YES];
     if(path.row==6){exportReport(self);return;}
     if(path.row==7){[events removeAllObjects];[drawnPrograms removeAllObjects];[frameSamples removeAllObjects];frameTotal=frameWorst=0;frameCount=0;dropped=0;[table reloadData];return;}

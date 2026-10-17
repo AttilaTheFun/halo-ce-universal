@@ -21,6 +21,7 @@ from xml.parsers.expat import ExpatError
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from tools.linux_build import MINIUPNPC_DEFINES, MINIUPNPC_DIR, miniupnpc_sources
+from tools.apple_cloud_config import validate_cloud_config
 from tools.macos_menu_icon import render as render_menu_icon
 from tools.macos_sparkle import setup_sparkle, DIRECTORY as SPARKLE_DIRECTORY
 from tools.macos_content_tools import stage_content_tools
@@ -110,7 +111,8 @@ def build_host(update_build):
         sources = [source for source in sources if source.name not in ("host_gl.c", "host_gl_bridge.c", "host_perf.c")]
     sources += sorted((ROOT / "port/macos/host").glob("*.mm"))
     sources += sorted((ROOT / "port/macos/native").glob("*.m"))
-    sources += [ROOT / "port/apple/save_snapshot.m", ROOT / "port/apple/save_restore.m", ROOT / "port/apple/save_checkpoint.m"]
+    sources += [ROOT / "port/apple/save_snapshot.m", ROOT / "port/apple/save_restore.m", ROOT / "port/apple/save_checkpoint.m",
+                ROOT / "port/apple/cloud_save.m", ROOT / "port/apple/cloud_sync.m", ROOT / "port/apple/cloud_runtime.m"]
     sources += [ROOT / "port/linux/src/xiso.c", ROOT / "port/linux/src/posix_dtls.c"]
     sources += miniupnpc_sources()
     sources += sorted((mbedtls / "library").glob("*.c"))
@@ -135,7 +137,7 @@ def build_host(update_build):
         link += [*(f"-F{directory}" for directory in frameworks),
                  "-framework", "libEGL", "-framework", "libGLESv2",
                  *(f"-Wl,-rpath,{directory}" for directory in frameworks)]
-    link += [f"-F{sparkle.parent}", "-framework", "Sparkle", "-framework", "Cocoa",
+    link += [f"-F{sparkle.parent}", "-framework", "Sparkle", "-framework", "Cocoa", "-framework", "CloudKit",
              f"-Wl,-rpath,{sparkle.parent}", "-o", BUILD / "halo"]
     run(*link)
 
@@ -193,7 +195,10 @@ def update_configuration(config):
 
 def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION, build=APP_BUILD,
             content_tools=None, update_build=0, bundle_id="local.halo.ce-universal",
-            sandbox=True, installer_managed=False, provisioning_profile=None):
+            sandbox=True, installer_managed=False, provisioning_profile=None, cloud_container=None, entitlements=None):
+    validate_cloud_config(cloud_container, entitlements, sandbox=sandbox)
+    if cloud_container and not provisioning_profile:
+        raise ValueError("Cloud builds require an embedded matching provisioning profile")
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
         if not installer_managed and not update_configuration(configuration):
@@ -205,7 +210,8 @@ def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION,
         staged = Path(temporary) / destination.name
         package_into(staged, data_root, sign_identity=sign_identity, release=release, version=version, build=build,
                      content_tools=content_tools, update_build=update_build, bundle_id=bundle_id, sandbox=sandbox,
-                     installer_managed=installer_managed, provisioning_profile=provisioning_profile)
+                     installer_managed=installer_managed, provisioning_profile=provisioning_profile,
+                     cloud_container=cloud_container, entitlements=entitlements)
         # A fresh bundle prevents old development resources entering a release.
         # Preserve the previous build, including a running executable's inode.
         backup = None
@@ -223,7 +229,7 @@ def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION,
 
 
 def package_into(app, data_root, *, sign_identity, release, version, build, content_tools=None, update_build=0, bundle_id="local.halo.ce-universal",
-            sandbox=True, installer_managed=False, provisioning_profile=None):
+            sandbox=True, installer_managed=False, provisioning_profile=None, cloud_container=None, entitlements=None):
     contents = app / "Contents"
     macos = contents / "MacOS"
     frameworks = contents / "Frameworks"
@@ -301,6 +307,8 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
         "HaloSandboxed": sandbox, "HaloInstallerManaged": installer_managed,
         "NSHumanReadableCopyright": "Local experimental Apple Silicon port",
     }
+    if cloud_container:
+        info["HaloCloudContainer"] = cloud_container
     if update_build > 0 and not installer_managed:
         info["OpenCEMacUpdateBuild"] = update_build
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
@@ -357,7 +365,7 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     app_signing = [*signing]
     if sandbox or release:
         entitlement = "sandbox.entitlements" if sandbox else "host.entitlements"
-        app_signing += ["--entitlements", ROOT / "port/macos" / entitlement]
+        app_signing += ["--entitlements", entitlements or ROOT / "port/macos" / entitlement]
     run("codesign", *app_signing, app)
     run("codesign", "--verify", "--deep", "--strict", app)
 
@@ -503,8 +511,13 @@ def main():
     parser.add_argument("--sandbox", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--installer-managed", action="store_true", help="Updates are distributed through Installer")
     parser.add_argument("--provisioning-profile", type=Path)
+    parser.add_argument("--cloud-container", help="Explicit opt-in to a provisioned private CloudKit container")
+    parser.add_argument("--entitlements", type=Path)
     parser.add_argument("--jobs", type=int, default=min(os.cpu_count() or 4, 6))
     args = parser.parse_args()
+    validate_cloud_config(args.cloud_container, args.entitlements, sandbox=args.sandbox)
+    if args.cloud_container and not args.provisioning_profile:
+        parser.error("Cloud builds require --provisioning-profile")
     use_renderer(args.renderer)
     os.chdir(ROOT)
     if args.release:
@@ -533,7 +546,8 @@ def main():
     package(None if args.no_data_path or args.release else args.data_root,
             sign_identity=args.sign_identity, release=args.release, version=args.version, build=args.build_number,
             content_tools=args.content_tools, update_build=update_build, bundle_id=args.bundle_id,
-            sandbox=args.sandbox, installer_managed=args.installer_managed, provisioning_profile=args.provisioning_profile)
+            sandbox=args.sandbox, installer_managed=args.installer_managed, provisioning_profile=args.provisioning_profile,
+            cloud_container=args.cloud_container, entitlements=args.entitlements)
     if args.install:
         install_app(BUILD / (APP_NAME + ".app"), args.install)
 

@@ -1,3 +1,4 @@
+#include "../../apple/cloud_runtime.h"
 #import <Cocoa/Cocoa.h>
 #import <Sparkle/Sparkle.h>
 #import "HaloPreferences.h"
@@ -201,6 +202,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     [statusMenu addItem:NSMenuItem.separatorItem];
     item(statusMenu, @"Choose Halo ISO…", @selector(selectImage:), @"");
     if (!sandboxedBuild()) item(statusMenu, @"Choose Maps Folder…", @selector(selectFolder:), @"");
+    item(statusMenu, @"iCloud Saves…", @selector(cloudSaves:), @"");
     item(statusMenu, @"Open Saves Folder", @selector(openSaves:), @"");
     item(statusMenu, @"Edit Controls and Advanced Settings…", @selector(openConfig:), @"");
     [statusMenu addItem:NSMenuItem.separatorItem];
@@ -488,6 +490,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     if (![NSFileManager.defaultManager createDirectoryAtURL:library withIntermediateDirectories:YES attributes:nil error:&error]) showError(error);
     else [NSWorkspace.sharedWorkspace openURL:library];
 }
+- (void)cloudSaves:(id)sender { (void)sender; host_sdl_release_mouse(); halo_cloud_show_status(); }
 - (void)openSaves:(id)sender {
     (void)sender;
     [NSWorkspace.sharedWorkspace openURL:self.preferences.supportDirectory];

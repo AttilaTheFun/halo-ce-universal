@@ -1,6 +1,7 @@
 /* SDL owns UIApplication and invokes this entry on the UIKit main thread. */
 #include "host.h"
 #include "../../apple/save_runtime.h"
+#include "../../apple/cloud_runtime.h"
 #include "image.h"
 extern void host_ios_show_fatal(const char *) __attribute__((noreturn));
 #include "../../apple/host_graphics.h"
@@ -152,6 +153,13 @@ int main(int argc, char **argv) {
             host_fatal("Copy your Xbox Halo maps folder into CoreCE's GameData folder using Files or Finder, then reopen the app.");
     }
     halo_save_checkpoint_configure(save_root, data_root);
+    halo_cloud_prepare(save_root, data_root);
+    {
+        char cloud_recovery_error[512] = {0};
+        if (!halo_save_recover_before_launch(save_root, cloud_recovery_error, sizeof(cloud_recovery_error)))
+            host_fatal("Cannot recover saved progress: %s", cloud_recovery_error);
+    }
+    halo_cloud_guest_started();
     host_install_signal_handlers();
     setenv("HALO_DATA_ROOT", data_root, 1); setenv("HALO_SAVE_ROOT", save_root, 1);
     const SDL_DisplayMode *display = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay());

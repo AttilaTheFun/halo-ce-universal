@@ -9,6 +9,8 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from tools.apple_cloud_config import validate_cloud_config
 BUILD = ROOT / 'build/ios'
 LLVM = Path(os.environ.get('HALO_MACOS_LLVM_BIN', '/opt/homebrew/opt/llvm/bin'))
 os.environ.setdefault('DEVELOPER_DIR', '/Applications/Xcode.app/Contents/Developer')
@@ -30,7 +32,10 @@ def build_app(platform, args):
         '-DCMAKE_SYSTEM_NAME=iOS', f'-DCMAKE_OSX_SYSROOT={sdk}',
         '-DCMAKE_OSX_ARCHITECTURES=arm64', '-DCMAKE_OSX_DEPLOYMENT_TARGET=26.0',
         f'-DHALO_BUNDLE_IDENTIFIER={args.bundle_id}',
-        f'-DHALO_DEVELOPMENT_TEAM={args.team or ""}')
+        f'-DHALO_DEVELOPMENT_TEAM={args.team or ""}',
+        f'-DHALO_CLOUD_CONTAINER={args.cloud_container or ""}',
+        f'-DHALO_BUILD_NUMBER={args.build_number}',
+        f'-DHALO_ENTITLEMENTS={args.entitlements.resolve() if args.entitlements else ROOT / "port/ios/Halo.entitlements"}')
     settings = ['-jobs', str(args.jobs)]
     if not args.sign or platform == 'simulator':
         settings += ['CODE_SIGNING_ALLOWED=NO']
@@ -57,11 +62,15 @@ def main():
     p.add_argument('--team', help='Apple development team ID for device signing')
     p.add_argument('--bundle-id', default='local.halo.ce-universal.ios',
                    help='Unique reverse-DNS app identifier registered to your development team')
+    p.add_argument('--cloud-container')
+    p.add_argument('--entitlements', type=Path)
+    p.add_argument('--build-number', default='12')
     p.add_argument('--sign', action='store_true', help='Use Xcode automatic device signing')
     p.add_argument('--jobs', type=int, default=6)
     args = p.parse_args()
     if args.sign and args.platform != 'simulator' and not args.team:
         p.error('--sign requires --team YOUR_TEAM_ID for a device build')
+    validate_cloud_config(args.cloud_container, args.entitlements)
     os.chdir(ROOT)
     if args.plugin_only:
         build_plugin()

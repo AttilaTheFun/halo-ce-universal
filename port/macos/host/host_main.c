@@ -1,6 +1,7 @@
 /* Native macOS entry point. SDL video remains on the real main thread. */
 #include "host.h"
 #include "../../apple/save_runtime.h"
+#include "../../apple/cloud_runtime.h"
 #include "../native/host_menu.h"
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
@@ -223,6 +224,13 @@ int main(int argc, char **argv) {
     setenv("HALO_DATA_ROOT", data_root, 1);
     setenv("HALO_SAVE_ROOT", save_root, 1);
     halo_save_checkpoint_configure(save_root, data_root);
+    halo_cloud_prepare(save_root, data_root);
+    {
+        char cloud_recovery_error[512] = {0};
+        if (!halo_save_recover_before_launch(save_root, cloud_recovery_error, sizeof(cloud_recovery_error)))
+            host_fatal("Cannot recover saved progress: %s", cloud_recovery_error);
+    }
+    halo_cloud_guest_started();
     const SDL_DisplayMode *display = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay());
     if (display && display->h > 0) {
         char width[32];

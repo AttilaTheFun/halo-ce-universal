@@ -8,6 +8,9 @@ else()
     set(HALO_BUILD "${HALO_ROOT}/build/ios")
 endif()
 set(HALO_BUNDLE_IDENTIFIER "local.halo.ce-universal.ios" CACHE STRING "Unique iOS app bundle identifier")
+set(HALO_CLOUD_CONTAINER "" CACHE STRING "Provisioned CloudKit container, empty disables cloud sync")
+set(HALO_BUILD_NUMBER "12" CACHE STRING "Monotonic application build number")
+set(HALO_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Halo.entitlements" CACHE FILEPATH "Signing entitlements")
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
@@ -21,6 +24,7 @@ add_executable(Halo MACOSX_BUNDLE ${HOST_SOURCES} ${MINIUPNPC_SOURCES} ${MBEDTLS
     host/host_loader.c host/host_main.m host/host_controls.m host/host_import.m
     host/host_orientation.m host/host_startup_error.m
     "${HALO_ROOT}/port/apple/save_snapshot.m" "${HALO_ROOT}/port/apple/save_restore.m" "${HALO_ROOT}/port/apple/save_checkpoint.m"
+    "${HALO_ROOT}/port/apple/cloud_save.m" "${HALO_ROOT}/port/apple/cloud_sync.m" "${HALO_ROOT}/port/apple/cloud_runtime.m"
     "${HALO_ROOT}/port/macos/native/HaloMapDownloads.m"
     "${HALO_ROOT}/port/apple/host_gl_diagnostics.c" "${HALO_ROOT}/port/apple/host_graphics.c"
     "${HALO_ROOT}/port/apple/host_debug.m" "${HALO_ROOT}/port/apple/host_metalfx.m"
@@ -62,7 +66,7 @@ foreach(NAME EGL GLESv2)
     target_link_libraries(Halo PRIVATE "${FRAMEWORK}")
 endforeach()
 target_link_libraries(Halo PRIVATE SDL3::SDL3-static "-framework Foundation" "-framework UIKit"
-    "-framework GameController" "-framework UniformTypeIdentifiers" "-framework Metal"
+    "-framework CloudKit" "-framework GameController" "-framework UniformTypeIdentifiers" "-framework Metal"
     "-framework QuartzCore" "-framework CoreVideo" "-framework IOSurface")
 set_target_properties(Halo PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in"
@@ -70,7 +74,7 @@ set_target_properties(Halo PROPERTIES
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
     XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
     XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic"
-    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/Halo.entitlements"
+    XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${HALO_ENTITLEMENTS}"
     XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME NO
     XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
     XCODE_EMBED_FRAMEWORKS "${ANGLE_FRAMEWORKS}"
