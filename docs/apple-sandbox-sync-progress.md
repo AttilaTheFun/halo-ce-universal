@@ -491,3 +491,7 @@ Mac build session 47158 finished successfully. Installed `/Applications/Halo.app
 ### iOS build 37 completed
 
 Session 38716 is terminal with exit 0. Both simulator and device products have Halo display name, com.LoganShire.Halo, build 37, and only landscape-left/right on phone and iPad. Neither contains ISO/XISO/map-extension files. Simulator strict nested signature verification passed; device product remains unsigned. No device interaction, live cloud test, or Installer publication occurred. No builds are running. Protocol 29 review is complete and recorded in the partial ledger. The signing-team question was surfaced asynchronously again; account provisioning remains pending the answer.
+
+### Release tooling review
+
+Installed Mac build 37 passes the existing package content audit. Fixed the optional DMG helper to honor APP_NAME instead of rejecting Halo.app; its four failure-boundary tests pass. No game/host change, no rebuild needed, no DMG created or published. Completed the mixed 86193542 review and fullscreen/message-box bridge reviews in the ledger. Remaining release blockers include shared signing team, CloudKit provisioning/live testing, final public/internal branch split, and unfinished upstream reviews. No running builds.
