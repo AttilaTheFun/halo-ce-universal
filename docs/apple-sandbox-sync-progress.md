@@ -479,3 +479,7 @@ The opt-in `tools/test_apple_game_store_real.py` production-backend test passed 
 ### Build 36 — upstream lighting policy review
 
 Completed additional upstream reviews in the review ledger and reversed d38b5fd7 to preserve original multiplayer lighting limits. Full native Metal Mac build session 71204 finished successfully; log `/tmp/halo-mac36-build.log`. Installed `/Applications/Halo.app` passes strict nested signature verification. BuildInfo records build 36, d6397aef with local changes (the subsequently committed lighting reversal), guest SHA-256 fe79b44b4ec3821803186dd7530ec25cd4bfafb0c91566aea4be90b127c3e99d. Info.plist confirms Halo, com.LoganShire.Halo, sandbox and Installer-managed flags. This remains an ad-hoc local build, not notarized or published; cloud container remains unconfigured. No host GUI or personal-device interaction was performed. iOS still needs the corresponding guest rebuild.
+
+### iOS build 36 and remote pose correction
+
+Full simulator/device build session 72719 completed successfully (log `/tmp/halo-ios36-build.log`). Both Info.plists confirm Halo, com.LoganShire.Halo, build 36, and landscape-only phone/iPad orientations. Device artifact is unsigned and neither was published. Subsequent upstream review found and fixed remote roll-only pose changes being ignored; the production-predicate regression failed before and passed after under ASan/UBSan. This change postdates build 36 and needs rebuilt guests. Additional network/menu decisions are recorded in the partial review ledger; rebase review remains incomplete.
