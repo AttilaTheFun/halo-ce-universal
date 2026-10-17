@@ -274,3 +274,28 @@ the host presents up to three supplied labels with stable original button IDs,
 returns the chosen ID, or -1 on presentation failure. Full diff inspected.
 This does not approve the still-unreviewed mod-loading feature or any replacement
 assets; it only provides the host/guest UI boundary. No mod prompt was exercised.
+
+### Legacy storage and updater follow-up
+
+- `c6c41adf79ae3845c70b579ed983f0bb67087e04`: all eighteen file diffs
+  inspected. Partially retain migration correctness: standardized record paths,
+  preference for the newer legacy source, and excluding prior migration records
+  from a new copy. Its unsandboxed OpenCE default path and iOS display name are
+  superseded by the Halo container/build changes. Sandboxed first launch cannot
+  automatically access external legacy folders; the explicit saved-game folder
+  picker and queued restore are the current migration path. Existing fixture
+  validation applies to helpers, not live sandbox picker permissions.
+- `07c80a5cb0cd19bcb02eced22ced28fa47f4cc45` and
+  `f67a5110175318725bfcf803af1648a4edebf095`: retain final wording in the
+  standalone updater UI; full one-line diffs inspected, no behavioral change.
+- `147a7e4b0c956b52b91977b028f56ecbfa40b420`: retain the standalone
+  updater's completion semaphore and CFRunLoop progress scheduling, avoiding a
+  completion block waiting on the main queue already occupied by the installer
+  method. Full diff inspected; no actual update download or GUI test executed.
+- `49c94068925a8e145ac7dc57fbcbe6c372717591`: full four-file diff
+  inspected. Retain only as part of the standalone updater feature: moves the
+  notice from the per-player HUD to the shared overlay and uses the terminal
+  font's top band. Installer-managed builds do not create the fork updater,
+  so they do not populate this notice. Its precursor `997fb9d2` and updater
+  implementation `0290a825` still require complete review; neither is approved
+  merely by reviewing this small follow-up.

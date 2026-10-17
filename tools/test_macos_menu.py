@@ -294,6 +294,24 @@ class ReleaseBoundary(unittest.TestCase):
             (contents / "Frameworks/libEGL.dylib").unlink()
             (contents / "Frameworks/libGLESv2.dylib").unlink()
             self.assertTrue(audit_bundle(app))
+            profile = contents / "embedded.provisionprofile"
+            profile.write_bytes(b"content-boundary fixture; not a signed profile")
+            self.assertTrue(audit_bundle(app))
+            profile.write_bytes(b"")
+            with self.assertRaisesRegex(RuntimeError, "nonempty regular file"):
+                audit_bundle(app)
+            profile.unlink()
+            profile.symlink_to(contents / "Info.plist")
+            with self.assertRaisesRegex(RuntimeError, "nonempty regular file"):
+                audit_bundle(app)
+            profile.unlink()
+            misplaced = contents / "Frameworks/Sparkle.framework/extra.provisionprofile"
+            (contents / "Frameworks/Sparkle.framework").unlink()
+            misplaced.parent.mkdir()
+            misplaced.write_bytes(b"misplaced")
+            with self.assertRaisesRegex(RuntimeError, "profile location"):
+                audit_bundle(app)
+            misplaced.unlink()
             for name in ("GameDataPath.txt", "game.iso", "GameData", "ui.map"):
                 path = contents / "Resources" / name
                 path.touch()
