@@ -370,3 +370,9 @@ CloudKit; unrelated profile capabilities are not copied. A separate explicit
 --disable-cloud-saves option makes a re-signed copy local-only. Six synthetic
 configuration tests and command-line help check passed. No real profile/account
 was changed and no signed IPA was produced. Build 34 session 1301 remains live.
+
+Completed the actual-diff review of map-sharing hardening 77e27537 and its
+regression fixtures. Retained; ledger records behavioral scope and the outstanding
+32-bit harness limitation. Two native parser boundary tests passed for the 64000
+vertex limit with UB trapping. Build 34 session 1301 remains live, now compiling
+the device guest after the simulator portion. No second full build was started.
