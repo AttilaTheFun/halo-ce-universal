@@ -120,20 +120,9 @@ void halo_cloud_prepare(const char *saves, const char *data) {
     compatibility = [@"halo-native-save-v1:" stringByAppendingString:hash];
     saveRoot = [NSURL fileURLWithPath:[NSString stringWithUTF8String:saves] isDirectory:YES];
     if (![identifier isKindOfClass:NSString.class] || ![identifier hasPrefix:@"iCloud."]) return;
-    // Existing offline progress must participate in reconciliation, rather than
-    // being mistaken for an empty device and overwritten by a cloud download.
-    NSURL *candidate = [saveRoot URLByAppendingPathComponent:@"Cloud Saves/local-checkpoint.plist"];
-    if (![NSFileManager.defaultManager fileExistsAtPath:candidate.path]) {
-        NSError *error = nil;
-        NSData *snapshot = halo_save_snapshot_create(saveRoot, compatibility, &error);
-        if (!snapshot) { runtimeStatus = @"invalidLocalSave"; return; }
-        if ([halo_save_snapshot_decode(snapshot, compatibility, nil)[@"files"] count]) {
-            halo_save_checkpoint_committed();
-            if (![NSFileManager.defaultManager fileExistsAtPath:candidate.path]) {
-                runtimeStatus = @"invalidLocalSave"; return;
-            }
-        }
-    }
+    // Capture offline/profile changes before comparing with the remote head.
+    // Unchanged bytes retain their snapshot ID; unreadable state fails closed.
+    if (!halo_save_checkpoint_prepare()) { runtimeStatus = @"invalidLocalSave"; return; }
     container = [CKContainer containerWithIdentifier:identifier];
     [NSNotificationCenter.defaultCenter addObserverForName:CKAccountChangedNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
         (void)note; authenticate();

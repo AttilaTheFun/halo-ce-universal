@@ -61,6 +61,17 @@ int main(int argc, char **argv) { @autoreleasepool {
     NSURL *candidate = [root URLByAppendingPathComponent:@"Cloud Saves/local-checkpoint.plist"];
     NSData *captured = [NSData dataWithContentsOfURL:candidate];
     assert(halo_save_snapshot_decode(captured, [@"halo-native-save-v1:" stringByAppendingString:hash], &error));
+    assert(halo_save_checkpoint_prepare());
+    assert([[NSData dataWithContentsOfURL:candidate] isEqual:captured]);
+    fixture_write(root, @"z/saved/player_profiles/default/00.sav", @"offline profile change");
+    assert(halo_save_checkpoint_prepare());
+    NSData *updated = [NSData dataWithContentsOfURL:candidate];
+    assert(![updated isEqual:captured]);
+    NSDictionary *offline = halo_save_snapshot_decode(updated, [@"halo-native-save-v1:" stringByAppendingString:hash], nil);
+    assert([offline[@"files"][@"z/saved/player_profiles/default/00.sav"][@"data"] isEqual:[@"offline profile change" dataUsingEncoding:NSUTF8StringEncoding]]);
+    assert([@"broken" writeToURL:candidate atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    assert(!halo_save_checkpoint_prepare());
+    assert([[NSString stringWithContentsOfURL:candidate encoding:NSUTF8StringEncoding error:nil] isEqual:@"broken"]);
     assert([fm removeItemAtURL:candidate error:nil]);
     halo_save_checkpoint_configure(root.fileSystemRepresentation, root.fileSystemRepresentation);
     halo_save_checkpoint_committed(); // no trusted game identity: do not enqueue
