@@ -285,3 +285,10 @@ explains that both choices keep backups. Production transport/coordinator tests
 passed with ASan/UBSan, including a rejected-server update retaining the cloud
 backup and an unwritable backup destination preventing any upload. This is
 injected-database evidence, not a real iCloud account test.
+
+Combined simulator/device build 35836 is now terminal with exit 0 and both
+Xcode builds succeeded. The physical-device artifact is unsigned; no device
+installation or publication occurred. Started incremental host rebuild for both
+platforms from 5ada1f66 with build number 33 (session 37275, log
+/tmp/halo-ios-host33-build.log) to include all changes made during the long build.
+Poll this handle before another build.
