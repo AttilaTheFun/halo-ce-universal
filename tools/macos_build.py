@@ -41,8 +41,8 @@ GL = BUILD / "toolchain/gl"
 APP_ICON = "AppIcon.icns"
 APP_VERSION = "0.3.0"
 APP_BUILD = "12"
-APP_NAME = "OpenCE"
-LEGACY_APP_NAMES = ("Halo CE Universal.app", "Halo OG.app")
+APP_NAME = "Halo"
+LEGACY_APP_NAMES = ("Halo CE Universal.app", "Halo OG.app", "OpenCE.app")
 
 
 def run(*args):
@@ -192,10 +192,11 @@ def update_configuration(config):
 
 
 def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION, build=APP_BUILD,
-            content_tools=None, update_build=0):
+            content_tools=None, update_build=0, bundle_id="local.halo.ce-universal",
+            sandbox=True, installer_managed=False, provisioning_profile=None):
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
-        if not update_configuration(configuration):
+        if not installer_managed and not update_configuration(configuration):
             raise RuntimeError("Set Halo's update feed and public key before creating a release")
         if not sign_identity.startswith("Developer ID Application:"):
             raise RuntimeError("A release needs an explicit Developer ID Application signing identity")
@@ -203,7 +204,8 @@ def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION,
     with tempfile.TemporaryDirectory(prefix=".halo-package-", dir=BUILD) as temporary:
         staged = Path(temporary) / destination.name
         package_into(staged, data_root, sign_identity=sign_identity, release=release, version=version, build=build,
-                     content_tools=content_tools, update_build=update_build)
+                     content_tools=content_tools, update_build=update_build, bundle_id=bundle_id, sandbox=sandbox,
+                     installer_managed=installer_managed, provisioning_profile=provisioning_profile)
         # A fresh bundle prevents old development resources entering a release.
         # Preserve the previous build, including a running executable's inode.
         backup = None
@@ -220,7 +222,8 @@ def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION,
     print(f"Built {destination}")
 
 
-def package_into(app, data_root, *, sign_identity, release, version, build, content_tools=None, update_build=0):
+def package_into(app, data_root, *, sign_identity, release, version, build, content_tools=None, update_build=0, bundle_id="local.halo.ce-universal",
+            sandbox=True, installer_managed=False, provisioning_profile=None):
     contents = app / "Contents"
     macos = contents / "MacOS"
     frameworks = contents / "Frameworks"
@@ -273,15 +276,15 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     if data_link.is_symlink():
         data_link.unlink()
     legacy_path = resources / "GameDataPath.txt"
-    if data_root is not None and not release:
+    if data_root is not None and not release and not sandbox:
         legacy_path.write_text(str(require(data_root.resolve())) + "\n")
     elif legacy_path.exists():
         legacy_path.unlink()
     render_menu_icon(ROOT / "port/macos/Helmet.svg", resources / "Helmet.pdf")
     package_icon(resources)
-    content_binaries = stage_content_tools(app, content_tools, sign_identity=sign_identity, release=release) if content_tools else []
+    content_binaries = stage_content_tools(app, content_tools, sign_identity=sign_identity, release=release, sandbox=sandbox) if content_tools else []
     info = {
-        "CFBundleExecutable": "halo", "CFBundleIdentifier": "local.halo.ce-universal",
+        "CFBundleExecutable": "halo", "CFBundleIdentifier": bundle_id,
         "CFBundleName": APP_NAME, "CFBundleDisplayName": APP_NAME,
         "CFBundleIconFile": APP_ICON,
         "CFBundlePackageType": "APPL", "CFBundleShortVersionString": version,
@@ -294,18 +297,22 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
         "NSLocalNetworkUsageDescription": "Connect to players hosting Halo multiplayer games.",
         "NSMicrophoneUsageDescription": "Voice chat uses the microphone in network games.",
         "NSHighResolutionCapable": True,
+        "HaloSandboxed": sandbox, "HaloInstallerManaged": installer_managed,
         "NSHumanReadableCopyright": "Local experimental Apple Silicon port",
     }
-    if update_build > 0:
+    if update_build > 0 and not installer_managed:
         info["OpenCEMacUpdateBuild"] = update_build
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
         updates = update_configuration(configuration)
-        if not updates:
+        if not updates and not installer_managed:
             raise RuntimeError("Set Halo's update feed and public key before creating a release")
         if sign_identity == "-":
             raise RuntimeError("A release needs an explicit Developer ID Application signing identity")
-        info.update(updates)
+        if not installer_managed:
+            info.update(updates)
+    if provisioning_profile:
+        shutil.copy2(provisioning_profile, contents / "embedded.provisionprofile")
     with (contents / "Info.plist").open("wb") as stream:
         plistlib.dump(info, stream)
     try:
@@ -347,8 +354,9 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     for binary in (sdl, *angle_libraries):
         run("codesign", *signing, binary)
     app_signing = [*signing]
-    if release:
-        app_signing += ["--entitlements", ROOT / "port/macos/host.entitlements"]
+    if sandbox or release:
+        entitlement = "sandbox.entitlements" if sandbox else "host.entitlements"
+        app_signing += ["--entitlements", ROOT / "port/macos" / entitlement]
     run("codesign", *app_signing, app)
     run("codesign", "--verify", "--deep", "--strict", app)
 
@@ -372,6 +380,11 @@ def development_app_bundles(build_root):
 def install_app(app, applications):
     """Stage and verify a complete app before replacing an installed copy."""
     app = require(app.resolve())
+    with (app / "Contents/Info.plist").open("rb") as stream:
+        source_id = plistlib.load(stream)["CFBundleIdentifier"]
+    accepted_ids = {source_id}
+    if source_id == "com.LoganShire.Halo":
+        accepted_ids.add("com.LoganShire.OpenCE")
     applications = applications.expanduser().resolve()
     applications.mkdir(parents=True, exist_ok=True)
     destination = applications / app.name
@@ -392,7 +405,7 @@ def install_app(app, applications):
         if destination.exists():
             with (destination / "Contents/Info.plist").open("rb") as stream:
                 installed = plistlib.load(stream)
-            if installed.get("CFBundleIdentifier") != "local.halo.ce-universal":
+            if installed.get("CFBundleIdentifier") not in accepted_ids:
                 raise RuntimeError(f"Another application already exists at {destination}")
             previous = Path(tempfile.mkdtemp(prefix=".halo-previous-", dir=applications))
             unregister(destination)
@@ -418,7 +431,7 @@ def install_app(app, applications):
                     info = plistlib.load(stream)
             except (OSError, plistlib.InvalidFileException, ValueError, ExpatError):
                 continue
-            if isinstance(info, dict) and info.get("CFBundleIdentifier") == "local.halo.ce-universal":
+            if isinstance(info, dict) and info.get("CFBundleIdentifier") in accepted_ids:
                 archive = Path(tempfile.mkdtemp(prefix=".halo-previous-", dir=applications))
                 unregister(legacy)
                 legacy.rename(archive / (legacy.name + ".backup"))
@@ -431,7 +444,7 @@ def install_app(app, applications):
                 info = plistlib.load(stream)
         except (OSError, plistlib.InvalidFileException, ValueError, ExpatError):
             continue
-        if isinstance(info, dict) and info.get("CFBundleIdentifier") == "local.halo.ce-universal":
+        if isinstance(info, dict) and info.get("CFBundleIdentifier") in accepted_ids:
             unregister(prior)
             prior.rename(prior.with_name(prior.name + ".backup"))
     # Spotlight can rediscover unregistered development bundles, and launching
@@ -453,7 +466,7 @@ def install_app(app, applications):
                 info = plistlib.load(stream)
         except (OSError, plistlib.InvalidFileException, ValueError, ExpatError):
             continue
-        if not isinstance(info, dict) or info.get("CFBundleIdentifier") != "local.halo.ce-universal":
+        if not isinstance(info, dict) or info.get("CFBundleIdentifier") not in accepted_ids:
             continue
         unregister(development_app)
         backup = backup_root / development_app.relative_to(development_root)
@@ -485,19 +498,23 @@ def main():
                         metavar="DIRECTORY", help="Install in /Applications, or the given directory, for Spotlight")
     parser.add_argument("--renderer", choices=("metal", "angle"), default="metal",
                         help="metal draws natively. angle keeps the OpenGL ES translation layer")
+    parser.add_argument("--bundle-id", default="local.halo.ce-universal")
+    parser.add_argument("--sandbox", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--installer-managed", action="store_true", help="Updates are distributed through Installer")
+    parser.add_argument("--provisioning-profile", type=Path)
     parser.add_argument("--jobs", type=int, default=min(os.cpu_count() or 4, 6))
     args = parser.parse_args()
     use_renderer(args.renderer)
     os.chdir(ROOT)
     if args.release:
-        if not update_configuration(json.loads((ROOT / "port/macos/release-config.json").read_text())):
+        if not args.installer_managed and not update_configuration(json.loads((ROOT / "port/macos/release-config.json").read_text())):
             raise RuntimeError("Choose release hosting and configure the public update key first")
         if not args.sign_identity.startswith("Developer ID Application:"):
             raise RuntimeError("A release needs an explicit Developer ID Application signing identity")
     if args.plugin_only:
         build_plugin()
         return
-    update_build = resolve_update_build(args.update_build)
+    update_build = 0 if args.installer_managed else resolve_update_build(args.update_build)
     print(f"Fork updates: {'mac ' + str(update_build) if update_build else 'off'}")
     if not args.host_only:
         llvm_bin = ROOT / "build/macos/toolchain/bin"
@@ -514,7 +531,8 @@ def main():
     build_host(update_build)
     package(None if args.no_data_path or args.release else args.data_root,
             sign_identity=args.sign_identity, release=args.release, version=args.version, build=args.build_number,
-            content_tools=args.content_tools, update_build=update_build)
+            content_tools=args.content_tools, update_build=update_build, bundle_id=args.bundle_id,
+            sandbox=args.sandbox, installer_managed=args.installer_managed, provisioning_profile=args.provisioning_profile)
     if args.install:
         install_app(BUILD / (APP_NAME + ".app"), args.install)
 
