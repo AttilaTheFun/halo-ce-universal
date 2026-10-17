@@ -98,3 +98,22 @@ channel), confirming its ring-wrap assumption in source.
 is partially reviewed and needs adaptation to the new sandbox. Its profile/map
 selection file descriptions were checked against actual engine read/write sites,
 revealing required sync metadata outside the snapshot's current two directories.
+
+### Configuration repair
+
+Retain `0ed8fe3a2bb7456b3be7bb9638151391de4bf319`: generate each TOML
+section once and join repeated sections from affected older files before parsing.
+The repaired text is written only after successful parsing. Full implementation
+and fixture diff reviewed. The existing test initially failed compilation because
+the Apple fork's newer port_config.c also includes input_bindings.def. Added that
+real include to the fixture's copied inputs. The production-parser regression now
+passes, covering fresh defaults, saved setting updates, and preservation of both
+sections' values during repair. This does not certify every possible TOML syntax.
+
+Also inspected complete diffs of `d38b5fd710ce178e5e6df40fe8231bd7a5c8fbb8`
+(always retain multiplayer flashlights/dynamic lighting beyond original Xbox
+capacity thresholds) and `ebc5b8019937b258fb9bf3ab8398309ad862c6e5` (ignore
+scripted BSP switches in active multiplayer). Decisions remain pending: the former
+changes original lighting behavior under load; the latter can change custom-map
+script semantics even though it avoids disruptive reloads. Neither is yet marked
+accepted by this ledger. Co-op teleport `a93cf120` was only partially inspected.

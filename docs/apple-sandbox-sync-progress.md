@@ -443,3 +443,12 @@ Mac build 26869 finished with exit 0, installed /Applications/Halo.app, and stri
 nested signature verification passed. It is ad-hoc signed, cloud-unconfigured,
 not launched and not published. The new metadata change postdates it; rebuild
 hosts on both platforms from the eventual final revision before distribution.
+
+## Host builds 35
+
+Mac host-only build 35 is running as session 93599, log /tmp/halo-mac35-build.log;
+iOS simulator/device host-only build 35 as session 35172, log
+/tmp/halo-ios35-build.log. Both reuse the already-built guests; neither writes
+root build.ninja. They include save-selection metadata and offline-refresh fixes.
+Poll these handles before repeating builds. The existing TOML repair test now
+copies its required input_bindings.def fixture dependency and passes.
