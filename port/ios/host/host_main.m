@@ -1,5 +1,6 @@
 /* SDL owns UIApplication and invokes this entry on the UIKit main thread. */
 #include "host.h"
+#include "../../apple/save_runtime.h"
 #include "image.h"
 extern void host_ios_show_fatal(const char *) __attribute__((noreturn));
 #include "../../apple/host_graphics.h"
@@ -103,6 +104,9 @@ int main(int argc, char **argv) {
         snprintf(save_root, sizeof(save_root), "%s", saves.fileSystemRepresentation);
         freopen([[saves stringByAppendingPathComponent:@"halo.log"] fileSystemRepresentation], "w", stderr);
         setbuf(stderr, NULL);
+        char recovery_error[512] = {0};
+        if (!halo_save_recover_before_launch(save_root, recovery_error, sizeof(recovery_error)))
+            host_fatal("Cannot recover saved progress: %s", recovery_error);
         // Fail before asking the user to spend time importing a large image.
         if ([NSProcessInfo.processInfo.environment[@"HALO_IOS_TEST_STARTUP_ERROR"] boolValue] ||
             host_memory_initialize(HALO_IOS_IMAGE_BASE, HALO_IOS_IMAGE_SIZE))

@@ -1,5 +1,6 @@
 /* Native macOS entry point. SDL video remains on the real main thread. */
 #include "host.h"
+#include "../../apple/save_runtime.h"
 #include "../native/host_menu.h"
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
@@ -197,6 +198,9 @@ int main(int argc, char **argv) {
         if (!host_menu_prepare(save_root, root, selected_data, sizeof(selected_data))) return 0;
         root = selected_data;
     }
+    char recovery_error[512] = {0};
+    if (!halo_save_recover_before_launch(save_root, recovery_error, sizeof(recovery_error)))
+        host_fatal("Cannot recover saved progress: %s", recovery_error);
     if (!realpath(root, data_root))
         host_fatal("Game data folder is missing: %s", root);
     if (!image_argument) {
