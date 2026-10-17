@@ -410,3 +410,16 @@ refresh and malformed-candidate preservation checks. Cloud coordinator suite and
 both platform syntax checks passed. Mac build session 26869 remains live; changes
 made during that build require a final host rebuild from the committed revision
 before publication, and iOS needs the updated host too.
+
+## Required follow-up: resume selection metadata
+
+Confirmed in source/saved games/saved_game_files.c and source/main/main.c:
+z/lastprof.txt identifies the last selected profile and z/last_solo.txt drives
+load-last-solo-map (missing file falls back to the first map). Current snapshots
+include u/UDATA and z/saved but omit both. Before claiming cross-device resume,
+add these two explicit files to bounded snapshots and transactional restore;
+extend restore journals to file targets while retaining recovery for version-1
+two-directory transactions. Test missing metadata, ordinary round trip, and each
+interrupted rename/commit point. Do not copy all z/ (cache maps and transient
+savegame.bin must remain excluded). This is a confirmed implementation gap,
+not yet fixed. Mac build 26869 remains live, near guest link at last poll.
