@@ -3,6 +3,7 @@
 #include "../save_runtime.h"
 #include <assert.h>
 
+void halo_cloud_checkpoint_ready(void) {} // Network scheduling is tested separately.
 static NSData *encode(NSDictionary *record) {
     return [NSPropertyListSerialization dataWithPropertyList:record format:NSPropertyListBinaryFormat_v1_0 options:0 error:nil];
 }

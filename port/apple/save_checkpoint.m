@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "save_snapshot.h"
 #include "save_runtime.h"
+#include "cloud_runtime.h"
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -37,6 +38,7 @@ void halo_save_checkpoint_committed(void) {
             if (fd >= 0) close(fd);
         }
         if (!ok) fprintf(stderr, "Could not prepare cloud checkpoint: %s\n", error.localizedDescription.UTF8String ?: "storage unavailable");
+        if (ok) halo_cloud_checkpoint_ready();
         // This is a local candidate, not an acknowledged cloud revision. The
         // account-aware coordinator must compare it with the remote head.
     }
