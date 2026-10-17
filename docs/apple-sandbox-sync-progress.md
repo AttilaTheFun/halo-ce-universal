@@ -57,3 +57,27 @@ Fetched upstreams:
 The recovered old saves are in ~/Library/Application Support/Halo OG. The
 network-test snapshot is separate under Recovered Saves. Original ISO remains
 in ~/Developer/game_images. No generated artifacts or credentials belong here.
+
+## Private Mac import progress
+
+Mac disc import now makes a SHA-256/readback-verified `disc.iso` copy beside its
+extracted maps, records integrity metadata, and stores the private image path in
+preferences. Failed import removes only the unpublished generation. Security
+scope stays open through the source copy. The private generation is excluded
+from backup; it must never enter the cloud save payload.
+
+Default Mac storage now comes from Foundation's user Application Support URL,
+with a Halo subdirectory, rather than a HOME-based path. This follows the
+container when sandbox entitlements are applied; it does not by itself enable
+sandboxing. Legacy in-scope OpenCE/Halo OG/Halo CE Universal data is preserved by
+the existing migration helper. Migration from outside the sandbox and across
+bundle identifiers still requires an explicit authorized picker flow.
+
+Validation: native Foundation preferences/import tests pass, including retained
+ISO byte equality and integrity metadata, source-image removal, invalid-image
+rollback, existing settings, and legacy migration tests. No GUI/device launch.
+
+Signing evidence from Visor: no Enterprise/In-House credentials on Mini. iOS
+team LOGAN SHIRE, LLC and Developer ID team Aphelion, LLC differ. No Halo App ID
+or iCloud container is configured. Asked Logan which team to use and whether to
+configure its App ID/container/profiles; no account changes before his answer.
