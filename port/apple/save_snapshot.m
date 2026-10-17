@@ -22,6 +22,7 @@ static BOOL allowedPath(NSString *path) {
     if (![path isKindOfClass:NSString.class] || path.length > 1024 ||
         [path containsString:@"\\"] || [path rangeOfString:[NSString stringWithFormat:@"%C", (unichar)0]].location != NSNotFound)
         return NO;
+    if ([path isEqual:@"z/lastprof.txt"] || [path isEqual:@"z/last_solo.txt"]) return YES;
     NSArray *parts = [path componentsSeparatedByString:@"/"];
     if (parts.count < 3) return NO;
     for (NSString *part in parts)
@@ -97,6 +98,25 @@ NSData *halo_save_snapshot_create(NSURL *root, NSString *compatibility, NSError 
         }
         if (enumerationError) { if (error) *error = enumerationError; return nil; }
     }
+    for (NSString *path in @[@"z/lastprof.txt", @"z/last_solo.txt"]) {
+        NSURL *parent = [root URLByAppendingPathComponent:@"z"];
+        struct stat st;
+        if (lstat(parent.fileSystemRepresentation, &st)) {
+            if (errno == ENOENT) continue;
+            fail(error, @"Could not inspect save selection metadata."); return nil;
+        }
+        if (!S_ISDIR(st.st_mode)) { fail(error, @"Save metadata directories must not be links."); return nil; }
+        NSURL *file = [root URLByAppendingPathComponent:path];
+        if (lstat(file.fileSystemRepresentation, &st)) {
+            if (errno == ENOENT) continue;
+            fail(error, @"Could not inspect save selection metadata."); return nil;
+        }
+        if (files.count >= maximumFiles) { fail(error, @"Too many save files."); return nil; }
+        NSData *data = readFile(file, MIN((NSUInteger)4096, maximumBytes - bytes), error);
+        if (!data) return nil;
+        bytes += data.length;
+        files[path] = @{@"data":data, @"sha256":digest(data)};
+    }
     NSDictionary *record = @{@"version":@1, @"compatibility":compatibility,
         @"snapshot":NSUUID.UUID.UUIDString, @"created":NSDate.date, @"files":files};
     NSData *result = [NSPropertyListSerialization dataWithPropertyList:record format:NSPropertyListBinaryFormat_v1_0 options:0 error:error];
@@ -122,6 +142,9 @@ NSDictionary *halo_save_snapshot_decode(NSData *data, NSString *compatibility, N
         if (!allowedPath(path) || [paths containsObject:folded] || ![file isKindOfClass:NSDictionary.class] ||
             ![file[@"data"] isKindOfClass:NSData.class] || ![file[@"sha256"] isEqual:digest(file[@"data"])]) {
             fail(error, @"The save snapshot has invalid paths or damaged data."); return nil;
+        }
+        if (([path isEqual:@"z/lastprof.txt"] || [path isEqual:@"z/last_solo.txt"]) && [file[@"data"] length] > 4096) {
+            fail(error, @"Save selection metadata is too large."); return nil;
         }
         [paths addObject:folded];
         bytes += [file[@"data"] length];

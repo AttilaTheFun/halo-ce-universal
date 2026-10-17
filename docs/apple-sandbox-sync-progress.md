@@ -423,3 +423,23 @@ two-directory transactions. Test missing metadata, ordinary round trip, and each
 interrupted rename/commit point. Do not copy all z/ (cache maps and transient
 savegame.bin must remain excluded). This is a confirmed implementation gap,
 not yet fixed. Mac build 26869 remains live, near guest link at last poll.
+
+## Resume selection metadata implemented
+
+Snapshots now explicitly include z/lastprof.txt and z/last_solo.txt (bounded to
+4 KiB each), alongside persistent save directories; arbitrary z files remain
+excluded. Restore journal version 2 atomically handles two directory targets and
+two optional regular-file targets. Missing selection metadata clears stale target
+selection rather than retaining another device's selection. Recovery still accepts
+version-1 two-directory journals. Link/type validation remains in place.
+
+ASan/UBSan save tests passed for ten interrupted restore points, full profile/map
+selection rollback or commit, version-1 journal recovery, and old snapshots lacking
+selection metadata. Cloud coordinator regressions passed. A fixture initially
+needed parentheses around its Objective-C literal in assert; fixed and rerun.
+Real campaign continuation still needs testing.
+
+Mac build 26869 finished with exit 0, installed /Applications/Halo.app, and strict
+nested signature verification passed. It is ad-hoc signed, cloud-unconfigured,
+not launched and not published. The new metadata change postdates it; rebuild
+hosts on both platforms from the eventual final revision before distribution.
