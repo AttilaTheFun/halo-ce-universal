@@ -125,3 +125,32 @@ checkpoints, restart recovery twice, and check that both profile and checkpoint
 belong to the same old/new generation while cache bytes remain untouched. All
 passed. These are process-death tests, not power-loss hardware tests. Production
 builds do not include the fault-injection environment variable.
+
+## Sandbox packaging in progress
+
+The Mac packager now defaults to sandbox entitlements and Halo.app, accepts
+`--bundle-id` and an optional embedded provisioning profile, and supports
+`--installer-managed` without a Sparkle feed. Installer-managed builds disable
+the fork updater. Optional bundled command-line content tools inherit the app
+sandbox. ISO selection remains a system picker, and sandbox first launch requires
+a private image import instead of retaining an external maps-folder path.
+
+A clean native Metal build exposed an upstream compiler-wrapper path mismatch:
+the plugin was generated in build/macos-metal but loaded from build/macos. The
+wrapper now selects the same renderer-specific directory as the build graph.
+Menu/installer unit tests pass (14). A clean native app build is in progress;
+its signature, sandbox runtime and device/cloud behavior are not yet verified.
+Signing-account setup remains pending Logan's team choice.
+
+Clean native Metal build 30 completed. The bundle is Halo.app with identifier
+com.LoganShire.Halo, HaloSandboxed=true and HaloInstallerManaged=true. Its actual
+code signature contains app-sandbox, user-selected file access, network client/
+server, USB/Bluetooth and the existing compiled-guest executable-memory exception.
+Strict nested signature verification passes; bundle inspection finds no ISO,
+XISO, map files or GameDataPath.txt. This is ad-hoc development signing, not
+team signing or notarization. Per the local install workflow it was installed
+at /Applications/Halo.app, retaining the previous copy in the installer backup;
+the installed signature and BuildInfo were checked. It was NOT launched.
+Runtime sandbox/import/controller/gameplay acceptance is still pending, as are
+cloud functionality and Installer publication. Do not treat build 30 as the
+completed cross-device release.

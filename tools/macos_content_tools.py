@@ -110,7 +110,7 @@ def _notices(directory, manifest, pins):
     return notices
 
 
-def stage_content_tools(app, toolchain_directory, sign_identity="-", release=False):
+def stage_content_tools(app, toolchain_directory, sign_identity="-", release=False, sandbox=False):
     """Return staged binary Paths for the caller's minimum-macOS calculation.
 
     The caller supplies a private, unsigned app staging tree. Existing helper or
@@ -160,6 +160,8 @@ def stage_content_tools(app, toolchain_directory, sign_identity="-", release=Fal
                 signing = ["/usr/bin/codesign", "--force", "--sign", sign_identity]
                 if release:
                     signing += ["--options", "runtime", "--timestamp"]
+                if sandbox:
+                    signing += ["--entitlements", str(Path(__file__).resolve().parents[1] / "port/macos/helper-sandbox.entitlements")]
                 subprocess.run([*signing, str(binary)], check=True, capture_output=True)
                 subprocess.run(["/usr/bin/codesign", "--verify", "--strict", str(binary)],
                                check=True, capture_output=True)
