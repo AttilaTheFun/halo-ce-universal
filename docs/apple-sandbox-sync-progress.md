@@ -499,3 +499,14 @@ Installed Mac build 37 passes the existing package content audit. Fixed the opti
 ### Provisioned Mac package boundary
 
 Found and fixed a mismatch: macos_build.py embeds a CloudKit profile at Contents/embedded.provisionprofile, but the release content audit rejected that top-level file. The content audit now permits a nonempty regular file at exactly that location, rejects links/empty files and misplaced .provisionprofile files. It does not authenticate a profile or establish entitlement authorization; signing validation remains required. Thirteen release-boundary/DMG unit tests pass. No account mutation, build, notarization or publication performed. Further legacy-storage/updater review decisions recorded in the ledger.
+
+
+### Continued upstream dependency review
+
+Confirmed clean apple/sandbox-sync at b4e7ed76 after resuming. Completed standalone
+updater, composite converter/voice/menu, download-aware start and admission diffs;
+decisions and unresolved HUD/BSP semantics are in the review ledger. Verified
+Installer guards in the current native host. No code changes, build, account
+mutation, device interaction or publication in this review step. Build 37 remains
+the latest local artifact; shared-team provisioning and live cloud tests remain
+pending. No build or simulator job is running.

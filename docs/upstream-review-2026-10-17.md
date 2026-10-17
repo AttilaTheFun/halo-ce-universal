@@ -299,3 +299,68 @@ assets; it only provides the host/guest UI boundary. No mod prompt was exercised
   so they do not populate this notice. Its precursor `997fb9d2` and updater
   implementation `0290a825` still require complete review; neither is approved
   merely by reviewing this small follow-up.
+
+
+### Standalone updater and conversion review completed
+
+- `0290a825f47218334b529ab6844559aa9dd3961e`: complete six-file diff and
+  updater implementation inspected. Retain only for upstream standalone builds;
+  exclude this update mechanism from Installer-managed Halo. It selects a Mac
+  release, downloads and mounts its DMG, checks the app's signature integrity,
+  fixed upstream bundle ID and update-build number, then replaces the app through
+  a helper. Signature integrity is not same-team or notarization verification;
+  redirect hosts are allowlisted but redirect schemes are not explicitly checked.
+  The helper removes quarantine. None of those operations were executed during
+  review. Halo's existing Installer flag guards Sparkle initialization, fork
+  updater creation, launch checks, installed-history recording and the timer.
+  Sandbox distribution continues through Installer, not this self-replacement
+  path. Standalone update behavior remains unverified.
+- `997fb9d257b0f60e6198402da3da3d74a741b270`: full eight-file diff inspected.
+  Retain as part of that dormant standalone feature: mutex-protected bounded
+  update notice, fifteen-minute checks and update history, including quoted helper
+  arguments and installed/replaced/failure messages. The later `49c94068` notice
+  placement and `147a7e4b` completion fix remain relevant. No simulation tick or
+  wire format change. Installer-managed Halo never starts these checks/history.
+  Preference/history fixtures were inspected; no live updater test is claimed.
+- `d10ac8be5d70f8bbb25a0d44267c3439fe72f7e1`: retain; complete eight-file
+  composite diff inspected against its parent. Combines the already-reviewed
+  assembly string preservation, Opus 20 ms guard and postgame navigation fallback.
+  Explicit `.ascii`/`.asciz`/`.string` preservation supersedes the earlier literal
+  workaround; escaped quoted symbol names are handled. XML and generator agree
+  on `main_menu_if_no_history`. Existing seven converter tests passed, including
+  real compiler/converter/assembler byte preservation; live voice/navigation
+  tests have not been run.
+
+### Downloading players and map-script dependencies
+
+Completed the actual diffs of `9db822e377533ce39e73f67daa962058da63f016`
+(ten files) and `fa463f36e57412f34e4de078fdfef9944d065ede` (seven files).
+Partially retain these mixed commits:
+
+- Retain download-aware start/precache/loading decisions and temporary held-player
+  state, together with the follow-up's normal player-addition queue. Downloaders
+  do not spawn before receiving the map or hold everyone else's start. Admission
+  uses the ordinary capacity/name/compatibility checks rather than direct insertion.
+  Silent pending machines can time out, and reset clears held state. No protocol
+  layout or simulation tick change. Live download/disconnect/late-join coverage
+  remains necessary; the Linux 32-bit harness has not run on this Mac.
+- Retain creation of a missing custom_maps directory without deleting existing
+  contents, and matching XML/generator platform visibility for map sharing.
+- Retain the co-op world-origin correction for seated units and grounded fallback
+  for the existing larger network-co-op mode. The latter is behind the existing
+  majority-player path; this does not establish original two-player parity.
+- Flag-preservation changes are superseded by the separately reviewed `85afe26a`
+  follow-up. That review remains the decision for the final flag-deletion path.
+- Defer approval of the overshield HUD heuristic pending comparison: it reduces
+  the drain threshold from 0.05 to 0.02 and preserves a fading hit flash, but still
+  infers drain from magnitude rather than identifying its cause. It is currently
+  inherited, not certified as faithful damage presentation.
+- `ebc5b8019937b258fb9bf3ab8398309ad862c6e5` is superseded by the BSP portion of
+  `9db822e3`: the first scripted multiplayer BSP selection now runs and later
+  different selections are suppressed, with state reset per map. Approval remains
+  deferred because valid custom scripts can require later transitions. It is
+  currently inherited. A final decision must account for multiplayer compatibility
+  and affected maps before publishing this rebase as reviewed.
+
+The full-review baseline remains unchanged. Reading a diff does not establish
+runtime compatibility, and inherited-but-deferred behavior is still release work.
