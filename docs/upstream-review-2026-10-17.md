@@ -83,3 +83,18 @@ The optional mode does not establish equivalence to original Xbox audio.
 The final resampler's contiguous two-sample access was also checked against the
 actual mirrored history allocation/write path (two times RESAMPLER_HISTORY per
 channel), confirming its ring-wrap assumption in source.
+
+### Additional platform review
+
+| Commit | Decision and effect | Evidence |
+| --- | --- | --- |
+| `4aecd050531abbc2995199cfa4e9de2bc8613bcf` | Retain: static tag accessor uses __inline__ to avoid the Windows shim's weak-symbol interpretation of __inline. | Complete diff inspected; Apple compilation includes header, Windows build not run. |
+| `9ade750f7d22114bfef3351a7aab7f9b6589bfaa` | Retain: test stand-in clients add a distinct 32-hex-digit hardware ID to the join request. | Complete diff inspected; test tooling only, no live bot session run. |
+| `c90a3bab81e3d604202e83cdde447f96e2f015f7` | Retain: classify a nav point with NONE screen type after spawn, or skip it without a player unit, before accessing arrow sequences. | Complete diff inspected; spawn timing rendering unverified. |
+| `fc4cc8cda5115345679a0247d8764733da14e4a6` | Retain pending comparative testing: default iOS interpolation off, explicit saved player choice still wins. No simulation-rate change. | Complete one-line diff inspected; performance comparison remains pending. |
+| `7599543bda2a3a9a59bb7dbb1ac494a1687dc03b` | Retain update initialization ordering for standalone builds: ask for game data before starting updater UI. Installer-managed builds already disable that updater. | Complete diff inspected; no update-service request or GUI test run. |
+
+`6462dffdc751f104fac7e9e13cedb1c3b4e2c437` runtime-directory documentation
+is partially reviewed and needs adaptation to the new sandbox. Its profile/map
+selection file descriptions were checked against actual engine read/write sites,
+revealing required sync metadata outside the snapshot's current two directories.
