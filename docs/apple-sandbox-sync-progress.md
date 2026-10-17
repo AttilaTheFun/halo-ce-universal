@@ -106,3 +106,22 @@ checkpoint compatibility, which requires actual Mac/iOS/iPadOS verification.
 
 Cache Cleanup status: no Bazel output bases or linked worktrees for this repo.
 Both former Apple worktree directories remain removed.
+
+## Transactional save restore
+
+`save_restore.m` stages a validated snapshot, records which persistent save
+folders existed, then moves original directories into the private transaction
+before replacing them. Files and directory changes are synced before commit.
+Startup recovery rolls back an uncommitted transaction or finishes committed
+cleanup. A restore error retains the journal/backups for retry; a game must not
+start if recovery fails. The game must be stopped for restoration.
+
+Both Mac and iOS startup paths now call the recovery bridge before guest launch;
+build inputs include the shared modules. Actual cloud-triggered restoration is
+not wired yet. Full app builds and sandboxed runtime verification remain pending.
+
+Validation: ASan/UBSan tests terminate a child process at each of six transaction
+checkpoints, restart recovery twice, and check that both profile and checkpoint
+belong to the same old/new generation while cache bytes remain untouched. All
+passed. These are process-death tests, not power-loss hardware tests. Production
+builds do not include the fault-injection environment variable.
