@@ -53,3 +53,20 @@ undefined-behavior trapping. This module explicitly supports the 64-bit host;
 this does not replace the still-unrun 32-bit map-sharing harness. Its positive
 and mutation-control test diffs were inspected but their runtime assertions have
 not run on this Mac. No downloaded community map or live peer was used.
+
+### Audio resampler series
+
+Full diffs reviewed, including generated XML, config/generator edits and mixer
+regressions. Retain the final series as an opt-in audio-processing setting;
+sinc remains the configured/default fallback and reverb selection is independent.
+
+| Apple commit | Main-upstream equivalent | Decision and effect |
+| --- | --- | --- |
+| `497b7fcc43851454a1bc1f9c17b4ae3f4b805566` | `4afb5966` | Superseded by the next commit; do not retain its intermediate coupling of reverb-off to linear resampling (or its incorrect history indexing). |
+| `65a4c37a1aaa935db7b6b74c82f92e0e790d5f06` | `39fcfdaf` | Retain final independent audio.resampler setting: linear optional, sinc default; correct per-channel history indexing. |
+| `75f2df1a576011deb67c0205e377bb0b379e941c` | `0f3ceb9e` | Retain comments clarifying spectral aliasing; no runtime change. |
+| `e1587dab683534ca5467c4ac0fa57613b8676739` | `5a1b8a40` | Retain final Sound Processing submenu, generator/manifest/XML, independent reverb/resampler settings, simplified setting fallback and contiguous mirrored-history reads. Mixer fixtures cover interpolation against computed samples and a nearest-neighbor mutation control. |
+
+Audio menu XML parses successfully. No live audio/reference comparison and no
+32-bit mixer harness execution on this Mac; the known host ABI limitation applies.
+The optional mode does not establish equivalence to original Xbox audio.
