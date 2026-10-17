@@ -1,10 +1,12 @@
 #import "cloud_runtime.h"
 #import "cloud_sync.h"
 #import "save_snapshot.h"
+#import "save_restore.h"
 #import "save_runtime.h"
 #import <TargetConditionals.h>
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #else
 #import <AppKit/AppKit.h>
 #endif
@@ -17,13 +19,38 @@ static NSString *runtimeStatus = @"notConfigured";
 static BOOL guestRunning, presenting;
 static NSUInteger generation;
 static NSTimer *timer;
+static void chooseSaveFolder(void);
+static NSString *queueSelectedSaves(NSURL *url) {
+    BOOL scoped = [url startAccessingSecurityScopedResource];
+    NSError *error = nil;
+    BOOL ok = halo_save_import_queue(url, compatibility, saveRoot, &error);
+    if (scoped) [url stopAccessingSecurityScopedResource];
+    return ok ? @"Progress copied. Quit and reopen Halo to use it. Your original files and a backup of this app’s progress will be kept."
+              : (error.localizedDescription ?: @"Could not import saved progress.");
+}
+static NSString *const importExplanation = @"Close the older Halo app first. Choose its save folder containing u and z, from the same Halo game image. Only saved progress is copied. It will replace this app’s progress on relaunch, with a backup kept.";
+
 #if TARGET_OS_IPHONE
 static UIWindow *cloudWindow;
 static __weak UIWindow *priorWindow;
-@interface HaloCloudViewController : UIViewController
+static void closeCloudWindow(void) {
+    cloudWindow.hidden = YES; cloudWindow = nil; [priorWindow makeKeyWindow]; presenting = NO;
+}
+@interface HaloCloudViewController : UIViewController <UIDocumentPickerDelegate>
 @end
 @implementation HaloCloudViewController
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations { return UIInterfaceOrientationMaskLandscape; }
+- (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
+    [controller dismissViewControllerAnimated:NO completion:^{ closeCloudWindow(); }];
+}
+- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
+    NSString *message = urls.firstObject ? queueSelectedSaves(urls.firstObject) : @"No folder was selected.";
+    [controller dismissViewControllerAnimated:NO completion:^{
+        UIAlertController *result = [UIAlertController alertControllerWithTitle:@"Import Saved Progress" message:message preferredStyle:UIAlertControllerStyleAlert];
+        [result addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) { (void)a; closeCloudWindow(); }]];
+        [self presentViewController:result animated:NO completion:nil];
+    }];
+}
 @end
 #endif
 static NSString *statusText(void) {
@@ -83,7 +110,6 @@ static void authenticate(void) {
 void halo_cloud_prepare(const char *saves, const char *data) {
     NSCAssert(NSThread.isMainThread, @"Cloud startup must run on the main thread");
     NSString *identifier = NSBundle.mainBundle.infoDictionary[@"HaloCloudContainer"];
-    if (![identifier isKindOfClass:NSString.class] || ![identifier hasPrefix:@"iCloud."]) return;
     NSDictionary *manifest = [NSDictionary dictionaryWithContentsOfFile:
         [[NSString stringWithUTF8String:data] stringByAppendingPathComponent:@"integrity.plist"]];
     NSString *hash = manifest[@"sha256"];
@@ -93,6 +119,7 @@ void halo_cloud_prepare(const char *saves, const char *data) {
     }
     compatibility = [@"halo-native-save-v1:" stringByAppendingString:hash];
     saveRoot = [NSURL fileURLWithPath:[NSString stringWithUTF8String:saves] isDirectory:YES];
+    if (![identifier isKindOfClass:NSString.class] || ![identifier hasPrefix:@"iCloud."]) return;
     // Existing offline progress must participate in reconciliation, rather than
     // being mistaken for an empty device and overwritten by a cloud download.
     NSURL *candidate = [saveRoot URLByAppendingPathComponent:@"Cloud Saves/local-checkpoint.plist"];
@@ -148,6 +175,10 @@ void halo_cloud_show_status(void) {
     } else if (container) {
         [titles addObject:@"Sync Now"]; [actions addObject:^{ if (session) [session synchronize]; else authenticate(); }];
     }
+    if (saveRoot && compatibility) {
+        [titles addObject:@"Import Saved Progress…"];
+        [actions addObject:^{ chooseSaveFolder(); }];
+    }
     [titles addObject:@"Close"]; [actions addObject:^{}];
 #if TARGET_OS_IPHONE
     UIWindowScene *scene = nil;
@@ -167,9 +198,10 @@ void halo_cloud_show_status(void) {
     for (NSUInteger i = 0; i < titles.count; i++) {
         void (^action)(void) = actions[i];
         [alert addAction:[UIAlertAction actionWithTitle:titles[i] style:UIAlertActionStyleDefault handler:^(UIAlertAction *button) {
-            (void)button; if (shownGeneration == generation) action();
+            (void)button;
             [cloudWindow.rootViewController dismissViewControllerAnimated:NO completion:^{
-                cloudWindow.hidden = YES; cloudWindow = nil; [priorWindow makeKeyWindow]; presenting = NO;
+                closeCloudWindow();
+                if (shownGeneration == generation) action();
             }];
         }]];
     }
@@ -178,7 +210,46 @@ void halo_cloud_show_status(void) {
     NSAlert *alert = [NSAlert new]; alert.messageText = @"iCloud Saves"; alert.informativeText = statusText();
     for (NSString *title in titles) [alert addButtonWithTitle:title];
     NSInteger selected = [alert runModal] - NSAlertFirstButtonReturn;
+    presenting = NO;
     if (shownGeneration == generation && selected >= 0 && (NSUInteger)selected < actions.count) { void (^action)(void) = actions[selected]; action(); }
+    presenting = NO;
+#endif
+}
+
+static void chooseSaveFolder(void) {
+    if (presenting || !saveRoot || !compatibility) return;
+    presenting = YES;
+#if TARGET_OS_IPHONE
+    UIWindowScene *scene = nil;
+    for (UIScene *candidate in UIApplication.sharedApplication.connectedScenes)
+        if ([candidate isKindOfClass:UIWindowScene.class] && candidate.activationState == UISceneActivationStateForegroundActive) { scene = (UIWindowScene *)candidate; break; }
+    if (!scene) { presenting = NO; return; }
+    for (UIWindow *window in scene.windows) if (window.isKeyWindow) priorWindow = window;
+    cloudWindow = [[UIWindow alloc] initWithWindowScene:scene];
+    cloudWindow.frame = scene.coordinateSpace.bounds;
+    HaloCloudViewController *host = [HaloCloudViewController new];
+    cloudWindow.rootViewController = host; cloudWindow.windowLevel = UIWindowLevelAlert + 1;
+    [cloudWindow makeKeyAndVisible];
+    UIAlertController *explanation = [UIAlertController alertControllerWithTitle:@"Import Saved Progress" message:importExplanation preferredStyle:UIAlertControllerStyleAlert];
+    [explanation addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction *a) { (void)a; closeCloudWindow(); }]];
+    [explanation addAction:[UIAlertAction actionWithTitle:@"Choose Save Folder" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+        (void)a;
+        [host dismissViewControllerAnimated:NO completion:^{
+            UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[UTTypeFolder] asCopy:NO];
+            picker.allowsMultipleSelection = NO; picker.delegate = host; picker.modalInPresentation = YES;
+            [host presentViewController:picker animated:NO completion:nil];
+        }];
+    }]];
+    [host presentViewController:explanation animated:NO completion:nil];
+#else
+    NSOpenPanel *picker = NSOpenPanel.openPanel;
+    picker.title = @"Import Saved Progress"; picker.message = importExplanation;
+    picker.canChooseDirectories = YES; picker.canChooseFiles = NO;
+    picker.allowsMultipleSelection = NO; picker.prompt = @"Import Saves";
+    if ([picker runModal] == NSModalResponseOK) {
+        NSAlert *result = [NSAlert new]; result.messageText = @"Import Saved Progress";
+        result.informativeText = queueSelectedSaves(picker.URL); [result runModal];
+    }
     presenting = NO;
 #endif
 }
