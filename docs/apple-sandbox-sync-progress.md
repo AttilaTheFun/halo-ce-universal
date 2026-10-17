@@ -183,3 +183,28 @@ now also checks real host capture and rejection of missing game identity. Both
 passed. Full Mac rebuild 31 is running, unified exec session 55378; log is
 /tmp/halo-checkpoint-build.log. Revalidate that handle before waiting/restarting.
 No build 31 installation/publication yet. Physical devices untouched.
+
+## Account-aware reconciliation
+
+`HaloCloudSync` now persists an account/compatibility-bound common snapshot,
+compares local candidates with the remote head, uploads only when the remote
+has not diverged, and presents conflict states when both sides changed. Remote
+restoration waits for guestStopped; conflicting local data is retained under
+Cloud Saves/Conflicts before adopting remote data. A newly captured checkpoint
+during upload remains pending instead of being acknowledged accidentally.
+Account changes require explicit consent; invalidation discards late callbacks.
+Invalid metadata/oversized candidates fail closed. Authentication and UI wiring
+are still outstanding; the coordinator is not yet running in the app.
+
+Tests run the coordinator against the production transport with an injected
+server: matching base, local upload, cloud arrival during play, stopped-guest
+restore, competing local/remote edits, rejected conditional write, preserved
+conflicting snapshot, different-account refusal and late-callback invalidation.
+ASan/UBSan passed. There have been no real CloudKit requests or developer-account
+changes, and no claim of real multi-device sync.
+
+Build 31 finished successfully (session 55378 is terminal). Installed it via the
+local workflow with strict signature and BuildInfo verification. Source recorded
+62aaeb96. No launch, device interaction or Installer publication. The build
+contains checkpoint capture, not the later coordinator. Team signing and actual
+sandbox/runtime/cloud acceptance remain pending.
