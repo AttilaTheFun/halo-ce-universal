@@ -125,3 +125,60 @@ int halo_save_recover_before_launch(const char *path, char *message, size_t capa
         return ok;
     }
 }
+
+static NSURL *importDirectory(NSURL *root) {
+    return [root URLByAppendingPathComponent:@"Save Imports"];
+}
+static BOOL writeImport(NSData *bytes, NSURL *url, NSError **error) {
+    return [bytes writeToURL:url options:NSDataWritingAtomic error:error] &&
+        syncURL(url, error) && syncURL(url.URLByDeletingLastPathComponent, error);
+}
+BOOL halo_save_import_queue(NSURL *selected, NSString *compatibility, NSURL *root, NSError **error) {
+    // Snapshot reads are bounded and reject links in persistent save paths.
+    NSData *bytes = halo_save_snapshot_create(selected, compatibility, error);
+    NSDictionary *record = bytes ? halo_save_snapshot_decode(bytes, compatibility, error) : nil;
+    if (!record) return NO;
+    if (![record[@"files"] count]) return failure(error, @"That folder contains no persistent Halo saves. Choose the folder containing u and z.");
+    NSURL *dir = importDirectory(root);
+    NSFileManager *fm = NSFileManager.defaultManager;
+    if (exists(dir) && !directory(dir)) return failure(error, @"The save import directory is unavailable.");
+    if (![fm createDirectoryAtURL:dir withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions:@0700} error:error]) return NO;
+    NSURL *pending = [dir URLByAppendingPathComponent:@"pending.plist"];
+    if (exists(pending)) return failure(error, @"A save import is already waiting. Reopen Halo to finish it before importing another.");
+    return writeImport(bytes, pending, error);
+}
+BOOL halo_save_import_apply(NSString *compatibility, NSURL *root, NSError **error) {
+    NSURL *dir = importDirectory(root);
+    NSURL *pending = [dir URLByAppendingPathComponent:@"pending.plist"];
+    if (!exists(pending)) return YES;
+    if (!directory(dir)) return failure(error, @"The save import directory is unavailable.");
+    struct stat st;
+    if (lstat(pending.fileSystemRepresentation, &st) || !S_ISREG(st.st_mode) || st.st_size > 128 * 1024 * 1024)
+        return failure(error, @"The pending save import is invalid or too large.");
+    NSData *bytes = [NSData dataWithContentsOfURL:pending options:0 error:error];
+    NSDictionary *record = bytes ? halo_save_snapshot_decode(bytes, compatibility, error) : nil;
+    if (!record || ![record[@"files"] count]) return failure(error, @"The pending saves do not match this game image or contain no progress.");
+    if (!halo_save_restore_recover(root, error)) return NO;
+    // One backup per queued snapshot. Never overwrite it on a recovery retry.
+    NSURL *backup = [dir URLByAppendingPathComponent:[NSString stringWithFormat:@"before-%@.plist", record[@"snapshot"]]];
+    if (!exists(backup)) {
+        NSData *original = halo_save_snapshot_create(root, compatibility, error);
+        if (!original || !writeImport(original, backup, error)) return NO;
+    } else {
+        struct stat saved;
+        if (lstat(backup.fileSystemRepresentation, &saved) || !S_ISREG(saved.st_mode) || saved.st_size > 128 * 1024 * 1024 ||
+            !halo_save_snapshot_decode([NSData dataWithContentsOfURL:backup], compatibility, error))
+            return failure(error, @"The original save backup is invalid; import stopped.");
+    }
+    if (!syncURL(backup, error) || !syncURL(dir, error)) return NO;
+    if (!halo_save_restore(bytes, compatibility, root, error)) return NO;
+    // Publish the imported snapshot as local progress, retaining the existing
+    // cloud base so reconciliation detects a genuine local change/conflict.
+    NSURL *cloud = [root URLByAppendingPathComponent:@"Cloud Saves"];
+    if (exists(cloud) && !directory(cloud)) return failure(error, @"The local cloud-save directory is unavailable.");
+    if (![NSFileManager.defaultManager createDirectoryAtURL:cloud withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions:@0700} error:error] ||
+        !writeImport(bytes, [cloud URLByAppendingPathComponent:@"local-checkpoint.plist"], error)) return NO;
+    // A failure before this point leaves pending in place for a safe retry
+    // before guest startup. Original source and pre-import backup stay intact.
+    return [NSFileManager.defaultManager removeItemAtURL:pending error:error] && syncURL(dir, error);
+}

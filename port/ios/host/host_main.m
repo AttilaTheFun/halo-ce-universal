@@ -148,6 +148,11 @@ int main(int argc, char **argv) {
             host_fatal("The imported game is missing its main menu map. Reopen Halo and choose your original Xbox Halo ISO again.");
     }
     halo_save_checkpoint_configure(save_root, data_root);
+    {
+        char import_error[512] = {0};
+        if (!halo_save_import_before_launch(import_error, sizeof(import_error)))
+            host_fatal("Cannot import saved progress: %s", import_error);
+    }
     halo_cloud_prepare(save_root, data_root);
     {
         char cloud_recovery_error[512] = {0};

@@ -224,6 +224,11 @@ int main(int argc, char **argv) {
     setenv("HALO_DATA_ROOT", data_root, 1);
     setenv("HALO_SAVE_ROOT", save_root, 1);
     halo_save_checkpoint_configure(save_root, data_root);
+    {
+        char import_error[512] = {0};
+        if (!halo_save_import_before_launch(import_error, sizeof(import_error)))
+            host_fatal("Cannot import saved progress: %s", import_error);
+    }
     halo_cloud_prepare(save_root, data_root);
     {
         char cloud_recovery_error[512] = {0};

@@ -313,3 +313,23 @@ recorded in the 17 October ledger. The map-sharing hardening review is partial.
 Attempted 64 network harness cases; all stopped at missing 32-bit host-runtime
 link support, before execution. No harness is running. These tests still require
 a suitable supported execution environment; no VM was created for this attempt.
+
+## Queued old-save migration backend
+
+Added halo_save_import_queue/apply in save_restore: snapshot only persistent
+u/UDATA and z/saved from a user-selected old save root, reject empty imports,
+retain original source, refuse to replace an already pending import, and apply
+only on the next startup before cloud reconciliation/guest entry. Both hosts
+now call the startup apply hook. A durable before-import snapshot stays in Save
+Imports; retries never replace it. Import uses the existing transactional restore
+and publishes the imported snapshot as the cloud candidate while preserving the
+cloud base, so reconciliation can recognize a local change/conflict. Cache maps,
+ISO and other old-app files are not copied. Invalid compatibility fails closed.
+
+ASan/UBSan snapshot tests passed including new queue/no-live-overwrite, original
+backup, source/cache preservation, compatibility and empty-folder cases, plus
+existing six interrupted-restore cases. Cloud regression suite also passed.
+This backend is not yet exposed in the app UI: Files/Finder folder selection,
+security-scoped access and explanatory confirmation still need wiring. Queuing
+requires the selected source game's save I/O to be stopped. App rebuilds and UI
+verification are still required; no account or device was touched.

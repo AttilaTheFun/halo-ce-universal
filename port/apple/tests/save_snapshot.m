@@ -91,6 +91,34 @@ int main(int argc, char **argv) { @autoreleasepool {
         assert([profile isEqual:committed ? @"profile" : @"old profile"]);
         assert([[NSString stringWithContentsOfURL:[live URLByAppendingPathComponent:@"z/cache000.map"] encoding:NSUTF8StringEncoding error:nil] isEqual:@"untouched cache"]);
     }
+    // A folder selected from an old app is copied now, applied only at the
+    // next stopped-guest launch, with both source and prior local saves kept.
+    NSURL *oldApp = [root URLByAppendingPathComponent:@"old-app"];
+    NSURL *newApp = [root URLByAppendingPathComponent:@"new-app"];
+    fixture_write(oldApp, @"u/UDATA/player/savegame.bin", @"old app progress");
+    fixture_write(oldApp, @"z/cache000.map", @"large disposable map cache");
+    fixture_write(newApp, @"u/UDATA/player/savegame.bin", @"new app progress");
+    assert(halo_save_import_queue(oldApp, @"game-1", newApp, &error));
+    assert(!halo_save_import_queue(oldApp, @"game-1", newApp, &error));
+    NSURL *liveSave = [newApp URLByAppendingPathComponent:@"u/UDATA/player/savegame.bin"];
+    assert([[NSString stringWithContentsOfURL:liveSave encoding:NSUTF8StringEncoding error:nil] isEqual:@"new app progress"]);
+    assert(!halo_save_import_apply(@"wrong game", newApp, &error));
+    assert(halo_save_import_apply(@"game-1", newApp, &error));
+    assert(halo_save_import_apply(@"game-1", newApp, &error));
+    assert([[NSString stringWithContentsOfURL:liveSave encoding:NSUTF8StringEncoding error:nil] isEqual:@"old app progress"]);
+    assert([fm fileExistsAtPath:[oldApp URLByAppendingPathComponent:@"u/UDATA/player/savegame.bin"].path]);
+    assert(![fm fileExistsAtPath:[newApp URLByAppendingPathComponent:@"z/cache000.map"].path]);
+    BOOL keptOriginal = NO;
+    for (NSURL *backup in [fm contentsOfDirectoryAtURL:[newApp URLByAppendingPathComponent:@"Save Imports"] includingPropertiesForKeys:nil options:0 error:nil]) {
+        NSDictionary *saved = halo_save_snapshot_decode([NSData dataWithContentsOfURL:backup], @"game-1", nil);
+        NSData *value = saved[@"files"][@"u/UDATA/player/savegame.bin"][@"data"];
+        keptOriginal |= [value isEqual:[@"new app progress" dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    assert(keptOriginal);
+    assert(halo_save_snapshot_decode([NSData dataWithContentsOfURL:[newApp URLByAppendingPathComponent:@"Cloud Saves/local-checkpoint.plist"]], @"game-1", nil));
+    NSURL *empty = [root URLByAppendingPathComponent:@"empty"];
+    assert([fm createDirectoryAtURL:empty withIntermediateDirectories:YES attributes:nil error:nil]);
+    assert(!halo_save_import_queue(empty, @"game-1", newApp, &error));
     assert([fm removeItemAtURL:root error:nil]);
     puts("Snapshot and restore tests passed: six process-death recovery points, round-trip, cache/ISO exclusion, compatibility, corruption, traversal, collisions, and symlinks");
 } }
