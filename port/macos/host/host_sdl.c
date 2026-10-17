@@ -516,6 +516,36 @@ int host_sdl_show_simple_message_box(uint32_t flags, const char *title, const ch
     return SDL_ShowSimpleMessageBox(flags, title, message, metal_window);
 }
 
+/* the mods question at startup (port_mods.c): the guest only gets the
+button that was chosen, and -1 when the box cannot be shown */
+int host_sdl_show_message_box(uint32_t flags, const char *title, const char *message, int default_index,
+    const char *button0, const char *button1, const char *button2) {
+    const char *labels[3] = { button0, button1, button2 };
+    SDL_MessageBoxButtonData buttons[3];
+    SDL_MessageBoxData question;
+    int count = 0;
+    int answer = -1;
+    int index;
+
+    for (index = 0; index < 3; index++) {
+        if (!labels[index])
+            continue;
+        buttons[count].flags = index == default_index ?
+            SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT : 0;
+        buttons[count].buttonID = index;
+        buttons[count].text = labels[index];
+        count++;
+    }
+    question.flags = (SDL_MessageBoxFlags)flags;
+    question.window = metal_window;
+    question.title = title;
+    question.message = message;
+    question.numbuttons = count;
+    question.buttons = buttons;
+    question.colorScheme = NULL;
+    return SDL_ShowMessageBox(&question, &answer) ? answer : -1;
+}
+
 /* ---------- gamepads */
 
 int host_sdl_get_gamepads(uint32_t *ids, int capacity) {
