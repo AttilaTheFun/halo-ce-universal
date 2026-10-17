@@ -81,3 +81,28 @@ Signing evidence from Visor: no Enterprise/In-House credentials on Mini. iOS
 team LOGAN SHIRE, LLC and Developer ID team Aphelion, LLC differ. No Halo App ID
 or iCloud container is configured. Asked Logan which team to use and whether to
 configure its App ID/container/profiles; no account changes before his answer.
+
+## Save snapshot foundation
+
+`port/apple/save_snapshot.m` now serializes persistent `u/UDATA` and `z/saved`
+files with per-file hashes, a schema version, snapshot identity and explicit
+compatibility ID. Map caches, ISO, logs and the working `z/savegame.bin` are
+excluded. Source inspection shows the persistent campaign checkpoint is written
+with header/checksum last and then closed in game_state_write_to_persistent_storage.
+The coordinator must take snapshots only at a quiescent save boundary, not by
+polling an actively written directory. That integration remains outstanding.
+
+Decoding validates paths, hashes, format, compatibility, case-equivalent names,
+file/directory collisions and bounds before staging into a new private directory.
+Staging never overwrites live saves. Journaled adoption/recovery, CloudKit
+transport, offline/conflict handling and UI are still required. These APIs are
+not yet wired into the app; there is no claim of functioning cloud sync.
+
+`python3 tools/test_apple_save_snapshot.py` compiles production code with ASan
+and UBSan and exercises round-trip restore, ignored cache/ISO files, wrong
+compatibility, corrupt content, malformed entries, traversal, collisions and
+symlink rejection. Passed locally. This does not prove cross-device runtime
+checkpoint compatibility, which requires actual Mac/iOS/iPadOS verification.
+
+Cache Cleanup status: no Bazel output bases or linked worktrees for this repo.
+Both former Apple worktree directories remain removed.
