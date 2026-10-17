@@ -274,3 +274,14 @@ only. This proves startup/import-screen presentation, not file-picker import,
 gameplay, physical-device behavior or cloud operation. Terminated the app and
 shut down only the owned simulator afterward. Device build session 35836 is
 still configuring its host dependencies; do not duplicate it.
+
+## Symmetric conflict preservation
+
+Keep This Device now persists the observed cloud snapshot under Cloud Saves/
+Conflicts before submitting a conditional overwrite. Previously only Use iCloud
+preserved its losing side. Backup failure stops the upload; the existing server
+change-tag condition still rejects another device's intervening save. The UI now
+explains that both choices keep backups. Production transport/coordinator tests
+passed with ASan/UBSan, including a rejected-server update retaining the cloud
+backup and an unwritable backup destination preventing any upload. This is
+injected-database evidence, not a real iCloud account test.

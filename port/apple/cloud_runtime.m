@@ -37,7 +37,7 @@ static NSString *statusText(void) {
         @"uploading":@"Uploading saved progress…",
         @"offline":@"iCloud is unavailable. Your progress remains on this device and sync will retry.",
         @"syncError":@"The save could not be uploaded. Sync again to check for conflicting progress.",
-        @"conflict":@"Both this device and iCloud have different progress. Choose which save to continue. Choosing iCloud keeps a local copy of this device’s save.",
+        @"conflict":@"Both this device and iCloud have different progress. Choose which save to continue. Either choice keeps a local backup of the progress it replaces.",
         @"accountChanged":@"The iCloud account has changed. Allow this account to sync the progress on this device? This may copy your local save into the new account.",
         @"accountUnavailable":@"Your iCloud account changed or became unavailable. Your local progress is safe.",
         @"cloudReadyForRelaunch":@"Newer progress is available in iCloud. Quit and reopen Halo to load it; it will not replace an active game.",
