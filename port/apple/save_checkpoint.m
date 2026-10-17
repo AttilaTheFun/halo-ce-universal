@@ -23,14 +23,31 @@ void halo_save_checkpoint_configure(const char *saves, const char *data) {
         else checkpointCompatibility = nil;
     }
 }
-void halo_save_checkpoint_committed(void) {
+static BOOL captureCheckpoint(BOOL preparingLaunch) {
     @autoreleasepool {
-        if (!checkpointRoot || !checkpointCompatibility) return;
+        if (!checkpointRoot || !checkpointCompatibility) return NO;
         NSError *error = nil;
         NSURL *root = [NSURL fileURLWithPath:checkpointRoot isDirectory:YES];
         NSData *snapshot = halo_save_snapshot_create(root, checkpointCompatibility, &error);
         NSURL *directory = [root URLByAppendingPathComponent:@"Cloud Saves" isDirectory:YES];
         NSURL *file = [directory URLByAppendingPathComponent:@"local-checkpoint.plist"];
+        if (preparingLaunch) {
+            if (!snapshot) return NO;
+            NSDictionary *current = halo_save_snapshot_decode(snapshot, checkpointCompatibility, &error);
+            NSDictionary *attributes = [NSFileManager.defaultManager attributesOfItemAtPath:file.path error:nil];
+            if (attributes) {
+                if (![attributes[NSFileType] isEqual:NSFileTypeRegular] ||
+                    [attributes[NSFileSize] unsignedLongLongValue] > 128 * 1024 * 1024) return NO;
+                NSDictionary *previous = halo_save_snapshot_decode([NSData dataWithContentsOfURL:file], checkpointCompatibility, &error);
+                if (!previous) return NO;
+                // Preserve the snapshot identity for unchanged content; making
+                // a fresh UUID on every launch would manufacture conflicts.
+                if ([current[@"files"] isEqual:previous[@"files"]]) return YES;
+                // A disappeared save tree must not overwrite progress in the
+                // cloud with an empty snapshot or silently restore stale data.
+                if (![current[@"files"] count]) return NO;
+            } else if (![current[@"files"] count]) return YES;
+        }
         BOOL ok = snapshot && [NSFileManager.defaultManager createDirectoryAtURL:directory withIntermediateDirectories:YES
             attributes:@{NSFilePosixPermissions:@0700} error:&error] && [snapshot writeToURL:file options:NSDataWritingAtomic error:&error];
         if (ok) {
@@ -42,8 +59,11 @@ void halo_save_checkpoint_committed(void) {
         if (ok) halo_cloud_checkpoint_ready();
         // This is a local candidate, not an acknowledged cloud revision. The
         // account-aware coordinator must compare it with the remote head.
+        return ok;
     }
 }
+void halo_save_checkpoint_committed(void) { (void)captureCheckpoint(NO); }
+int halo_save_checkpoint_prepare(void) { return captureCheckpoint(YES); }
 
 int halo_save_import_before_launch(char *message, size_t capacity) {
     @autoreleasepool {

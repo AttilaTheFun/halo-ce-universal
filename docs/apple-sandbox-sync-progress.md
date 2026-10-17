@@ -394,3 +394,19 @@ Poll 26869 before another build; its configure.py owns root build.ninja now.
 Four additional complete upstream diffs reviewed (clock-read optimization,
 triangle/group capacity and debug scratch-buffer allocation). Ledger records
 retention and outstanding runtime/performance evidence.
+
+## Refresh offline progress before cloud reconciliation
+
+Startup previously captured local files only if no candidate existed. It now
+compares the stopped guest's persistent files to the candidate before any cloud
+request. Unchanged content retains its snapshot UUID (avoids manufactured
+conflicts); changed profile/checkpoint bytes create a new candidate. Malformed or
+oversized candidates fail closed. An empty live tree with prior nonempty candidate
+also refuses sync rather than overwriting the cloud or silently using stale local
+progress. New empty installations still allow normal cloud download.
+
+Snapshot/restore ASan/UBSan suite passed with unchanged-identity, offline-profile
+refresh and malformed-candidate preservation checks. Cloud coordinator suite and
+both platform syntax checks passed. Mac build session 26869 remains live; changes
+made during that build require a final host rebuild from the committed revision
+before publication, and iOS needs the updated host too.
