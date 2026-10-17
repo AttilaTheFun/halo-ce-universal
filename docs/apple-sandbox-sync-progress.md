@@ -475,3 +475,7 @@ personal device or host Mac GUI was used. No builds are currently running.
 ### Real ISO importer verification
 
 The opt-in `tools/test_apple_game_store_real.py` production-backend test passed against the user-owned image: retained 7,825,162,240 bytes, matching independent source/copy/manifest SHA-256, 24 extracted maps, and unchanged original content and modification time. Temporary copied data was removed on exit. The harness resolves the temporary root before containment checks to handle macOS `/var` versus `/private/var` aliases. This verifies the importer backend, not sandbox picker permissions or gameplay. The reported external simulator shutdown did not interrupt our already-completed simulator check.
+
+### Build 36 — upstream lighting policy review
+
+Completed additional upstream reviews in the review ledger and reversed d38b5fd7 to preserve original multiplayer lighting limits. Full native Metal Mac build session 71204 finished successfully; log `/tmp/halo-mac36-build.log`. Installed `/Applications/Halo.app` passes strict nested signature verification. BuildInfo records build 36, d6397aef with local changes (the subsequently committed lighting reversal), guest SHA-256 fe79b44b4ec3821803186dd7530ec25cd4bfafb0c91566aea4be90b127c3e99d. Info.plist confirms Halo, com.LoganShire.Halo, sandbox and Installer-managed flags. This remains an ad-hoc local build, not notarized or published; cloud container remains unconfigured. No host GUI or personal-device interaction was performed. iOS still needs the corresponding guest rebuild.
