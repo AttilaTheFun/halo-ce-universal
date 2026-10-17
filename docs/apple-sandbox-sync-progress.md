@@ -260,3 +260,17 @@ No simulator was running when Visor reported its shutdown-all incident.
 The native macOS VM recipe is now available locally and was read; it requires
 one-time user Setup Assistant/permissions before automated UI testing. No VM
 has been downloaded, created or booted.
+
+## Simulator first-launch smoke check
+
+Installed the completed simulator product from session 35836 onto the existing
+OpenCE migration test simulator (only this simulator was booted). Launch of
+com.LoganShire.Halo succeeded and reached the first-run ISO importer, with the
+white-on-blue Choose Halo ISO button and the landscape interface fully visible.
+The screenshot is at build/apple-tests/sandbox-first-launch.png (ignored).
+The compiled simulator artifact predates f08941b4, so its screen still says
+OpenCE; a final host rebuild is required. iPad plist lists landscape-left/right
+only. This proves startup/import-screen presentation, not file-picker import,
+gameplay, physical-device behavior or cloud operation. Terminated the app and
+shut down only the owned simulator afterward. Device build session 35836 is
+still configuring its host dependencies; do not duplicate it.
