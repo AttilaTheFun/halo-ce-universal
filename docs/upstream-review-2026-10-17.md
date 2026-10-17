@@ -70,3 +70,16 @@ sinc remains the configured/default fallback and reverb selection is independent
 Audio menu XML parses successfully. No live audio/reference comparison and no
 32-bit mixer harness execution on this Mac; the known host ABI limitation applies.
 The optional mode does not establish equivalence to original Xbox audio.
+
+### Rendering capacity and avoided clock reads
+
+| Commit | Decision and actual effect | Validation limits |
+| --- | --- | --- |
+| `60004d153ce1af912bb73a5f5f280d50c93dfc9d` | Retain: short-circuit clock reads for inactive keys and unheard/muted voice indicators; collision timings read clocks only when timing is enabled and a start timestamp exists. Does not change tick frequency or held-button calculation. | Full diff reviewed; no measured performance gain claimed. |
+| `9aae4b18f1e04cbee502957b759ede0ac0522dd1` | Retain: dynamic-triangle capacity increases 49152→98304, retaining allocation refusal at the limit. Prevents omitted rendering under high geometry loads rather than changing game rules. | Full diff reviewed; peak-memory and heavy-scene verification pending. |
+| `1e2a951569df5cfc5751713d0ad4f5da94157fc8` | Retain: debug model vertex scratch buffer becomes static to avoid 128 KB stack allocation/probing per rendered model. | Full diff reviewed; assumes existing serial rasterizer use, no new parallel rendering introduced. |
+| `fd8157c074eb22a4e2168a152e2c7807daff2214` | Retain: transparent group capacity increases 384→2048 to avoid dropped render groups. No change to object simulation or enabled gameplay variants. | Full diff reviewed; actual crowded-scene rendering not tested. |
+
+The final resampler's contiguous two-sample access was also checked against the
+actual mirrored history allocation/write path (two times RESAMPLER_HISTORY per
+channel), confirming its ring-wrap assumption in source.

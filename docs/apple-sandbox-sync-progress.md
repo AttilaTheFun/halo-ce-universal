@@ -381,3 +381,16 @@ Reviewed all four audio-resampler series diffs (including menu/generated assets
 and regression fixtures). Final defaults remain sinc and reverb-independent;
 recorded superseded intermediate behavior separately. Audio menu XML parsed.
 No live audio or 32-bit mixer claim. Build 34 session 1301 remains live.
+
+## Build 34 iOS success; Mac build started
+
+Session 1301 is terminal with exit 0. Simulator and physical-device build 34 both
+succeeded; the device app remains unsigned. Started full native Metal sandboxed
+Mac build 34 at session 26869, log /tmp/halo-mac34-build.log, with --no-data-path,
+--bundle-id com.LoganShire.Halo, --installer-managed and --install. It will install
+to /Applications/Halo.app per the local workflow but will not launch or publish.
+Poll 26869 before another build; its configure.py owns root build.ninja now.
+
+Four additional complete upstream diffs reviewed (clock-read optimization,
+triangle/group capacity and debug scratch-buffer allocation). Ledger records
+retention and outstanding runtime/performance evidence.
