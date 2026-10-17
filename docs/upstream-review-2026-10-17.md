@@ -117,3 +117,43 @@ scripted BSP switches in active multiplayer). Decisions remain pending: the form
 changes original lighting behavior under load; the latter can change custom-map
 script semantics even though it avoids disruptive reloads. Neither is yet marked
 accepted by this ledger. Co-op teleport `a93cf120` was only partially inspected.
+
+### Completed follow-up review
+
+- `d38b5fd710ce178e5e6df40fe8231bd7a5c8fbb8`: exclude and reverse. The
+  diff removes original player/vehicle-count restrictions on dynamic lights and
+  integrated lights, affecting flashlight availability and visibility during
+  multiplayer. Restored the prior thresholds and vehicle counting, including its
+  long counter for map flags. This follows the original-Xbox baseline policy;
+  increased renderer capacity alone does not authorize changing these rules.
+- `a93cf12071695fb2a14b65e5c228019144902f09`: retain. Completed all seven
+  file diffs and checked host gating in `players_following`/`coop_scripts_host`.
+  Additional network co-op players follow a scripted flag, searching nearby
+  positions with line-of-sight and BSP-switch checks; fallback ignores player
+  collisions only for that teleport and resets the flag immediately. Network
+  clients defer movement to the host. Solo/local trigger teleports retain their
+  ordinary orientation path. This repairs the existing optional network co-op
+  mode, not the original two-player campaign rules. Live grav-lift/cutscene and
+  crowded fallback testing remains required; compiled builds are not that test.
+- `962d20d372b67e1f59cd9e1e0bd00634cece2da4`: retain Mac ANGLE fallback
+  to rebased indices instead of EXT/OES base-vertex entry points. The condition
+  excludes iOS and does not change native Metal. Original upstream build-number
+  metadata is superseded by explicit local build numbering. Full diff inspected;
+  the ANGLE menu-ring image has not been compared here.
+- `7b5f8402f0bb16c369a1719bf73c6f84016304d4`: retain test-only changes:
+  assert map-list refresh counts and remove unused fake bookkeeping. Complete
+  diff inspected. The earlier macOS `-m32` harness limitation still applies.
+- `04710ebb0e7090fcfac55b151d402659ceb6bfb5`: retain native Metal
+  visibility counting and game-pixel normalization, with early depth testing for
+  texture-free, non-alpha-tested, non-depth-replacing fragment shaders. Complete
+  diff inspected. This repairs the query's sample-count contract rather than
+  introducing a flare-size heuristic. GPU visual verification remains pending.
+
+`67574819` has now been fully inspected but is not yet approved: it changes
+sprite/glow depth testing in game renderer code beyond repairing query counts.
+An Xbox reference comparison is needed to decide whether this is a faithful
+correction. `70afd39e` is partially inspected only; its large render-pose/network
+changes still need the untruncated remaining diff and dependency review.
+`c1081648` is fully inspected but not approved pending validation of word-access
+alignment/aliasing assumptions across the key's byte-array fields. The review
+baseline remains incomplete and must not be advanced or published as finished.
