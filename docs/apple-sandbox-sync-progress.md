@@ -495,3 +495,7 @@ Session 38716 is terminal with exit 0. Both simulator and device products have H
 ### Release tooling review
 
 Installed Mac build 37 passes the existing package content audit. Fixed the optional DMG helper to honor APP_NAME instead of rejecting Halo.app; its four failure-boundary tests pass. No game/host change, no rebuild needed, no DMG created or published. Completed the mixed 86193542 review and fullscreen/message-box bridge reviews in the ledger. Remaining release blockers include shared signing team, CloudKit provisioning/live testing, final public/internal branch split, and unfinished upstream reviews. No running builds.
+
+### Provisioned Mac package boundary
+
+Found and fixed a mismatch: macos_build.py embeds a CloudKit profile at Contents/embedded.provisionprofile, but the release content audit rejected that top-level file. The content audit now permits a nonempty regular file at exactly that location, rejects links/empty files and misplaced .provisionprofile files. It does not authenticate a profile or establish entitlement authorization; signing validation remains required. Thirteen release-boundary/DMG unit tests pass. No account mutation, build, notarization or publication performed. Further legacy-storage/updater review decisions recorded in the ledger.

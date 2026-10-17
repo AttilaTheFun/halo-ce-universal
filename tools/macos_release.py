@@ -50,10 +50,16 @@ def https_url(value):
 
 def audit_bundle(app):
     """An explicit package boundary, not a license clearance for compiled code."""
-    allowed = {"Info.plist", "MacOS", "Frameworks", "Resources", "_CodeSignature", "Helpers"}
+    allowed = {"Info.plist", "MacOS", "Frameworks", "Resources", "_CodeSignature", "Helpers", "embedded.provisionprofile"}
     contents = app / "Contents"
     if {path.name for path in contents.iterdir()} - allowed:
         raise RuntimeError("Unexpected top-level content in the app")
+    # CloudKit-capable Developer ID apps carry a standard embedded profile.
+    # This audits its location/type only; signing must validate authorization.
+    profile = contents / "embedded.provisionprofile"
+    if profile.is_symlink() or (profile.exists() and
+                                (not profile.is_file() or profile.stat().st_size == 0)):
+        raise RuntimeError("Embedded provisioning profile must be a nonempty regular file")
     resources = contents / "Resources"
     if {path.name for path in resources.iterdir()} - {"AppIcon.icns", "Helmet.pdf", "halo_guest.elf", "BuildInfo.txt", "Licenses", "map-downloads.json", "ContentTools.json", "brokers.txt", "opening_frames.bin"}:
         raise RuntimeError("Release resources must contain only the compiled engine, icons, build record and licenses")
@@ -74,6 +80,8 @@ def audit_bundle(app):
     if frameworks not in (metal, metal | {"libEGL.dylib", "libGLESv2.dylib"}):
         raise RuntimeError("Unexpected bundled runtime dependency")
     for path in app.rglob("*"):
+        if path.suffix.lower() == ".provisionprofile" and path != profile:
+            raise RuntimeError("Unexpected provisioning profile location")
         if path.suffix.lower() in {".iso", ".xiso", ".map", ".xbe", ".pdb", ".p12", ".mobileprovision"}:
             raise RuntimeError("Restricted or private input in app: " + str(path.relative_to(app)))
         if path.is_symlink() and not path.resolve().is_relative_to(app.resolve()):
