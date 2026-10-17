@@ -91,7 +91,7 @@ set(LICENSE_INPUTS
     "port/third_party/kcp/LICENSE" "port/third_party/miniupnpc/LICENSE"
     "port/third_party/tomlc17/LICENSE" "port/third_party/mbedtls/LICENSE"
     "port/third_party/zlib/LICENSE" "port/third_party/expat/COPYING"
-    "port/third_party/stb/LICENSE" "port/third_party/smaa/LICENSE")
+    "port/third_party/stb/LICENSE" "port/third_party/stb_vorbis/LICENSE" "port/third_party/smaa/LICENSE")
 foreach(INPUT IN LISTS LICENSE_INPUTS)
     string(REPLACE "/" "-" NAME "${INPUT}")
     set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/Licenses/${NAME}.txt")
