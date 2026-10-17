@@ -376,3 +376,8 @@ regression fixtures. Retained; ledger records behavioral scope and the outstandi
 32-bit harness limitation. Two native parser boundary tests passed for the 64000
 vertex limit with UB trapping. Build 34 session 1301 remains live, now compiling
 the device guest after the simulator portion. No second full build was started.
+
+Reviewed all four audio-resampler series diffs (including menu/generated assets
+and regression fixtures). Final defaults remain sinc and reverb-independent;
+recorded superseded intermediate behavior separately. Audio menu XML parsed.
+No live audio or 32-bit mixer claim. Build 34 session 1301 remains live.
