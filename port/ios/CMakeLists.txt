@@ -20,7 +20,7 @@ list(FILTER HOST_SOURCES EXCLUDE REGEX "host_(main|loader)\\.c$")
 add_executable(Halo MACOSX_BUNDLE ${HOST_SOURCES} ${MINIUPNPC_SOURCES} ${MBEDTLS_SOURCES}
     host/host_loader.c host/host_main.m host/host_controls.m host/host_import.m
     host/host_orientation.m host/host_startup_error.m
-    "${HALO_ROOT}/port/apple/save_snapshot.m" "${HALO_ROOT}/port/apple/save_restore.m"
+    "${HALO_ROOT}/port/apple/save_snapshot.m" "${HALO_ROOT}/port/apple/save_restore.m" "${HALO_ROOT}/port/apple/save_checkpoint.m"
     "${HALO_ROOT}/port/macos/native/HaloMapDownloads.m"
     "${HALO_ROOT}/port/apple/host_gl_diagnostics.c" "${HALO_ROOT}/port/apple/host_graphics.c"
     "${HALO_ROOT}/port/apple/host_debug.m" "${HALO_ROOT}/port/apple/host_metalfx.m"

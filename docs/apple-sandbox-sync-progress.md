@@ -154,3 +154,32 @@ the installed signature and BuildInfo were checked. It was NOT launched.
 Runtime sandbox/import/controller/gameplay acceptance is still pending, as are
 cloud functionality and Installer publication. Do not treat build 30 as the
 completed cross-device release.
+
+## Cloud transport and checkpoint capture
+
+`cloud_save.m` implements bounded CKAsset download/validation and upload using
+CKRecordSaveIfServerRecordUnchanged. It accepts the caller's last observed head;
+conflicts are returned without an overwrite/retry. Temporary upload assets stay
+alive until completion and are removed afterwards. Tests inject a database and
+make NO Apple account requests. They cover missing/offline responses, file
+lifetime, successful validation, conflict without retry, metadata mismatch and
+compatibility rejection. ASan/UBSan passed. This transport still needs the
+account-bound coordinator and production container setup before app use.
+Apple policy reference:
+https://developer.apple.com/documentation/cloudkit/ckmodifyrecordsoperation/recordsavepolicy/ifserverrecordunchanged
+
+The Apple guest's successful persistent checkpoint write now invokes a host
+callback after closing its save handle. Failed open/payload/header writes never
+capture a snapshot. The host prepares a durable local candidate at
+`Cloud Saves/local-checkpoint.plist`; it is NOT a cloud acknowledgement. The
+compatibility key includes a versioned native save format and the private ISO's
+SHA-256. Legacy imports without an integrity manifest do not enqueue snapshots.
+This callback and configuration are wired into both Apple build/launch paths.
+Other platform/Xbox builds retain their existing behavior behind HALO_MACOS.
+
+Tests: `tools/test_apple_checkpoint_boundary.py` runs the production persistent
+write function with injected file failures; `tools/test_apple_save_snapshot.py`
+now also checks real host capture and rejection of missing game identity. Both
+passed. Full Mac rebuild 31 is running, unified exec session 55378; log is
+/tmp/halo-checkpoint-build.log. Revalidate that handle before waiting/restarting.
+No build 31 installation/publication yet. Physical devices untouched.

@@ -222,11 +222,7 @@ int main(int argc, char **argv) {
     }
     setenv("HALO_DATA_ROOT", data_root, 1);
     setenv("HALO_SAVE_ROOT", save_root, 1);
-    {
-        char film_path[4096];
-        snprintf(film_path, sizeof(film_path), "%s/opening_frames.bin", resources);
-        setenv("HALO_OPENING_FILM", film_path, 1);
-    }
+    halo_save_checkpoint_configure(save_root, data_root);
     const SDL_DisplayMode *display = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay());
     if (display && display->h > 0) {
         char width[32];

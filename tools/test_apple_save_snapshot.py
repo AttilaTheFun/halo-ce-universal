@@ -11,7 +11,7 @@ def main():
     subprocess.run([
         'clang', '-fobjc-arc', '-fblocks', '-Wall', '-Wextra', '-Werror',
         '-fsanitize=address,undefined', '-DHALO_SAVE_RESTORE_TEST=1',
-        'port/apple/save_snapshot.m', 'port/apple/save_restore.m',
+        'port/apple/save_snapshot.m', 'port/apple/save_restore.m', 'port/apple/save_checkpoint.m',
         'port/apple/tests/save_snapshot.m', '-framework', 'Foundation',
         '-o', str(output),
     ], cwd=ROOT, check=True)

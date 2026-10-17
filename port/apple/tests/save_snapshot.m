@@ -1,5 +1,6 @@
 #import "../save_snapshot.h"
 #import "../save_restore.h"
+#include "../save_runtime.h"
 #include <assert.h>
 
 static NSData *encode(NSDictionary *record) {
@@ -51,6 +52,18 @@ int main(int argc, char **argv) { @autoreleasepool {
     assert(!halo_save_snapshot_decode(encode(bad), @"retail-2276-runtime-1", &error));
     bad[@"files"] = @{ @"u/UDATA/file": @"wrong type" };
     assert(!halo_save_snapshot_decode(encode(bad), @"retail-2276-runtime-1", &error));
+    NSString *hash = [@"" stringByPaddingToLength:64 withString:@"a" startingAtIndex:0];
+    NSURL *game = [root URLByAppendingPathComponent:@"game-private"];
+    assert([@{@"sha256":hash} writeToURL:[game URLByAppendingPathComponent:@"integrity.plist"] atomically:YES]);
+    halo_save_checkpoint_configure(root.fileSystemRepresentation, game.fileSystemRepresentation);
+    halo_save_checkpoint_committed();
+    NSURL *candidate = [root URLByAppendingPathComponent:@"Cloud Saves/local-checkpoint.plist"];
+    NSData *captured = [NSData dataWithContentsOfURL:candidate];
+    assert(halo_save_snapshot_decode(captured, [@"halo-native-save-v1:" stringByAppendingString:hash], &error));
+    assert([fm removeItemAtURL:candidate error:nil]);
+    halo_save_checkpoint_configure(root.fileSystemRepresentation, root.fileSystemRepresentation);
+    halo_save_checkpoint_committed(); // no trusted game identity: do not enqueue
+    assert(![fm fileExistsAtPath:candidate.path]);
     assert([fm createSymbolicLinkAtURL:[root URLByAppendingPathComponent:@"u/UDATA/link"] withDestinationURL:[root URLByAppendingPathComponent:@"game-private/disc.iso"] error:nil]);
     assert(!halo_save_snapshot_create(root, @"retail-2276-runtime-1", &error));
     NSURL *archive = [root URLByAppendingPathComponent:@"snapshot.plist"];

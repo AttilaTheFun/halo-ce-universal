@@ -6,3 +6,6 @@ halo_fork_update_notice
 host_sdl_audio_device_count
 host_sdl_audio_device_name
 host_sdl_audio_device_id
+
+# Capture only after a complete persistent campaign write.
+halo_save_checkpoint_committed
