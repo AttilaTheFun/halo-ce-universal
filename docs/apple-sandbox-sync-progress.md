@@ -487,3 +487,7 @@ Full simulator/device build session 72719 completed successfully (log `/tmp/halo
 ### Build 37 verification and active iOS job
 
 Mac build session 47158 finished successfully. Installed `/Applications/Halo.app` passes strict nested signature verification; BuildInfo reports build 37, source 0138512a19c2db2082db336d3d9e6c3ede39de92 and guest SHA-256 0465a518ae8e60ee3764fed2295e33e3be56cb310a0c2a5c293761e0fa40d91f. It includes the remote roll predicate fix; no GUI playtest or publishing performed. Full iOS simulator/device build 37 is running as session 38716, log `/tmp/halo-ios37-build.log`; poll that handle before restarting. It configures the shared Ninja file, so do not start a concurrent full Mac build. Cache-cleanup status reports no Bazel bases/worktrees and nothing safe to remove.
+
+### iOS build 37 completed
+
+Session 38716 is terminal with exit 0. Both simulator and device products have Halo display name, com.LoganShire.Halo, build 37, and only landscape-left/right on phone and iPad. Neither contains ISO/XISO/map-extension files. Simulator strict nested signature verification passed; device product remains unsigned. No device interaction, live cloud test, or Installer publication occurred. No builds are running. Protocol 29 review is complete and recorded in the partial ledger. The signing-team question was surfaced asynchronously again; account provisioning remains pending the answer.
