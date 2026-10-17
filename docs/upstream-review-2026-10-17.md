@@ -31,3 +31,25 @@ target has no runnable 32-bit macOS runtime on this host. No test bodies ran;
 this is not a passing validation or evidence of 64 game logic failures. The
 harness README explicitly requires a Linux 32-bit C runtime. Do not remove the
 ABI requirement just to make these tests pass on the host.
+
+### Map-sharing hardening review completed
+
+Completed the remaining diffs of `77e27537e05198cff78612719604898af0f3ad83`,
+including the decoder and all added/modified regression fixtures. Retain the
+already-inherited change. Remote piece bitmaps track their allocated piece count,
+are forgotten after a download ends, and are checked/reallocated before access.
+Failed finalization removes only newly moved files and refreshes map discovery;
+previously existing files are preserved. Repeated map requests are rate-limited
+with the latest request queued, and switching requested names cannot reset the
+current game's no-progress timeout. These are transfer validation changes, not
+weapon/simulation changes or a new wire layout. Review the five-second retry
+interval in live join/reconnect testing.
+
+The same commit caps geometry counts consistently at 64000, rejects missing
+required globals, prevents tag-name overlap with mutable data, bounds debug
+formatting, and masks the Vorbis floor index consistently with draw_line. Native
+cache-parser tests for 64000 accepted/64001 rejected passed (2 tests), with
+undefined-behavior trapping. This module explicitly supports the 64-bit host;
+this does not replace the still-unrun 32-bit map-sharing harness. Its positive
+and mutation-control test diffs were inspected but their runtime assertions have
+not run on this Mac. No downloaded community map or live peer was used.
