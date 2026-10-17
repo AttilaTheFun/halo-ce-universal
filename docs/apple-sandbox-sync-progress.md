@@ -483,3 +483,7 @@ Completed additional upstream reviews in the review ledger and reversed d38b5fd7
 ### iOS build 36 and remote pose correction
 
 Full simulator/device build session 72719 completed successfully (log `/tmp/halo-ios36-build.log`). Both Info.plists confirm Halo, com.LoganShire.Halo, build 36, and landscape-only phone/iPad orientations. Device artifact is unsigned and neither was published. Subsequent upstream review found and fixed remote roll-only pose changes being ignored; the production-predicate regression failed before and passed after under ASan/UBSan. This change postdates build 36 and needs rebuilt guests. Additional network/menu decisions are recorded in the partial review ledger; rebase review remains incomplete.
+
+### Build 37 verification and active iOS job
+
+Mac build session 47158 finished successfully. Installed `/Applications/Halo.app` passes strict nested signature verification; BuildInfo reports build 37, source 0138512a19c2db2082db336d3d9e6c3ede39de92 and guest SHA-256 0465a518ae8e60ee3764fed2295e33e3be56cb310a0c2a5c293761e0fa40d91f. It includes the remote roll predicate fix; no GUI playtest or publishing performed. Full iOS simulator/device build 37 is running as session 38716, log `/tmp/halo-ios37-build.log`; poll that handle before restarting. It configures the shared Ninja file, so do not start a concurrent full Mac build. Cache-cleanup status reports no Bazel bases/worktrees and nothing safe to remove.
