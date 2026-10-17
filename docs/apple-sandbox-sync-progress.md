@@ -471,3 +471,7 @@ all visible in landscape. Screenshot build/apple-tests/halo35-import.png.
 Terminated the app and shut down only that simulator afterward. This does not
 validate picker interaction, ISO import, campaign, migration or cloud UI. No
 personal device or host Mac GUI was used. No builds are currently running.
+
+### Real ISO importer verification
+
+The opt-in `tools/test_apple_game_store_real.py` production-backend test passed against the user-owned image: retained 7,825,162,240 bytes, matching independent source/copy/manifest SHA-256, 24 extracted maps, and unchanged original content and modification time. Temporary copied data was removed on exit. The harness resolves the temporary root before containment checks to handle macOS `/var` versus `/private/var` aliases. This verifies the importer backend, not sandbox picker permissions or gameplay. The reported external simulator shutdown did not interrupt our already-completed simulator check.
