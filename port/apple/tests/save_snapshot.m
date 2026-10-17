@@ -98,6 +98,10 @@ int main(int argc, char **argv) { @autoreleasepool {
     fixture_write(oldApp, @"u/UDATA/player/savegame.bin", @"old app progress");
     fixture_write(oldApp, @"z/cache000.map", @"large disposable map cache");
     fixture_write(newApp, @"u/UDATA/player/savegame.bin", @"new app progress");
+    assert(!halo_save_import_queue(newApp, @"game-1", newApp, &error));
+    NSURL *alias = [root URLByAppendingPathComponent:@"current-save-alias"];
+    assert([fm createSymbolicLinkAtURL:alias withDestinationURL:newApp error:nil]);
+    assert(!halo_save_import_queue(alias, @"game-1", newApp, &error));
     assert(halo_save_import_queue(oldApp, @"game-1", newApp, &error));
     assert(!halo_save_import_queue(oldApp, @"game-1", newApp, &error));
     NSURL *liveSave = [newApp URLByAppendingPathComponent:@"u/UDATA/player/savegame.bin"];
