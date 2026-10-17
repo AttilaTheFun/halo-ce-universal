@@ -333,3 +333,19 @@ This backend is not yet exposed in the app UI: Files/Finder folder selection,
 security-scoped access and explanatory confirmation still need wiring. Queuing
 requires the selected source game's save I/O to be stopped. App rebuilds and UI
 verification are still required; no account or device was touched.
+
+## Save migration picker wiring
+
+The iCloud Saves panel now also offers Import Saved Progress when an imported
+ISO supplies a compatibility identity, even without cloud configuration. iOS/
+iPadOS use a folder-only UIDocumentPicker; Mac uses a directory-only NSOpenPanel.
+The explanatory prompt requires the old app to be closed and the same game
+image, identifies the u/z save root, and explains replacement on relaunch with
+backup. Selection holds security-scoped access for the snapshot copy and reports
+queue errors/success. Cancel does not queue an import. Native status-window
+dismissal now completes before opening the picker, preserving the prior key
+window. No cloud account request is introduced for unconfigured builds.
+
+Syntax checks passed with macOS and iPhoneOS SDKs. Snapshot/restore regression
+suite passed again. Rendered picker interaction, provider-file access, migration
+from real old app containers and post-import gameplay are not yet verified.
