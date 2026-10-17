@@ -1,5 +1,6 @@
 #import "../cloud_save.h"
 #import "../save_snapshot.h"
+#import "../cloud_sync.h"
 #include <assert.h>
 
 @interface AcknowledgedRecord : CKRecord
@@ -13,12 +14,13 @@
 @property NSError *saveError;
 @property NSURL *remoteFile;
 @property NSUInteger writes;
+@property NSUInteger reads;
 @property CKRecordSavePolicy policy;
 @property BOOL assetReadableDuringUpload;
 @end
 @implementation FakeDatabase
 - (void)fetchRecordWithID:(CKRecordID *)recordID completionHandler:(void (^)(CKRecord *, NSError *))completion {
-    (void)recordID;
+    (void)recordID; self.reads++;
     completion(self.head, self.fetchError ?: (self.head ? nil : [NSError errorWithDomain:CKErrorDomain code:CKErrorUnknownItem userInfo:nil]));
 }
 - (void)addOperation:(CKDatabaseOperation *)operation {
@@ -37,6 +39,17 @@
     op.modifyRecordsCompletionBlock(@[saved], @[], nil);
 }
 @end
+static void waitSync(HaloCloudSync *sync) {
+    NSDate *limit = [NSDate dateWithTimeIntervalSinceNow:3];
+    while (sync.busy && limit.timeIntervalSinceNow > 0)
+        [NSRunLoop.mainRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+    assert(!sync.busy);
+}
+static void putCandidate(NSURL *root, NSData *data) {
+    NSURL *directory = [root URLByAppendingPathComponent:@"Cloud Saves"];
+    assert([NSFileManager.defaultManager createDirectoryAtURL:directory withIntermediateDirectories:YES attributes:nil error:nil]);
+    assert([data writeToURL:[directory URLByAppendingPathComponent:@"local-checkpoint.plist"] atomically:YES]);
+}
 int main(void) { @autoreleasepool {
     NSFileManager *fm = NSFileManager.defaultManager;
     NSURL *root = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString]];
@@ -81,6 +94,56 @@ int main(void) { @autoreleasepool {
         assert(!head && !data && failure); callbacks++;
     }];
     assert(callbacks == 7);
+    // Coordinator reconciliation against the real transport with a fake server.
+    db.saveError = nil;
+    db.head[@"snapshot"] = halo_save_snapshot_decode(snapshot, @"game-1", nil)[@"snapshot"];
+    NSURL *device = [root URLByAppendingPathComponent:@"device"];
+    putCandidate(device, snapshot);
+    HaloCloudSync *sync = [[HaloCloudSync alloc] initWithRoot:device compatibility:@"game-1" account:@"user-A" transport:transport];
+    sync.guestStopped = YES;
+    [sync synchronize]; waitSync(sync); assert([sync.status isEqual:@"synced"]);
+    assert([@"second" writeToURL:profile atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    NSData *second = halo_save_snapshot_create(root, @"game-1", nil);
+    putCandidate(device, second);
+    NSUInteger writes = db.writes;
+    [sync synchronize]; waitSync(sync);
+    assert([sync.status isEqual:@"synced"] && db.writes == writes + 1);
+    assert([@"third" writeToURL:profile atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    NSData *third = halo_save_snapshot_create(root, @"game-1", nil);
+    [transport uploadSnapshot:third compatibility:@"game-1" expectedHead:db.head completion:^(CKRecord *head, NSError *failure) { assert(head && !failure); }];
+    sync.guestStopped = NO;
+    [sync synchronize]; waitSync(sync);
+    assert([sync.status isEqual:@"cloudReadyForRelaunch"]);
+    assert(![fm fileExistsAtPath:[device URLByAppendingPathComponent:@"z/saved/profiles/default.sav"].path]);
+    sync.guestStopped = YES; [sync useCloud];
+    assert([sync.status isEqual:@"synced"]);
+    assert([[NSString stringWithContentsOfURL:[device URLByAppendingPathComponent:@"z/saved/profiles/default.sav"] encoding:NSUTF8StringEncoding error:nil] isEqual:@"third"]);
+    assert([@"local fourth" writeToURL:profile atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    NSData *fourth = halo_save_snapshot_create(root, @"game-1", nil);
+    putCandidate(device, fourth);
+    assert([@"remote fifth" writeToURL:profile atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    NSData *fifth = halo_save_snapshot_create(root, @"game-1", nil);
+    [transport uploadSnapshot:fifth compatibility:@"game-1" expectedHead:db.head completion:^(CKRecord *head, NSError *failure) { assert(head && !failure); }];
+    writes = db.writes;
+    [sync synchronize]; waitSync(sync);
+    assert([sync.status isEqual:@"conflict"] && db.writes == writes);
+    db.saveError = [NSError errorWithDomain:CKErrorDomain code:CKErrorServerRecordChanged userInfo:nil];
+    [sync keepLocal]; waitSync(sync);
+    assert([sync.status isEqual:@"syncError"]);
+    db.saveError = nil;
+    [sync synchronize]; waitSync(sync); assert([sync.status isEqual:@"conflict"]);
+    [sync useCloud]; assert([sync.status isEqual:@"synced"]);
+    NSURL *conflicts = [device URLByAppendingPathComponent:@"Cloud Saves/Conflicts"];
+    BOOL foundLocal = NO;
+    for (NSURL *file in [fm contentsOfDirectoryAtURL:conflicts includingPropertiesForKeys:nil options:0 error:nil])
+        foundLocal |= [[NSData dataWithContentsOfURL:file] isEqual:fourth];
+    assert(foundLocal);
+    HaloCloudSync *changed = [[HaloCloudSync alloc] initWithRoot:device compatibility:@"game-1" account:@"user-B" transport:transport];
+    NSUInteger reads = db.reads;
+    [changed synchronize]; assert([changed.status isEqual:@"accountChanged"] && db.reads == reads);
+    [sync synchronize]; [sync invalidate];
+    [NSRunLoop.mainRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.03]];
+    assert([sync.status isEqual:@"accountUnavailable"]);
     assert([fm removeItemAtURL:root error:nil]);
-    puts("Cloud transport contracts passed: missing/offline, upload lifetime, validated download, conflict without retry, compatibility and metadata mismatch");
+    puts("Cloud contracts passed: transport validation, offline errors, conditional upload, reconciliation, stopped-guest restore, conflict preservation, account isolation and invalidation");
 } }
