@@ -1045,6 +1045,8 @@ void halo_menus_art_register(void const *texture, char const *png)
 			xgpu_gl_texture_deleted(art[index].texture);
 			glDeleteTextures(1, &art[index].texture);
 		}
+#else
+		halo_metal_menu_art_drop(art[index].data);
 #endif
 	}
 	memset(&art[index], 0, sizeof(art[index]));
@@ -1069,6 +1071,9 @@ void halo_menus_art_forget(void)
 #endif
 	}
 	art_count = 0;
+#if defined(HALO_MACOS_NATIVE_METAL)
+	halo_metal_menu_art_forget();
+#endif
 }
 
 int menu_art_pixels(unsigned long data, unsigned char **rgba, unsigned long *width, unsigned long *height)

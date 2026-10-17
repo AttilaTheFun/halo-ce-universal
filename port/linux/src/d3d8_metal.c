@@ -1537,7 +1537,35 @@ static struct native_resource *hud_texture_get(long asset) {
  * ordered upload/draw commands also preserve earlier draws if the CPU atlas
  * is reset or gains more glyphs later in this same frame. */
 /* A menu bitmap's D3D texture is a 4x4 placeholder. Its picture is the PNG
- * registered for that texture, drawn with the widget's 0..1 coordinates. */
+ * registered for that texture, drawn with the widget's 0..1 coordinates.
+ * The picture is cached by that texture's physical address. Loading a map
+ * frees the main menu's textures and the pause menu's are built in the
+ * same addresses, so a cache hit would draw the main menu's picture (the
+ * Mods title, over the hosted pause box) until these are dropped. */
+static void menu_art_release(struct native_resource *entry) {
+    struct native_resource **link=&resources;
+    resource_unindex(entry);
+    if (device.ready) resource_delete(entry);
+    while (*link && *link!=entry) link=&(*link)->next;
+    if (*link) *link=entry->next;
+    free(entry->mip_copy_cache);free(entry);
+}
+void halo_metal_menu_art_drop(unsigned long data) {
+    struct native_resource *entry=resource_buckets[native_resource_bucket(data)];
+    while (entry) {
+        struct native_resource *next=entry->bucket_next;
+        if (entry->menu_art && entry->data==data) menu_art_release(entry);
+        entry=next;
+    }
+}
+void halo_metal_menu_art_forget(void) {
+    struct native_resource *entry=resources;
+    while (entry) {
+        struct native_resource *next=entry->next;
+        if (entry->menu_art) menu_art_release(entry);
+        entry=next;
+    }
+}
 static struct native_resource *menu_texture_get(unsigned long data) {
     struct native_resource *entry;
     unsigned char *pixels=NULL;

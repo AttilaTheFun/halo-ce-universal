@@ -27,4 +27,12 @@ unsigned int menu_art_texture(unsigned long data, unsigned long *levels);
 not a menu bitmap or the PNG cannot be decoded */
 int menu_art_pixels(unsigned long data, unsigned char **rgba, unsigned long *width, unsigned long *height);
 
+#if defined(HALO_MACOS_NATIVE_METAL)
+/* The uploaded picture is kept by the texture's physical address. That
+address is given to a new texture after this one is freed, so the picture
+has to go with the registration or the new texture draws the old one. */
+void halo_metal_menu_art_drop(unsigned long data);
+void halo_metal_menu_art_forget(void);
+#endif
+
 #endif
