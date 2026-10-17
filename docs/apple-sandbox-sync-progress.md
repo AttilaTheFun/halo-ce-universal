@@ -452,3 +452,22 @@ iOS simulator/device host-only build 35 as session 35172, log
 root build.ninja. They include save-selection metadata and offline-refresh fixes.
 Poll these handles before repeating builds. The existing TOML repair test now
 copies its required input_bindings.def fixture dependency and passes.
+
+## Build 35 artifact and startup audit
+
+Mac session 93599 and iOS session 35172 both finished successfully. Installed
+Mac BuildInfo identifies source 0517600e and build 35; strict nested signature
+verification passed. Its actual signature has App Sandbox true and no
+get-task-allow; HaloInstallerManaged is true. It is still ad-hoc signed, not a
+team-signed/notarized distributable. Both iOS products have build 35, Halo name,
+com.LoganShire.Halo ID, and only landscape-left/right for phone and iPad. Simulator
+strict signature check passed; device product remains unsigned. None of the
+three bundles contains files with ISO/XISO/map extensions. Cloud container is
+absent/empty in every product; no real cloud operation is enabled.
+
+Installed/launched simulator build 35 on the owned migration-test simulator and
+inspected its first-run screen: Halo title, icon, white-on-blue Choose Halo ISO,
+all visible in landscape. Screenshot build/apple-tests/halo35-import.png.
+Terminated the app and shut down only that simulator afterward. This does not
+validate picker interaction, ISO import, campaign, migration or cloud UI. No
+personal device or host Mac GUI was used. No builds are currently running.
