@@ -292,3 +292,18 @@ installation or publication occurred. Started incremental host rebuild for both
 platforms from 5ada1f66 with build number 33 (session 37275, log
 /tmp/halo-ios-host33-build.log) to include all changes made during the long build.
 Poll this handle before another build.
+
+## Build 33 and upstream review
+
+Host rebuild 37275 completed with exit 0 for simulator and device. Both generated
+plists identify Halo / com.LoganShire.Halo / build 33, explicitly do not require
+Extended Virtual Addressing, and have no cloud container configured. Both include
+stb_vorbis license text; file-extension audit found no ISO/XISO/map files. Device
+artifact remains unsigned. This audit is not signing or runtime acceptance.
+
+Started docs/upstream-review-2026-10-17.md with four actual-diff reviews and
+seven passing assembly-converter regressions. Reversed the Apple fork's new
+radius-based weapon-flare suppression/brightness heuristic pending Xbox visual
+evidence, following the inherited fidelity policy. Build 33 predates this reversal;
+new guest builds are required before release. The complete upstream ledger and
+public/internal branch update remain outstanding.
