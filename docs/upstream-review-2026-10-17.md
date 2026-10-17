@@ -241,3 +241,36 @@ menu resource invalidation remains required. The rest of the mixed commit is
 still under review (branding, UI, packaging and documentation); the review
 baseline is not advanced. Installer-managed builds must keep their own Halo
 identity and cannot inherit OpenCE release-label assumptions.
+
+### Mixed naming/packaging change review completed
+
+Completed all remaining file diffs of `861935420df053f09b81e2c328838ecac7e684cf`.
+Partially adopt: retain native Metal resource/program indexing, the protocol
+version progression (now superseded by 29), and release-audit support for a
+Metal-only dependency set. The OpenCE naming substitutions do not replace the
+user-requested internal Halo identity; existing internal host/build overrides
+remain authoritative. Upstream historical documentation is not evidence of a
+new release or of this branch's runtime paths. Public/internal branding still
+needs separation before the final branch stack is published.
+
+The inherited DMG helper rejected Halo.app and hardcoded OpenCE in its layout.
+It now reads the build's APP_NAME for bundle validation, volume name, icon
+positions and layout audit, and renders a temporary copy of the background with
+that name. Upstream artwork remains unchanged. The four packaging failure-boundary
+tests pass with the configured Halo bundle name; no disk image was created or
+published. The existing content audit also passes on installed Mac build 37.
+That content audit is not a team-signing, provisioning or notarization check.
+
+Retain `63e4366a92abae3ddd8026d6e483ffec74835b89`: the complete diff was
+inspected, including fresh updater launch, disabled window restoration, accurate
+fullscreen logging, and reapplying the saved fullscreen state on activation.
+Checked the current setter: toggling fullscreen updates HALO_WINDOWED before
+calling host_menu_window_changed, so a deliberate windowed choice is preserved.
+Installer-managed builds disable the independent updater. No Mac GUI update/
+activation test has been performed.
+
+Retain the message-box bridge in `14b0f83f5736045fe6e4f8a60ecae77ecc72c803`:
+the host presents up to three supplied labels with stable original button IDs,
+returns the chosen ID, or -1 on presentation failure. Full diff inspected.
+This does not approve the still-unreviewed mod-loading feature or any replacement
+assets; it only provides the host/guest UI boundary. No mod prompt was exercised.

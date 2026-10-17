@@ -1,14 +1,17 @@
 """Create and audit the drag-to-Applications Finder layout without UI scripting."""
 from pathlib import Path
 import hashlib
+from html import escape
 import os
 import stat
 import subprocess
 import tempfile
 
+from tools.macos_build import APP_NAME
+
 ROOT = Path(__file__).resolve().parents[1]
 WINDOW_SIZE = (680, 440)
-ICON_POSITIONS = {"CoreCE.app": (160, 220), "Applications": (520, 220)}
+ICON_POSITIONS = {APP_NAME + ".app": (160, 220), "Applications": (520, 220)}
 
 
 def bundle_manifest(app):
@@ -34,8 +37,8 @@ def create_dmg(app, destination):
     app, destination = Path(app).resolve(), Path(destination).resolve()
     if destination.exists():
         raise RuntimeError("Disk image output already exists; choose a new filename")
-    if app.name != "CoreCE.app" or not app.is_dir():
-        raise RuntimeError("Package an existing CoreCE.app bundle")
+    if app.name != APP_NAME + ".app" or not app.is_dir():
+        raise RuntimeError(f"Package an existing {APP_NAME}.app bundle")
     try:
         import dmgbuild
     except ImportError as error:
@@ -53,15 +56,19 @@ def create_dmg(app, destination):
     # directory, then expose the complete output with an exclusive hard link.
     with tempfile.TemporaryDirectory(prefix=".halo-og-installer-", dir=destination.parent) as temporary:
         layout = Path(temporary)
+        # Use the build's app name without changing upstream source artwork.
+        background = layout / "background.svg"
+        template = (ROOT / "port/macos/installer/background.svg").read_text()
+        background.write_text(template.replace("OpenCE", escape(APP_NAME)))
         for scale, name in ((1, "background.png"), (2, "background@2x.png")):
             subprocess.run([
                 "swift", "-module-cache-path", str(ROOT / "build/macos/installer-module-cache"),
                 str(ROOT / "port/macos/installer/render_background.swift"),
-                str(ROOT / "port/macos/installer/background.svg"),
+                str(background),
                 str(layout / name), str(scale),
             ], cwd=ROOT, check=True)
         image = layout / "installer.dmg"
-        dmgbuild.build_dmg(str(image), "CoreCE", settings={
+        dmgbuild.build_dmg(str(image), APP_NAME, settings={
             "format": "UDZO", "filesystem": "HFS+",
             "files": [str(app)], "symlinks": {"Applications": "/Applications"},
             "background": str(layout / "background.png"),
@@ -82,7 +89,7 @@ def audit_dmg_layout(volume):
     """Validate the mounted image's actual Finder metadata and install target."""
     from ds_store import DSStore
     volume = Path(volume)
-    if not (volume / "CoreCE.app").is_dir():
+    if not (volume / (APP_NAME + ".app")).is_dir():
         raise RuntimeError("Installer app is missing")
     shortcut = volume / "Applications"
     if not shortcut.is_symlink() or os.readlink(shortcut) != "/Applications":

@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from tools.macos_dmg import create_dmg
+from tools.macos_dmg import APP_NAME, create_dmg
 
 
 class InstallerBoundary(unittest.TestCase):
@@ -14,7 +14,7 @@ class InstallerBoundary(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.app = self.root / "CoreCE.app"
+        self.app = self.root / (APP_NAME + ".app")
         self.app.mkdir()
         (self.app / "engine").write_bytes(b"verified source")
         self.output = self.root / "Halo-OG.dmg"
