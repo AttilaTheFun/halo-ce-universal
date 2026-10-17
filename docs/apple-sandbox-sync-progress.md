@@ -238,3 +238,25 @@ simulator/device build is running as unified exec session 35836; log:
 configuration began. Poll that handle before retrying; do not duplicate builds.
 The running invocation predates the new --build-number flag and uses its default
 12; repackage with a current build number before any publication.
+
+## iOS contribution comparison, 17 October
+
+Inspected the actual old-public-versus-innerhat diffs for iOS host controls,
+import/startup, CMake packaging, plist/entitlements, build/compiler/resigning
+scripts, and shared graphics/debug defaults. Restored the omitted stb_vorbis
+license to packaged resources and renamed remaining iOS user-facing OpenCE
+strings to Halo. The missing-map message now directs users to the ISO importer.
+Controls otherwise differ only in accessibility-label punctuation; keep upstream.
+Keep upstream's explicit SDK selection in the compiler-plugin build and its
+ANGLE token fallback. Dynamic-arena entitlement/resigning changes were already
+reapplied earlier in this branch. Keep upstream's interpolation default for now;
+the smooth-motion option remains available and performance comparison is pending.
+This is a scoped contribution audit, not completion of the upstream commit ledger.
+
+Build session 35836 remains live; the device guest compiled and host CMake
+configuration is progressing. Source changes during this build mean final host
+artifacts must be rebuilt from the committed revision before distribution.
+No simulator was running when Visor reported its shutdown-all incident.
+The native macOS VM recipe is now available locally and was read; it requires
+one-time user Setup Assistant/permissions before automated UI testing. No VM
+has been downloaded, created or booted.

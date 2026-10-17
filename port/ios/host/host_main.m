@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
             data = halo_game_store_current(documents);
         }
         if (!data)
-            host_fatal("OpenCE has no game data yet.");
+            host_fatal("Halo has no game data yet.");
         snprintf(data_root, sizeof(data_root), "%s", data.fileSystemRepresentation);
         // Refresh the shipped default; custom broker files use a separate
         // network.brokers_file path and remain untouched.
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
         if (profile && !strcmp(profile, "1"))
             setenv("HALO_PERF_LOG", [[saves stringByAppendingPathComponent:@"frames.csv"] fileSystemRepresentation], 1);
         if (![files fileExistsAtPath:[data stringByAppendingPathComponent:@"maps/ui.map"]])
-            host_fatal("Copy your Xbox Halo maps folder into OpenCE's GameData folder using Files or Finder, then reopen the app.");
+            host_fatal("The imported game is missing its main menu map. Reopen Halo and choose your original Xbox Halo ISO again.");
     }
     halo_save_checkpoint_configure(save_root, data_root);
     halo_cloud_prepare(save_root, data_root);
