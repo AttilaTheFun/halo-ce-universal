@@ -8,6 +8,7 @@
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.3.0</string>
 <key>CFBundleVersion</key><string>@HALO_BUILD_NUMBER@</string>
+<key>HaloCloudBackend</key><string>GameSave</string>
 <key>HaloCloudContainer</key><string>@HALO_CLOUD_CONTAINER@</string>
 <key>HaloRequiresExtendedVirtualAddressing</key><false/>
 <key>LSRequiresIPhoneOS</key><true/>

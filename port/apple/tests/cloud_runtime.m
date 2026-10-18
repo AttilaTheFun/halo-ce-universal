@@ -32,7 +32,7 @@ int main(void) { @autoreleasepool {
     setSyncEnabled(YES);
     NSCAssert(requests == 1 && preparations == 1 && timer && accountObserver, @"Explicit enable starts sync");
     NSUserDefaults *readback = [[NSUserDefaults alloc] initWithSuiteName:suite];
-    NSCAssert([readback boolForKey:syncPreference], @"Opt-in must persist");
+    NSCAssert([readback boolForKey:syncPreferenceKey()], @"Opt-in must persist");
     void (^staleReply)(CKAccountStatus, NSError *) = accountReply;
     setSyncEnabled(NO);
     NSCAssert(!container && !timer && !accountObserver && !session, @"Disable tears down sync");
@@ -40,7 +40,7 @@ int main(void) { @autoreleasepool {
     [NSNotificationCenter.defaultCenter postNotificationName:CKAccountChangedNotification object:nil];
     halo_cloud_checkpoint_ready(); drain();
     NSCAssert(!identities && requests == 1 && [runtimeStatus isEqual:@"disabled"], @"Disabled callbacks must not restart authentication");
-    NSCAssert(![readback boolForKey:syncPreference], @"Opt-out must persist");
+    NSCAssert(![readback boolForKey:syncPreferenceKey()], @"Opt-out must persist");
     guestRunning = YES;
     setSyncEnabled(YES);
     NSCAssert(requests == 2 && preparations == 1, @"Enabling during gameplay must not scan live save handles");
@@ -49,6 +49,16 @@ int main(void) { @autoreleasepool {
     accountReply(CKAccountStatusAvailable, nil); drain();
     NSCAssert(identities == 1, @"Current enabled generation may authenticate");
     setSyncEnabled(NO);
+    // Switching the backend must never reuse an old CloudKit opt-in.
+    Method infoMethod = class_getInstanceMethod(NSBundle.class, @selector(infoDictionary));
+    IMP oldInfo = method_setImplementation(infoMethod, imp_implementationWithBlock(^id(id bundle) {
+        (void)bundle; return @{@"HaloCloudBackend":@"GameSave"};
+    }));
+    [defaults setBool:YES forKey:@"HaloCloudSyncEnabled"];
+    NSCAssert(!syncEnabled(), @"GameSave requires its own explicit opt-in");
+    startSync(); authenticateGameSave();
+    NSCAssert(!timer && !gameTransport && requests == 2, @"Default-off GameSave performs no account lookup");
+    method_setImplementation(infoMethod, oldInfo);
     [defaults removePersistentDomainForName:suite];
     method_setImplementation(factory, oldFactory);
     method_setImplementation(defaultsMethod, oldDefaults);

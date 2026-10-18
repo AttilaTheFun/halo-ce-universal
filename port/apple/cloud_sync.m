@@ -133,7 +133,7 @@
                 // A checkpoint written during upload stays pending.
                 NSString *latest = [self snapshotID:[self candidate]];
                 if (![self.status isEqual:@"invalidLocalSave"])
-                    [self announce:[latest isEqual:sentID] ? @"synced" : @"pending" error:nil];
+                    [self announce:[latest isEqual:sentID] ? (self.transport.uploadsRequireConfirmation ? @"queued" : @"synced") : @"pending" error:nil];
             }
         });
     }];

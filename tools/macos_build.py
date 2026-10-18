@@ -112,7 +112,7 @@ def build_host(update_build):
     sources += sorted((ROOT / "port/macos/host").glob("*.mm"))
     sources += sorted((ROOT / "port/macos/native").glob("*.m"))
     sources += [ROOT / "port/apple/save_snapshot.m", ROOT / "port/apple/save_restore.m", ROOT / "port/apple/save_checkpoint.m",
-                ROOT / "port/apple/cloud_save.m", ROOT / "port/apple/cloud_sync.m", ROOT / "port/apple/cloud_runtime.m"]
+                ROOT / "port/apple/cloud_save.m", ROOT / "port/apple/cloud_sync.m", ROOT / "port/apple/cloud_runtime.m", ROOT / "port/apple/game_save.m"]
     sources += [ROOT / "port/linux/src/xiso.c", ROOT / "port/linux/src/posix_dtls.c"]
     sources += miniupnpc_sources()
     sources += sorted((mbedtls / "library").glob("*.c"))
@@ -137,7 +137,7 @@ def build_host(update_build):
         link += [*(f"-F{directory}" for directory in frameworks),
                  "-framework", "libEGL", "-framework", "libGLESv2",
                  *(f"-Wl,-rpath,{directory}" for directory in frameworks)]
-    link += [f"-F{sparkle.parent}", "-framework", "Sparkle", "-framework", "Cocoa", "-framework", "CloudKit",
+    link += [f"-F{sparkle.parent}", "-framework", "Sparkle", "-framework", "Cocoa", "-framework", "CloudKit", "-weak_framework", "GameSave",
              f"-Wl,-rpath,{sparkle.parent}", "-o", BUILD / "halo"]
     run(*link)
 
@@ -196,7 +196,7 @@ def update_configuration(config):
 def package(data_root, *, sign_identity="-", release=False, version=APP_VERSION, build=APP_BUILD,
             content_tools=None, update_build=0, bundle_id="local.halo.ce-universal",
             sandbox=True, installer_managed=False, provisioning_profile=None, cloud_container=None, entitlements=None):
-    validate_cloud_config(cloud_container, entitlements, sandbox=sandbox)
+    validate_cloud_config(cloud_container, entitlements, sandbox=sandbox, backend="GameSave")
     if cloud_container and not provisioning_profile:
         raise ValueError("Cloud builds require an embedded matching provisioning profile")
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
@@ -309,6 +309,7 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     }
     if cloud_container:
         info["HaloCloudContainer"] = cloud_container
+        info["HaloCloudBackend"] = "GameSave"
     if update_build > 0 and not installer_managed:
         info["OpenCEMacUpdateBuild"] = update_build
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
@@ -511,11 +512,11 @@ def main():
     parser.add_argument("--sandbox", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--installer-managed", action="store_true", help="Updates are distributed through Installer")
     parser.add_argument("--provisioning-profile", type=Path)
-    parser.add_argument("--cloud-container", help="Explicit opt-in to a provisioned private CloudKit container")
+    parser.add_argument("--cloud-container", help="Explicit opt-in to a provisioned iCloud Documents container for GameSave")
     parser.add_argument("--entitlements", type=Path)
     parser.add_argument("--jobs", type=int, default=min(os.cpu_count() or 4, 6))
     args = parser.parse_args()
-    validate_cloud_config(args.cloud_container, args.entitlements, sandbox=args.sandbox)
+    validate_cloud_config(args.cloud_container, args.entitlements, sandbox=args.sandbox, backend="GameSave")
     if args.cloud_container and not args.provisioning_profile:
         parser.error("Cloud builds require --provisioning-profile")
     use_renderer(args.renderer)

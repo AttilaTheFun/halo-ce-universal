@@ -301,7 +301,7 @@ static void exportReport(UIViewController *presenter) {
         cell.detailTextLabel.text=@"Touch controls stay visible for player 1; controllers join as other players. Use Add Player in the lobby. Relaunch to apply.";
         [toggle addTarget:self action:@selector(changed:) forControlEvents:UIControlEventValueChanged];cell.accessoryView=toggle;break;
     }
-    case 10:cell.textLabel.text=@"iCloud Saves…";cell.detailTextLabel.text=@"Check sync status and resolve competing saved progress.";break;
+    case 10:cell.textLabel.text=@"GameSave / iCloud Saves…";cell.detailTextLabel.text=@"Optional save sync on iOS 26+. Off by default.";break;
     case 7:cell.textLabel.text=@"Clear recorded diagnostics";cell.detailTextLabel.text=@"Start a fresh measurement for your next play session.";break;
     }
     return cell;
