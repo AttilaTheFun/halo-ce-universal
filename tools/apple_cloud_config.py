@@ -47,3 +47,15 @@ def cloud_resigning_entitlements(container, allowed, environment):
         'com.apple.developer.icloud-services': ['CloudKit'],
         'com.apple.developer.icloud-container-environment': environment,
     }
+
+
+def configure_resigned_cloud(info, allowed, environment=None):
+    """Re-signed copies are local-only unless cloud is explicitly requested.
+
+    Mutates the staged Info.plist only after validating the requested cloud
+    capabilities. The source IPA and its imported data are never changed.
+    """
+    if environment is None:
+        info.pop('HaloCloudContainer', None)
+        return {}
+    return cloud_resigning_entitlements(info.get('HaloCloudContainer'), allowed, environment)

@@ -532,3 +532,33 @@ runtime and existing transport/coordinator suites passed; iOS simulator-target
 syntax check passed. No live CloudKit or UI test, full app build or publication.
 Apple's GameSave framework is an additional iCloud-backed file-save option worth
 evaluating; no migration from the existing CloudKit implementation was performed.
+
+
+### Re-signed copies default to local play
+
+User chose Apple's recommended save approach with optional cloud support so
+re-signed IPAs remain usable. Apple's WWDC25 “Level up your games” recommends
+GameSave for file-based game saves; it uses iCloud Documents, not the existing
+private CloudKit-record transport. The installed SDK declares GameSave available
+on iOS/macOS/visionOS 26+. Its directory pauses sync while open and resumes when
+closed. This is a transport/lifecycle migration, not a rename of CloudKit calls.
+It has not yet been implemented; current app code still uses the CloudKit backend.
+Reference: https://developer.apple.com/videos/play/wwdc2025/209/ (9:31–12:52).
+
+Completed the independent re-signing safeguard: the signing helper now strips
+HaloCloudContainer from the staged IPA by default and grants no cloud
+entitlements. Explicit --cloud-environment retains cloud support only after the
+profile/container/environment checks succeed. --disable-cloud-saves remains a
+compatible explicit spelling of the local-only default. Nine configuration tests
+passed, including unrelated/no-cloud profiles, authorized profiles still defaulting
+to local, explicit opt-in, and failure without mutating staged metadata. Source
+IPA unchanged. No build signed or published.
+
+GameSave integration must keep live saves in the private app container, exchange
+validated checkpoint snapshots only, never sync the ISO, and remain opt-in.
+Availability and iCloud permissions must be checked before opening a GameSave
+directory. Preserve local-only play on older OSes and re-signed builds, and retain
+conflict backups and stopped-guest restore guarantees. Do not claim the existing
+CloudKit runtime tests validate GameSave. The cloud provisioning templates and
+re-sign opt-in validation will need iCloud Documents capability support alongside
+that integration; do not provision the old record schema as a shortcut.

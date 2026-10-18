@@ -1,6 +1,6 @@
 """Signing configuration checks using synthetic profiles; no account access."""
 import unittest
-from tools.apple_cloud_config import cloud_resigning_entitlements
+from tools.apple_cloud_config import cloud_resigning_entitlements, configure_resigned_cloud
 
 
 class CloudResigning(unittest.TestCase):
@@ -36,6 +36,25 @@ class CloudResigning(unittest.TestCase):
         self.allowed['com.apple.developer.icloud-services'] = []
         with self.assertRaises(ValueError):
             cloud_resigning_entitlements(self.container, self.allowed, 'Development')
+
+    def test_resign_defaults_local_even_with_authorized_profile(self):
+        for profile in ({}, self.allowed):
+            info = {'HaloCloudContainer': self.container, 'CFBundleIdentifier': 'example.Halo'}
+            self.assertEqual(configure_resigned_cloud(info, profile), {})
+            self.assertNotIn('HaloCloudContainer', info)
+            self.assertEqual(info['CFBundleIdentifier'], 'example.Halo')
+
+    def test_resign_explicit_cloud_preserves_configuration(self):
+        info = {'HaloCloudContainer': self.container}
+        result = configure_resigned_cloud(info, self.allowed, 'Production')
+        self.assertEqual(info['HaloCloudContainer'], self.container)
+        self.assertEqual(result['com.apple.developer.icloud-container-environment'], 'Production')
+
+    def test_resign_explicit_unauthorized_cloud_fails_without_mutation(self):
+        info = {'HaloCloudContainer': self.container}
+        with self.assertRaises(ValueError):
+            configure_resigned_cloud(info, {}, 'Production')
+        self.assertEqual(info, {'HaloCloudContainer': self.container})
 
     def test_local_only(self):
         self.assertEqual(cloud_resigning_entitlements(None, {}, None), {})
