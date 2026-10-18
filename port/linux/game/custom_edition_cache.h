@@ -39,6 +39,9 @@ never are: a map named as one of them (a30, bloodgulch) stays apart from it,
 in the menus, the loader and network games. The game engine keeps 63
 characters of a level name (game_engine.c, struct game_engine_stage). */
 #define CUSTOM_EDITION_LEVEL_NAME_PREFIX "custom_maps\\"
+/* (Competitive's maps, beside custom_maps. Classic never looks here.) */
+#define COMPETITIVE_MAP_DIRECTORY "d:\\competitive_maps\\"
+#define COMPETITIVE_LEVEL_NAME_PREFIX "competitive_maps\\"
 #define CUSTOM_EDITION_MAXIMUM_LEVEL_NAME_LENGTH 63
 
 /* ---------- structures */

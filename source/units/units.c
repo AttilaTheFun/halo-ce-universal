@@ -709,6 +709,7 @@ void network_actors_note_user_animation(long unit_index, long animation_graph_in
 
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "performance_sound.h"
+#include "competitive_rules.h" /* port: competitive skip of the first weapon draw */
 #endif
 
 /* ---------- constants */
@@ -2515,6 +2516,9 @@ boolean unit_new(
 	struct unit_definition *unit_definition =
 		unit_definition_get(unit->definition_index);
 	result = FALSE;
+
+	/* port: remembered off the unit, so a competitive game can skip one draw. */
+	competitive_rules_skip_arm(unit_index);
 
 	if (unit_definition->object.animation_graph.index!=NONE)
 	{

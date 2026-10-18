@@ -377,6 +377,7 @@ symbols in this file:
 #include "game/performance_variant.h"
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "../../port/linux/game/performance_options.h"
+#include "competitive_rules.h" /* port: competitive rules from the host */
 #include "performance_audio.h"
 #endif
 #include "game/local_players.h"
@@ -2667,6 +2668,12 @@ static boolean network_game_client_process_messages(
 				performance_options_apply_host_flags(performance_flags);
 #endif
 			}
+			message_packet_size = sizeof(message_packet);
+			continue;
+		}
+		/* port: competitive rules. An older build ignores this in the lobby. */
+		if (reliable && competitive_rules_take_message(message_packet, message_packet_size))
+		{
 			message_packet_size = sizeof(message_packet);
 			continue;
 		}

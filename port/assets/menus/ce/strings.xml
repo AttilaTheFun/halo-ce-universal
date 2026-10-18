@@ -376,6 +376,7 @@
 		<string text="Host a game on your LAN\nonly."/>
 		<string text="Play the campaign with a\nfriend in split screen:\nplayer 2 on a gamepad."/>
 		<string text="Set all the attributes for your \nmultiplayer gametypes and\nkeep them for future use."/>
+		<string text="A separate game. Its maps are\nin competitive_maps, next to\ncustom_maps."/>
 	</strings>
 	<strings name="main_menu/multiplayer_type_select/multiplayer_options">
 		<string text="JOIN GAME"/>

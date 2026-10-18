@@ -211,6 +211,7 @@ symbols in this file:
 
 #include "real_math.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "competitive_rules.h" /* port: competitive magnetism scales */
 
 /* ---------- constants */
 
@@ -1300,9 +1301,9 @@ static void get_local_player_input_blob(
 						{
 							real game_speed = game_time_get_speed();
 							real input_scale = 1.f - control->magnetism_level *
-								PIN(constants->magnetism_friction, 0.f, 1.f);
+								competitive_rules_friction(PIN(constants->magnetism_friction, 0.f, 1.f));
 							real magnetism_scale = control->magnetism_level *
-								PIN(constants->magnetism_adhesion, 0.f, 1.f);
+								competitive_rules_adhesion(PIN(constants->magnetism_adhesion, 0.f, 1.f));
 
 							if (game_players_are_double_speed())
 							{

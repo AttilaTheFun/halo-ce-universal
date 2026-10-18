@@ -122,6 +122,7 @@ struct game_options;
 #include "game/game.h"
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "../../port/linux/game/performance_options.h"
+#include "competitive_rules.h" /* port: competitive rules for this map */
 #endif
 #include "ai/ai.h"
 #include "bink/bink_playback.h"
@@ -715,6 +716,8 @@ void game_initialize_for_new_map(
 	network_objects_placed();
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 	performance_options_initialize_for_new_map();
+	/* port: after the practice flags are reset, so a competitive game can add its own. */
+	competitive_rules_begin_map();
 #endif
 	ui_widgets_safe_to_load(TRUE);
 

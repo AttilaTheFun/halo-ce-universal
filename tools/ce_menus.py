@@ -77,6 +77,9 @@ CHILD_OFFSETS = {
         port_settings.QUIT_ITEM_PLACE,
     ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
      "ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_gametypes_item"): (0, 358),
+    # (Competitive sits under Edit Gametypes, so the buttons move down with it)
+    ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_list",
+     "ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_button_bar"): (0, 440),
     ("ui\\shell\\main_menu\\multiplayer_type_select\\multiplayer_type_select_screen",
      "ui\\shell\\main_menu\\blueline"): (64, 349),
     # the browser's rows up under the column titles, into the place of the

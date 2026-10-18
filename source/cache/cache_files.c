@@ -1317,8 +1317,10 @@ long scenario_tags_load(
 	name: a Custom Edition map that cannot load is not played at all. */
 	if (custom_edition_level_name(scenario_name))
 	{
+		/* (the folder on the name is which maps folder holds the file.
+		Without it, the lookup is custom_maps.) */
 		cache_file_globals.tag_header = custom_edition_cache_tags_load(
-			stripped_scenario_name,
+			scenario_name,
 			&cache_file_globals.header);
 		if (cache_file_globals.tag_header)
 		{

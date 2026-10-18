@@ -21,6 +21,7 @@
 #include "text/text_group.h"
 #include "network_distributed.h"
 #include "performance_options.h"
+#include "competitive_rules.h"
 #include "performance_audio.h"
 #include "performance_timer_schedule.h"
 #include "performance_timer_items.h"
@@ -268,6 +269,8 @@ void performance_options_update(void)
 
 	if (!game_in_progress() || !game_engine_running())
 		return;
+	/* port: competitive ammo rules, each tick, and only while that mode is on. */
+	competitive_rules_tick();
 	if ((performance_flags & _performance_option_timer_audio) &&
 		!cinematic_in_progress() && !game_engine_showing_postgame())
 	{
@@ -396,6 +399,8 @@ void performance_options_render(void)
 	if (!game_in_progress() || !game_engine_running() || cinematic_in_progress() || game_engine_showing_postgame())
 		return;
 	performance_options_render_spawn_points();
+	/* port: competitive markers and the random-spawn estimate. */
+	competitive_rules_render();
 	if (performance_flags & _performance_option_match_timer)
 		performance_timer_render(performance_options_timer_ticks());
 }

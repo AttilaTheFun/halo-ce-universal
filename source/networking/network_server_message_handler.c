@@ -261,6 +261,7 @@ symbols in this file:
 #include "networking/network_game_protocol.h"
 #include "networking/network_messages.h"
 #include "networking/network_performance_protocol.h"
+#include "competitive_rules.h" /* port: competitive rules beside the variant */
 #include "networking/network_server_manager_internal.h"
 #include "networking/network_server_message_handler.h"
 #include "text/unicode.h"
@@ -778,6 +779,41 @@ boolean network_game_server_send_message_to_client_machine(
 	return network_game_server_write(connection, buffer, size, NULL, 1);
 }
 
+/* port: the competitive sheet is not in the variant. Old builds ignore this
+data message while they are still in the lobby. */
+static void competitive_rules_send_settings(
+	struct network_game_server *server,
+	struct network_game_server_client_machine *only)
+{
+	unsigned char message[40];
+	struct game_variant const *variant = game_engine_get_variant();
+	long index;
+
+	/* The server struct is opaque here. The live variant is the one just given to it. */
+	if (!server || !variant || !TEST_FLAG(variant->universal_variant.flags, _game_variant_anniversary_rules_bit))
+		return;
+	if (!competitive_rules_write_message(message, (long)sizeof(message)))
+		return;
+	if (only)
+	{
+		if (!network_game_server_client_machine_is_local(server, only))
+			network_game_server_send_message_to_client_machine(server, only, message);
+		return;
+	}
+	if (game_in_progress())
+		return;
+	for (index = 0; index < MAXIMUM_NETWORK_MACHINE_COUNT; index++)
+	{
+		struct network_game_server_client_machine *machine =
+			network_game_server_get_client_machine_at_index(server, index);
+
+		if (!network_game_server_client_machine_is_joined_to_game(server, machine) ||
+			network_game_server_client_machine_is_local(server, machine))
+			continue;
+		network_game_server_send_message_to_client_machine(server, machine, message);
+	}
+}
+
 boolean network_game_server_send_game_settings_to_client_machine(
 	struct network_game_server *server,
 	struct network_game_server_client_machine *machine,
@@ -801,6 +837,8 @@ boolean network_game_server_send_game_settings_to_client_machine(
 		if (!encoded_message || !network_game_server_send_message_to_client_machine(server, machine, encoded_message))
 			return FALSE;
 	}
+	/* port: the joining machine gets the competitive sheet with the variant. */
+	competitive_rules_send_settings(server, machine);
 	return TRUE;
 }
 
@@ -1106,6 +1144,8 @@ boolean network_game_server_send_game_settings_to_all_machines(
 
 	network_game_settings_update_pending = !result;
 	network_game_settings_update_time = system_milliseconds();
+	/* port: lobby only. An in-progress game already gave this to each machine. */
+	competitive_rules_send_settings(server, NULL);
 
 	return result;
 }

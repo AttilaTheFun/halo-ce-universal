@@ -594,6 +594,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "units/bipeds.h"
 #include "units/units.h"
 #include "custom_edition_cache.h" /* port: port/linux/game/custom_edition_cache.c */
+#include "competitive_rules.h" /* port: competitive kills and item spawns */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -5014,6 +5015,8 @@ void game_engine_player_killed(
 	/* port: a killer who has left the game since is no one's kill */
 	if (killing_player_index != NONE && !player_try_and_get(killing_player_index))
 		killing_player_index = NONE;
+	/* port: competitive kill restore, and a dropped powerup. Vitality is simulated. */
+	competitive_rules_on_kill(killing_player_index, dead_player_index);
 	/* the host's kill of a player who quit, ahead of this client's clock
 	(game_update_quit_players has not come to its time yet) */
 	if (network_game_distributed_client() && dead_player->quit_out_of_game_time != NONE &&
@@ -8911,6 +8914,11 @@ static void game_engine_update_item_spawn(
 			{
 				respawn_period = respawn_time * TICKS_PER_SECOND;
 			}
+
+			/* port: competitive item timing. A classic game keeps the tag's period. */
+			respawn_period = competitive_rules_item_period(respawn_period, respawn_time);
+			if (competitive_rules_omit_spawn(game_time_get(), respawn_time))
+				continue;
 
 			if (game_time_get() % respawn_period == 0)
 			{

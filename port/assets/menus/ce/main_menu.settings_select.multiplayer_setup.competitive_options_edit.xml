@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's multiplayer screens, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_list"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_competitive"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_competitive" type="text" controller="1" left="51" top="18" width="400" height="36" text="COMPETITIVE" font="ui\large_ui" color="#FF2896FF">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_desc">
+		<data input="port competitive maps"/>
+		<on event="created" run="port competitive open"/>
+		<on event="b" run="port competitive leave" back="true"/>
+		<on event="back" run="port competitive leave" back="true"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_0" x="51" y="73"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_1" x="51" y="106"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_2" x="51" y="139"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_3" x="51" y="172"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_4" x="51" y="205"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_5" x="51" y="238"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_6" x="51" y="271"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_7" x="51" y="304"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/map_button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_0" type="text" width="280" height="28" bitmap="bitmaps/list_item_bkd" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="start" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_1" type="text" width="280" height="28" bitmap="bitmaps/list_item_bkd" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="start" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_2" type="text" width="280" height="28" bitmap="bitmaps/list_item_bkd" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="start" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_3" type="text" width="280" height="28" bitmap="bitmaps/list_item_bkd" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="start" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_4" type="text" width="280" height="28" bitmap="bitmaps/list_item_bkd" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="start" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_5" type="text" width="280" height="28" bitmap="bitmaps/list_item_bkd" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="start" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_6" type="text" width="280" height="28" bitmap="bitmaps/list_item_bkd" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="start" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/list_item_7" type="text" width="280" height="28" bitmap="bitmaps/list_item_bkd" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="start" run="port competitive choose" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_desc" width="640" height="480">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_help" x="360" y="90"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_help" type="text" controller="1" width="240" height="160" string_list="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_help_strings" font="ui\small_ui" color="#FF2896FF">
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_help_strings">
+		<string text="Put this game's maps in\ncompetitive_maps, next to\ncustom_maps."/>
+		<string text="This file is not a multiplayer\nmap this game can start."/>
+		<string text="Anniversary shot movement.\nClassic multiplayer is left\nas it is."/>
+	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/map_button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<data input="common button bar update"/>
+		<child widget="common_button_back" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_setup_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_list"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_setup"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_setup" type="text" controller="1" left="51" top="18" width="400" height="36" text="COMPETITIVE" font="ui\large_ui" color="#FF2896FF">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_desc">
+		<data input="port competitive setup"/>
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/rules_row" x="54" y="73"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/teams_row" x="54" y="106"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_slayer_rules" x="54" y="139"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ctf_rules" x="54" y="139"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_rules" x="54" y="139"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ball_rules" x="54" y="139"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_player" x="54" y="172"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_items" x="54" y="205"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_indicators" x="54" y="238"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_vehicles" x="54" y="271"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_teamplay" x="54" y="304"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_extras" x="54" y="337"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/rules_row" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/rules_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_rules_spinner" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/rules_label" type="text" controller="1" width="240" height="22" text="GAME RULES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_rules_spinner" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="SLAYER|CTF|ODDBALL|CRAZY KING" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/teams_row" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/teams_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_teams_spinner" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/teams_label" type="text" controller="1" width="240" height="22" text="TEAMS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_teams_spinner" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="YES|NO" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_slayer_rules" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/playlist_edit/slayer_edit/slayer_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/playlist_edit/slayer_edit/slayer_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_slayer_rules_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_slayer_rules_label" type="text" controller="1" width="300" height="22" text="SLAYER RULES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ctf_rules" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/playlist_edit/ctf_edit/ctf_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/playlist_edit/ctf_edit/ctf_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ctf_rules_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ctf_rules_label" type="text" controller="1" width="300" height="22" text="CTF RULES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_rules" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/playlist_edit/koth_edit/koth_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/playlist_edit/koth_edit/koth_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_rules_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_rules_label" type="text" controller="1" width="300" height="22" text="HILL RULES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ball_rules" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/playlist_edit/oddball_edit/oddball_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/playlist_edit/oddball_edit/oddball_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ball_rules_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ball_rules_label" type="text" controller="1" width="300" height="22" text="ODDBALL RULES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_player" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/player_options_edit/player_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/player_options_edit/player_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_player_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_player_label" type="text" controller="1" width="300" height="22" text="PLAYER OPTIONS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_items" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_items_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_items_label" type="text" controller="1" width="300" height="22" text="ITEM OPTIONS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_indicators" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/indicator_options_edit/indicator_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/indicator_options_edit/indicator_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_indicators_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_indicators_label" type="text" controller="1" width="300" height="22" text="INDICATOR OPTIONS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_vehicles" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/vehicle_options_edit/vehicle_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/vehicle_options_edit/vehicle_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_vehicles_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_vehicles_label" type="text" controller="1" width="300" height="22" text="VEHICLE OPTIONS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_teamplay" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/teamplay_options_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/teamplay_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_teamplay_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_teamplay_label" type="text" controller="1" width="300" height="22" text="TEAMPLAY OPTIONS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_desc" width="640" height="480">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_help" x="360" y="220"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_help" type="text" controller="1" width="240" height="120" string_list="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_help_strings" font="ui\small_ui" color="#FF2896FF">
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_help_strings">
+		<string text="Player, items, indicators,\nvehicles, teamplay, and the\ncompetitive rules."/>
+	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<data input="common button bar update"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_ok" x="380" y="1"/>
+		<child widget="common_button_back" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/setup_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port competitive start" open="main_menu/multiplayer_type_select/lobby/lobby_screen"/>
+		<on event="start" run="port competitive start" open="main_menu/multiplayer_type_select/lobby/lobby_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/multiplayer_type_competitive_item" type="text" left="51" width="232" height="32" bitmap="bitmaps/list_item_bkd" text="COMPETITIVE" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_screen"/>
+		<on event="start" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_extras" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_extras_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_extras_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_extras_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_extras_label" type="text" controller="1" width="300" height="22" text="COMPETITIVE RULES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_extras_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_extras"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/extras_list"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_extras" type="text" controller="1" left="51" top="18" width="400" height="36" text="COMPETITIVE RULES" font="ui\large_ui" color="#FF2896FF">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/extras_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_match" x="54" y="73"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_world" x="54" y="106"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_tuning" x="54" y="139"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/extras_buttons" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/extras_buttons" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<data input="common button bar update"/>
+		<child widget="common_button_back" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_match" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_match_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_match_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_match_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_match_label" type="text" controller="1" width="300" height="22" text="MATCH RULES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_world" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_world_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_world_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_world_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_world_label" type="text" controller="1" width="300" height="22" text="WORLD" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_tuning" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_tuning_screen"/>
+		<on event="start" run="port competitive prepare" open="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_tuning_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_tuning_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_tuning_label" type="text" controller="1" width="300" height="22" text="WEAPON TUNING" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_match_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_match"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/match_list"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_match" type="text" controller="1" left="51" top="18" width="400" height="36" text="MATCH RULES" font="ui\large_ui" color="#FF2896FF">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/match_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children">
+		<on event="created" run="mp profile init player opts"/>
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_flag_pickup" x="54" y="73"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ball_pickup" x="54" y="103"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_order" x="54" y="133"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_move" x="54" y="163"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_fireteams" x="54" y="193"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_infinite_ammo" x="54" y="223"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_kill_restore" x="54" y="253"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_skip_draw" x="54" y="283"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_move_sounds" x="54" y="313"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_spawns" x="54" y="343"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_wall_jump" x="54" y="373"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/match_buttons" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/match_buttons" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<data input="common button bar update"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/match_ok" x="380" y="1"/>
+		<child widget="common_button_back" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/match_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="mp profile set player options" back="true"/>
+		<on event="start" run="mp profile set player options" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_flag_pickup" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_flag_pickup_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_flag_pickup" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_flag_pickup_label" type="text" controller="1" width="240" height="22" text="FLAG PICKUP" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_flag_pickup" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="MANUAL|AUTOMATIC" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ball_pickup" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ball_pickup_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_ball_pickup" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_ball_pickup_label" type="text" controller="1" width="240" height="22" text="BALL PICKUP" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_ball_pickup" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="MANUAL|AUTOMATIC" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_order" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_order_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_hill_order" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_order_label" type="text" controller="1" width="240" height="22" text="HILL ORDER" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_hill_order" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ORDERED|RANDOM" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_move" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_move_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_hill_move" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_hill_move_label" type="text" controller="1" width="240" height="22" text="HILL MOVE TIME" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_hill_move" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="15 S|30 S|45 S|60 S|90 S|120 S|180 S" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_fireteams" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_fireteams_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_fireteams" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_fireteams_label" type="text" controller="1" width="240" height="22" text="FIRETEAMS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_fireteams" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_infinite_ammo" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_infinite_ammo_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_infinite_ammo" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_infinite_ammo_label" type="text" controller="1" width="240" height="22" text="INFINITE AMMO" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_infinite_ammo" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|AMMO|MAGAZINES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_kill_restore" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_kill_restore_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_kill_restore" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_kill_restore_label" type="text" controller="1" width="240" height="22" text="KILL RESTORES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_kill_restore" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_skip_draw" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_skip_draw_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_skip_draw" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_skip_draw_label" type="text" controller="1" width="240" height="22" text="SKIP FIRST DRAW" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_skip_draw" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_move_sounds" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_move_sounds_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_move_sounds" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_move_sounds_label" type="text" controller="1" width="240" height="22" text="MOVEMENT SOUNDS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_move_sounds" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="YES|NO" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_spawns" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_spawns_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_spawns" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_spawns_label" type="text" controller="1" width="240" height="22" text="SPAWNS VISIBLE" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_spawns" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_wall_jump" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_wall_jump_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_wall_jump" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_wall_jump_label" type="text" controller="1" width="240" height="22" text="WALL JUMP" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_wall_jump" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_world_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_world"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/world_list"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_world" type="text" controller="1" left="51" top="18" width="400" height="36" text="WORLD" font="ui\large_ui" color="#FF2896FF">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/world_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children">
+		<on event="created" run="mp profile init player opts"/>
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_random_pct" x="54" y="73"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_omit_first" x="54" y="106"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_item_spawn" x="54" y="139"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_camo" x="54" y="172"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_camo_drop" x="54" y="205"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_outlines" x="54" y="238"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_visible" x="54" y="271"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_type" x="54" y="304"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/world_buttons" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/world_buttons" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<data input="common button bar update"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/world_ok" x="380" y="1"/>
+		<child widget="common_button_back" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/world_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="mp profile set player options" back="true"/>
+		<on event="start" run="mp profile set player options" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_random_pct" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_random_pct_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_random_pct" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_random_pct_label" type="text" controller="1" width="240" height="22" text="RANDOM % VISIBLE" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_random_pct" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_omit_first" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_omit_first_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_omit_first" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_omit_first_label" type="text" controller="1" width="240" height="22" text="OMIT FIRST SPAWN" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_omit_first" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES|POWER" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_item_spawn" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_item_spawn_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_item_spawn" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_item_spawn_label" type="text" controller="1" width="240" height="22" text="ITEM SPAWN" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_item_spawn" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|15 S|30 S|45 S|60 S|90 S|120 S" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_camo" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_camo_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_camo" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_camo_label" type="text" controller="1" width="240" height="22" text="CAMO VARIANT" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_camo" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="XBOX|MCC|CUSTOM" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_camo_drop" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_camo_drop_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_camo_drop" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_camo_drop_label" type="text" controller="1" width="240" height="22" text="CAMO DROP" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_camo_drop" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|PAUSE|CONTINUE" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_outlines" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_outlines_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_outlines" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_outlines_label" type="text" controller="1" width="240" height="22" text="TEAMMATE OUTLINES" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_outlines" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_visible" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_visible_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_os_visible" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_visible_label" type="text" controller="1" width="240" height="22" text="OVERSHIELD VISIBLE" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_os_visible" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_type" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_type_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_os_type" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_type_label" type="text" controller="1" width="240" height="22" text="OVERSHIELD TYPE" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_os_type" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="CONSTANT|FADING" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/competitive_tuning_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_tuning"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/tuning_list"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/header_tuning" type="text" controller="1" left="51" top="18" width="400" height="36" text="WEAPON TUNING" font="ui\large_ui" color="#FF2896FF">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/tuning_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children">
+		<on event="created" run="mp profile init player opts"/>
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_kill" x="54" y="73"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_plasma_climb" x="54" y="106"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_friction" x="54" y="139"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_adhesion" x="54" y="172"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_aim_delay" x="54" y="205"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_trig_delay" x="54" y="238"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_pistol_spread" x="54" y="271"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_shotgun_spread" x="54" y="304"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/tuning_buttons" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/tuning_buttons" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<data input="common button bar update"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/tuning_ok" x="380" y="1"/>
+		<child widget="common_button_back" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/tuning_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="mp profile set player options" back="true"/>
+		<on event="start" run="mp profile set player options" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_kill" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_kill_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_os_kill" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_os_kill_label" type="text" controller="1" width="240" height="22" text="OVERSHIELD ON KILL" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_os_kill" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NOTHING|FULL|REMAINING" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_plasma_climb" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_plasma_climb_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_plasma_climb" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_plasma_climb_label" type="text" controller="1" width="240" height="22" text="PLASMA RIFLE WALL CLIMB" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_plasma_climb" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_friction" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_friction_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_friction" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_friction_label" type="text" controller="1" width="240" height="22" text="FRICTION" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_friction" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="TAG|NONE|HALF|FULL|STRONG" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_adhesion" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_adhesion_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_adhesion" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_adhesion_label" type="text" controller="1" width="240" height="22" text="ADHESION" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_adhesion" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="TAG|NONE|HALF|FULL|STRONG" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_aim_delay" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_aim_delay_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_aim_delay" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_aim_delay_label" type="text" controller="1" width="240" height="22" text="AIM DELAY" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_aim_delay" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|33 MS|66 MS|100 MS|166 MS|266 MS" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_trig_delay" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_trig_delay_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_trig_delay" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_trig_delay_label" type="text" controller="1" width="240" height="22" text="TRIGGER DELAY" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_trig_delay" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|33 MS|66 MS|100 MS|166 MS|266 MS" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_pistol_spread" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_pistol_spread_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_pistol_spread" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_pistol_spread_label" type="text" controller="1" width="240" height="22" text="PISTOL SPREAD" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_pistol_spread" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="TAG|TIGHT|WIDE|DOUBLE" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_shotgun_spread" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_shotgun_spread_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_shotgun_spread" x="250" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/op_shotgun_spread_label" type="text" controller="1" width="240" height="22" text="SHOTGUN SPREAD" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/competitive_options_edit/comp_shotgun_spread" type="spinner" top="2" width="230" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="TAG|TIGHT|WIDE|DOUBLE" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 220 19 226">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+</menus>
