@@ -22,9 +22,11 @@ and the debug keyboard that the game's console reads.
 #include "native_video.h"
 #include "native_input_events.h"
 #include "touch_input.h"
+#include "../game/text_filter.h"
 #if defined(HALO_MACOS) && !defined(HALO_IOS)
 #include "guest_host.h"
 extern unsigned char console_is_active(void);
+extern unsigned char network_chat_typing(void);
 #endif
 
 #include <SDL3/SDL.h>
@@ -1375,6 +1377,9 @@ void platform_show_message(const char *title, const char *message)
 	pthread_mutex_lock(&platform_message_lock);
 	snprintf(platform_message_title, sizeof(platform_message_title), "%s", title);
 	snprintf(platform_message_text, sizeof(platform_message_text), "%s", message);
+	/* (streamer mode's words hidden here too: a map's or a mod's name) */
+	text_filter_utf8(platform_message_title);
+	text_filter_utf8(platform_message_text);
 	platform_message_pending = TRUE;
 	pthread_mutex_unlock(&platform_message_lock);
 }
@@ -1387,10 +1392,36 @@ void web_js_ask(const char *title, const char *text, const char *labels);
 
 int platform_ask(const char *title, const char *text, const char *const *labels, int count, int default_index)
 {
+	/* (streamer mode's words hidden here too: mods' names) */
+	static char shown_title[128];
+	static char shown_text[4096];
+	static char shown_labels[3][128];
+	const char *shown[3];
+	int index;
 #ifdef HALO_WEB
 	char joined[512] = "";
-	int index;
+#else
+	SDL_MessageBoxButtonData buttons[3];
+	SDL_MessageBoxData question;
+	int answer = -1;
+#endif
 
+	if (count > 3)
+		count = 3;
+	snprintf(shown_title, sizeof(shown_title), "%s", title);
+	snprintf(shown_text, sizeof(shown_text), "%s", text);
+	text_filter_utf8(shown_title);
+	text_filter_utf8(shown_text);
+	for (index = 0; index < count; index++)
+	{
+		snprintf(shown_labels[index], sizeof(shown_labels[index]), "%s", labels[index]);
+		text_filter_utf8(shown_labels[index]);
+		shown[index] = shown_labels[index];
+	}
+	title = shown_title;
+	text = shown_text;
+	labels = shown;
+#ifdef HALO_WEB
 	/* (the page's dialog: the game's thread waits for the player there, as
 	SDL's box would, which a page's worker cannot show) */
 	for (index = 0; index < count; index++)
@@ -1406,13 +1437,6 @@ int platform_ask(const char *title, const char *text, const char *const *labels,
 	(void)default_index;
 	return __atomic_load_n(&web_shared[_web_answer], __ATOMIC_SEQ_CST);
 #else
-	SDL_MessageBoxButtonData buttons[3];
-	SDL_MessageBoxData question;
-	int answer = -1;
-	int index;
-
-	if (count > 3)
-		count = 3;
 	for (index = 0; index < count; index++)
 	{
 		buttons[index].flags = index == default_index ?
@@ -1625,8 +1649,10 @@ void platform_pump_events(void)
 		case SDL_EVENT_KEY_UP:
 #if defined(HALO_MACOS) && !defined(HALO_IOS)
 			/* Escape has context, even when an older config still binds it to
-			melee. The console receives Escape for its own close operation. */
-			if (event.key.scancode == SDL_SCANCODE_ESCAPE && !console_is_active())
+			melee. A chat line uses it to let the line go, so it is not a
+			pause. The console receives Escape for its own close operation. */
+			if (event.key.scancode == SDL_SCANCODE_ESCAPE && !console_is_active() &&
+				!network_chat_typing())
 			{
 				if (event.key.down && !event.key.repeat)
 				{
@@ -1637,8 +1663,11 @@ void platform_pump_events(void)
 				}
 				break;
 			}
+			/* A chat line is typed with the keyboard. The pause key would open
+			the pause menu instead of being a letter in the line. */
 			if (event.key.down && !event.key.repeat && !input_state.ui_pointer &&
-				!console_is_active() && input_binding_matches_key(_binding_start, event.key.scancode))
+				!console_is_active() && !network_chat_typing() &&
+				input_binding_matches_key(_binding_start, event.key.scancode))
 			{
 				platform_mouse_released_set(TRUE);
 				input_state.pause_pressed = TRUE;
