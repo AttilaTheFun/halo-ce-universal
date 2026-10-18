@@ -19,6 +19,13 @@ static NSString *runtimeStatus = @"notConfigured";
 static BOOL guestRunning, presenting;
 static NSUInteger generation;
 static NSTimer *timer;
+static id accountObserver;
+static NSString *containerIdentifier;
+static NSString *const syncPreference = @"HaloCloudSyncEnabled";
+static BOOL syncEnabled(void) {
+    return [NSUserDefaults.standardUserDefaults boolForKey:syncPreference];
+}
+static void setSyncEnabled(BOOL enabled);
 static void chooseSaveFolder(void);
 static NSString *queueSelectedSaves(NSURL *url) {
     BOOL scoped = [url startAccessingSecurityScopedResource];
@@ -55,6 +62,7 @@ static void closeCloudWindow(void) {
 #endif
 static NSString *statusText(void) {
     NSDictionary *text = @{
+        @"disabled":@"iCloud sync is off. Progress is saved locally in this app’s container. Enable sync to share saved progress through your iCloud account. Turning it off keeps local saves and any existing iCloud copy.",
         @"notConfigured":@"iCloud saves are not enabled in this build. Your progress is saved on this device.",
         @"notAuthenticated":@"Sign in to iCloud in system settings to sync progress. Your local save is safe.",
         @"checking":@"Checking iCloud for saved progress…",
@@ -78,34 +86,67 @@ static NSString *statusText(void) {
     return text[status] ?: @"Saved progress stays on this device until iCloud sync completes.";
 }
 static void pulse(void) {
-    if (session && !presenting) [session synchronize];
+    if (syncEnabled() && session && !presenting) [session synchronize];
 }
 static void authenticate(void) {
+    if (!syncEnabled() || !container) return;
     NSUInteger token = ++generation;
     [session invalidate]; session = nil;
     runtimeStatus = @"checking";
     [container accountStatusWithCompletionHandler:^(CKAccountStatus status, NSError *error) {
-        if (status != CKAccountStatusAvailable || error) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (token == generation) runtimeStatus = error ? @"offline" : @"notAuthenticated";
-            });
-            return;
-        }
-        [container fetchUserRecordIDWithCompletionHandler:^(CKRecordID *identity, NSError *failure) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (token != generation) return;
-                if (failure || !identity.recordName.length) { runtimeStatus = @"notAuthenticated"; return; }
-                HaloCloudSaveTransport *transport = [[HaloCloudSaveTransport alloc]
-                    initWithDatabase:(id<HaloCloudDatabase>)container.privateCloudDatabase
-                    stagingDirectory:[saveRoot URLByAppendingPathComponent:@"Cloud Saves/Uploads"]];
-                session = [[HaloCloudSync alloc] initWithRoot:saveRoot compatibility:compatibility
-                    account:identity.recordName transport:transport];
-                session.guestStopped = !guestRunning;
-                session.stateChanged = ^{ [NSNotificationCenter.defaultCenter postNotificationName:@"HaloCloudSaveChanged" object:nil]; };
-                [session synchronize];
-            });
-        }];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (token != generation || !syncEnabled()) return;
+            if (status != CKAccountStatusAvailable || error) {
+                runtimeStatus = error ? @"offline" : @"notAuthenticated";
+                return;
+            }
+            [container fetchUserRecordIDWithCompletionHandler:^(CKRecordID *identity, NSError *failure) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (token != generation) return;
+                    if (failure || !identity.recordName.length) { runtimeStatus = @"notAuthenticated"; return; }
+                    HaloCloudSaveTransport *transport = [[HaloCloudSaveTransport alloc]
+                        initWithDatabase:(id<HaloCloudDatabase>)container.privateCloudDatabase
+                        stagingDirectory:[saveRoot URLByAppendingPathComponent:@"Cloud Saves/Uploads"]];
+                    session = [[HaloCloudSync alloc] initWithRoot:saveRoot compatibility:compatibility
+                        account:identity.recordName transport:transport];
+                    session.guestStopped = !guestRunning;
+                    session.stateChanged = ^{ [NSNotificationCenter.defaultCenter postNotificationName:@"HaloCloudSaveChanged" object:nil]; };
+                    [session synchronize];
+                });
+            }];
+        });
     }];
+}
+static void startSync(void) {
+    if (!syncEnabled() || !containerIdentifier || container) return;
+    // Live game writes are captured by the checkpoint hook; reconcile only
+    // before the guest opens save handles.
+    if (!guestRunning && !halo_save_checkpoint_prepare()) {
+        runtimeStatus = @"invalidLocalSave"; return;
+    }
+    container = [CKContainer containerWithIdentifier:containerIdentifier];
+    accountObserver = [NSNotificationCenter.defaultCenter addObserverForName:CKAccountChangedNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+        (void)note; authenticate();
+    }];
+    authenticate();
+    timer = [NSTimer timerWithTimeInterval:30 repeats:YES block:^(NSTimer *tick) {
+        (void)tick;
+        if (!syncEnabled()) return;
+        if (!session && container && ![runtimeStatus isEqual:@"checking"]) authenticate();
+        else pulse();
+    }];
+    [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
+}
+static void setSyncEnabled(BOOL enabled) {
+    NSCAssert(NSThread.isMainThread, @"Cloud preference must run on the main thread");
+    [NSUserDefaults.standardUserDefaults setBool:enabled forKey:syncPreference];
+    if (enabled) { startSync(); return; }
+    ++generation; // Ignore authentication and UI completions already in flight.
+    [timer invalidate]; timer = nil;
+    if (accountObserver) [NSNotificationCenter.defaultCenter removeObserver:accountObserver];
+    accountObserver = nil;
+    [session invalidate]; session = nil; container = nil;
+    runtimeStatus = @"disabled";
 }
 void halo_cloud_prepare(const char *saves, const char *data) {
     NSCAssert(NSThread.isMainThread, @"Cloud startup must run on the main thread");
@@ -120,14 +161,9 @@ void halo_cloud_prepare(const char *saves, const char *data) {
     compatibility = [@"halo-native-save-v1:" stringByAppendingString:hash];
     saveRoot = [NSURL fileURLWithPath:[NSString stringWithUTF8String:saves] isDirectory:YES];
     if (![identifier isKindOfClass:NSString.class] || ![identifier hasPrefix:@"iCloud."]) return;
-    // Capture offline/profile changes before comparing with the remote head.
-    // Unchanged bytes retain their snapshot ID; unreadable state fails closed.
-    if (!halo_save_checkpoint_prepare()) { runtimeStatus = @"invalidLocalSave"; return; }
-    container = [CKContainer containerWithIdentifier:identifier];
-    [NSNotificationCenter.defaultCenter addObserverForName:CKAccountChangedNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
-        (void)note; authenticate();
-    }];
-    authenticate();
+    containerIdentifier = identifier;
+    if (!syncEnabled()) { runtimeStatus = @"disabled"; return; }
+    startSync();
     // Bound startup waiting; never let connectivity prevent offline play.
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:12];
     while ((([runtimeStatus isEqual:@"checking"] && !session) || session.busy) && deadline.timeIntervalSinceNow > 0)
@@ -138,12 +174,6 @@ void halo_cloud_prepare(const char *saves, const char *data) {
         while (presenting) [NSRunLoop.mainRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.025]];
 #endif
     }
-    timer = [NSTimer timerWithTimeInterval:30 repeats:YES block:^(NSTimer *tick) {
-        (void)tick;
-        if (!session && container && ![runtimeStatus isEqual:@"checking"]) authenticate();
-        else pulse();
-    }];
-    [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 }
 void halo_cloud_guest_started(void) { guestRunning = YES; session.guestStopped = NO; }
 void halo_cloud_checkpoint_ready(void) {
@@ -156,6 +186,10 @@ void halo_cloud_show_status(void) {
     NSString *status = session ? session.status : runtimeStatus;
     NSMutableArray<NSString *> *titles = [NSMutableArray new];
     NSMutableArray *actions = [NSMutableArray new];
+    if (containerIdentifier) {
+        [titles addObject:syncEnabled() ? @"Disable iCloud Sync" : @"Enable iCloud Sync"];
+        [actions addObject:^{ setSyncEnabled(!syncEnabled()); }];
+    }
     if ([status isEqual:@"conflict"]) {
         [titles addObject:@"Keep This Device"]; [actions addObject:^{ [session keepLocal]; }];
         [titles addObject:guestRunning ? @"Use iCloud After Relaunch" : @"Use iCloud"]; [actions addObject:^{ [session useCloud]; }];
