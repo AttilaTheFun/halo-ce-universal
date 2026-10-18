@@ -32,6 +32,7 @@ static NSData *readAsset(NSURL *url, NSError **error) {
 @property(nonatomic) NSURL *stagingDirectory;
 @end
 @implementation HaloCloudSaveTransport
+- (BOOL)uploadsRequireConfirmation { return NO; }
 - (instancetype)initWithDatabase:(id<HaloCloudDatabase>)database stagingDirectory:(NSURL *)directory {
     if ((self = [super init])) { _database = database; _stagingDirectory = directory; }
     return self;

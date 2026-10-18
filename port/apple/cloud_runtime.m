@@ -1,5 +1,7 @@
 #import "cloud_runtime.h"
 #import "cloud_sync.h"
+#import "game_save.h"
+#import <CommonCrypto/CommonDigest.h>
 #import "save_snapshot.h"
 #import "save_restore.h"
 #import "save_runtime.h"
@@ -21,9 +23,19 @@ static NSUInteger generation;
 static NSTimer *timer;
 static id accountObserver;
 static NSString *containerIdentifier;
-static NSString *const syncPreference = @"HaloCloudSyncEnabled";
+static id gameTransport;
+static BOOL usesGameSave(void) {
+    return [NSBundle.mainBundle.infoDictionary[@"HaloCloudBackend"] isEqual:@"GameSave"];
+}
+static BOOL gameSaveAvailable(void) {
+    if (@available(iOS 26.0, macOS 26.0, *)) return YES;
+    return NO;
+}
+static NSString *syncPreferenceKey(void) {
+    return usesGameSave() ? @"HaloGameSaveEnabled" : @"HaloCloudSyncEnabled";
+}
 static BOOL syncEnabled(void) {
-    return [NSUserDefaults.standardUserDefaults boolForKey:syncPreference];
+    return [NSUserDefaults.standardUserDefaults boolForKey:syncPreferenceKey()];
 }
 static void setSyncEnabled(BOOL enabled);
 static void chooseSaveFolder(void);
@@ -62,8 +74,11 @@ static void closeCloudWindow(void) {
 #endif
 static NSString *statusText(void) {
     NSDictionary *text = @{
+        @"unsupported":@"GameSave sync requires iOS/iPadOS 26 or macOS 26 or later. Progress stays local on this device.",
+        @"queued":@"GameSave has received this checkpoint and will upload it through iCloud. Your local save is safe.",
         @"disabled":@"iCloud sync is off. Progress is saved locally in this app’s container. Enable sync to share saved progress through your iCloud account. Turning it off keeps local saves and any existing iCloud copy.",
         @"notConfigured":@"iCloud saves are not enabled in this build. Your progress is saved on this device.",
+        @"gameSaveUnavailable":@"GameSave cannot access iCloud Documents with this account or signed build. Your progress stays local; check iCloud Drive and the app’s provisioning.",
         @"notAuthenticated":@"Sign in to iCloud in system settings to sync progress. Your local save is safe.",
         @"checking":@"Checking iCloud for saved progress…",
         @"ready":@"iCloud is ready. Progress will upload after the game saves a campaign checkpoint.",
@@ -117,35 +132,79 @@ static void authenticate(void) {
         });
     }];
 }
+static void authenticateGameSave(void) {
+    if (!syncEnabled() || !gameSaveAvailable()) return;
+    if (@available(iOS 26.0, macOS 26.0, *)) {
+        NSUInteger token = ++generation;
+        [session invalidate]; session = nil;
+        [(HaloGameSaveTransport *)gameTransport invalidate]; gameTransport = nil;
+        runtimeStatus = @"checking";
+        NSString *identifier = containerIdentifier;
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+            // Foundation checks the signed app's iCloud Documents access. Do
+            // not open GameSave based only on an untrusted Info.plist string.
+            id identity = NSFileManager.defaultManager.ubiquityIdentityToken;
+            NSURL *authorized = identity ? [NSFileManager.defaultManager URLForUbiquityContainerIdentifier:identifier] : nil;
+            NSData *identityBytes = identity ? [NSKeyedArchiver archivedDataWithRootObject:identity requiringSecureCoding:NO error:nil] : nil;
+            unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+            CC_SHA256(identityBytes.bytes, (CC_LONG)identityBytes.length, hash);
+            NSMutableString *account = [NSMutableString stringWithString:@"gamesave:"];
+            for (NSUInteger i = 0; i < sizeof(hash); ++i) [account appendFormat:@"%02x", hash[i]];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (token != generation || !syncEnabled()) return;
+                if (!authorized || !identityBytes.length) { runtimeStatus = identityBytes.length ? @"gameSaveUnavailable" : @"notAuthenticated"; return; }
+                HaloGameSaveTransport *transport = [[HaloGameSaveTransport alloc] initWithContainer:identifier
+                    backups:[saveRoot URLByAppendingPathComponent:@"Cloud Saves/GameSave Conflicts"]];
+                gameTransport = transport;
+                session = [[HaloCloudSync alloc] initWithRoot:saveRoot compatibility:compatibility account:account transport:transport];
+                session.guestStopped = !guestRunning;
+                session.stateChanged = ^{ [NSNotificationCenter.defaultCenter postNotificationName:@"HaloCloudSaveChanged" object:nil]; };
+                [session synchronize];
+            });
+        });
+    }
+}
 static void startSync(void) {
-    if (!syncEnabled() || !containerIdentifier || container) return;
+    if (!syncEnabled() || !containerIdentifier || container || gameTransport || timer) return;
+    if (usesGameSave() && !gameSaveAvailable()) { runtimeStatus = @"unsupported"; return; }
     // Live game writes are captured by the checkpoint hook; reconcile only
     // before the guest opens save handles.
     if (!guestRunning && !halo_save_checkpoint_prepare()) {
         runtimeStatus = @"invalidLocalSave"; return;
     }
-    container = [CKContainer containerWithIdentifier:containerIdentifier];
-    accountObserver = [NSNotificationCenter.defaultCenter addObserverForName:CKAccountChangedNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
-        (void)note; authenticate();
-    }];
-    authenticate();
+    if (usesGameSave()) {
+        accountObserver = [NSNotificationCenter.defaultCenter addObserverForName:NSUbiquityIdentityDidChangeNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+            (void)note; authenticateGameSave();
+        }];
+        authenticateGameSave();
+    } else {
+        container = [CKContainer containerWithIdentifier:containerIdentifier];
+        accountObserver = [NSNotificationCenter.defaultCenter addObserverForName:CKAccountChangedNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+            (void)note; authenticate();
+        }];
+        authenticate();
+    }
     timer = [NSTimer timerWithTimeInterval:30 repeats:YES block:^(NSTimer *tick) {
         (void)tick;
         if (!syncEnabled()) return;
-        if (!session && container && ![runtimeStatus isEqual:@"checking"]) authenticate();
+        if (!session && ![runtimeStatus isEqual:@"checking"]) {
+            if (usesGameSave()) authenticateGameSave(); else if (container) authenticate();
+        }
         else pulse();
     }];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 }
 static void setSyncEnabled(BOOL enabled) {
     NSCAssert(NSThread.isMainThread, @"Cloud preference must run on the main thread");
-    [NSUserDefaults.standardUserDefaults setBool:enabled forKey:syncPreference];
+    [NSUserDefaults.standardUserDefaults setBool:enabled forKey:syncPreferenceKey()];
     if (enabled) { startSync(); return; }
     ++generation; // Ignore authentication and UI completions already in flight.
     [timer invalidate]; timer = nil;
     if (accountObserver) [NSNotificationCenter.defaultCenter removeObserver:accountObserver];
     accountObserver = nil;
     [session invalidate]; session = nil; container = nil;
+    if (@available(iOS 26.0, macOS 26.0, *)) [(HaloGameSaveTransport *)gameTransport invalidate];
+    gameTransport = nil;
     runtimeStatus = @"disabled";
 }
 void halo_cloud_prepare(const char *saves, const char *data) {
@@ -162,6 +221,7 @@ void halo_cloud_prepare(const char *saves, const char *data) {
     saveRoot = [NSURL fileURLWithPath:[NSString stringWithUTF8String:saves] isDirectory:YES];
     if (![identifier isKindOfClass:NSString.class] || ![identifier hasPrefix:@"iCloud."]) return;
     containerIdentifier = identifier;
+    if (usesGameSave() && !gameSaveAvailable()) { runtimeStatus = @"unsupported"; return; }
     if (!syncEnabled()) { runtimeStatus = @"disabled"; return; }
     startSync();
     // Bound startup waiting; never let connectivity prevent offline play.
@@ -186,8 +246,8 @@ void halo_cloud_show_status(void) {
     NSString *status = session ? session.status : runtimeStatus;
     NSMutableArray<NSString *> *titles = [NSMutableArray new];
     NSMutableArray *actions = [NSMutableArray new];
-    if (containerIdentifier) {
-        [titles addObject:syncEnabled() ? @"Disable iCloud Sync" : @"Enable iCloud Sync"];
+    if (containerIdentifier && (!usesGameSave() || gameSaveAvailable())) {
+        [titles addObject:syncEnabled() ? @"Disable iCloud Sync" : (usesGameSave() ? @"Enable GameSave Sync" : @"Enable iCloud Sync")];
         [actions addObject:^{ setSyncEnabled(!syncEnabled()); }];
     }
     if ([status isEqual:@"conflict"]) {
@@ -195,8 +255,20 @@ void halo_cloud_show_status(void) {
         [titles addObject:guestRunning ? @"Use iCloud After Relaunch" : @"Use iCloud"]; [actions addObject:^{ [session useCloud]; }];
     } else if ([status isEqual:@"accountChanged"]) {
         [titles addObject:@"Use Current iCloud Account"]; [actions addObject:^{ [session allowAccountChange]; }];
-    } else if (container) {
-        [titles addObject:@"Sync Now"]; [actions addObject:^{ if (session) [session synchronize]; else authenticate(); }];
+    } else if (container || gameTransport) {
+        [titles addObject:@"Sync Now"]; [actions addObject:^{ if (session) [session synchronize]; else if (usesGameSave()) authenticateGameSave(); else authenticate(); }];
+    }
+    if (@available(iOS 26.0, macOS 26.0, *)) {
+        HaloGameSaveTransport *transport = gameTransport;
+        NSArray<NSString *> *choices = transport.conflictChoices;
+        for (NSUInteger index = 0; index < choices.count; index++) {
+            [titles addObject:[@"Use iCloud version: " stringByAppendingString:choices[index]]];
+            [actions addObject:^{
+                NSError *error = nil;
+                if ([transport resolveConflictAtIndex:index error:&error]) [session synchronize];
+                else { [session invalidate]; session = nil; runtimeStatus = @"localError"; }
+            }];
+        }
     }
     if (saveRoot && compatibility) {
         [titles addObject:@"Import Saved Progress…"];
@@ -217,7 +289,7 @@ void halo_cloud_show_status(void) {
     cloudWindow.rootViewController = [HaloCloudViewController new];
     cloudWindow.windowLevel = UIWindowLevelAlert + 1;
     [cloudWindow makeKeyAndVisible];
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"iCloud Saves" message:statusText() preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:usesGameSave() ? @"GameSave / iCloud Saves" : @"iCloud Saves" message:statusText() preferredStyle:UIAlertControllerStyleAlert];
     for (NSUInteger i = 0; i < titles.count; i++) {
         void (^action)(void) = actions[i];
         [alert addAction:[UIAlertAction actionWithTitle:titles[i] style:UIAlertActionStyleDefault handler:^(UIAlertAction *button) {

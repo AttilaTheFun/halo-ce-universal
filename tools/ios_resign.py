@@ -33,8 +33,9 @@ def main():
     parser.add_argument('--output', required=True, type=Path, help='New signed IPA (must not exist)')
     parser.add_argument('--device', help='Check that this device UDID is included in the profile')
     cloud = parser.add_mutually_exclusive_group()
+    cloud.add_argument('--enable-game-save', action='store_true', help='Retain GameSave using a profile authorizing this IPA’s iCloud Documents container')
     cloud.add_argument('--cloud-environment', choices=['Development', 'Production'], help='Explicit database environment for a cloud-enabled IPA')
-    cloud.add_argument('--disable-cloud-saves', action='store_true', help='Make this copy local-only (the default unless --cloud-environment is supplied)')
+    cloud.add_argument('--disable-cloud-saves', action='store_true', help='Make this copy local-only (the default unless cloud support is explicitly enabled)')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('Requires macOS, Xcode command-line tools and Python 3.')
@@ -92,7 +93,7 @@ def main():
         app = apps[0]
         info_path = app/'Info.plist'
         info = plistlib.loads(info_path.read_bytes())
-        entitlements.update(configure_resigned_cloud(info, allowed, args.cloud_environment))
+        entitlements.update(configure_resigned_cloud(info, allowed, args.cloud_environment, game_save=args.enable_game_save))
         # Older IPAs still hardcode the extended-VA arena. Missing metadata
         # must retain their entitlement requirement when using a newer kit.
         if info.get('HaloRequiresExtendedVirtualAddressing', True) is not False:

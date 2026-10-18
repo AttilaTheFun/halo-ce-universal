@@ -562,3 +562,47 @@ conflict backups and stopped-guest restore guarantees. Do not claim the existing
 CloudKit runtime tests validate GameSave. The cloud provisioning templates and
 re-sign opt-in validation will need iCloud Documents capability support alongside
 that integration; do not provision the old record schema as a shortcut.
+
+
+### GameSave file transport implemented (2026-10-18)
+
+Added the GameSave directory transport and a separate persisted GameSave opt-in
+in the existing shake settings' GameSave / iCloud Saves panel. Availability is
+checked for iOS/iPadOS/macOS 26; the framework is weak-linked. New iOS builds and
+configured Mac builds select GameSave; the old CloudKit coordinator/transport is
+retained for legacy configuration. GameSave reuses the validated snapshot and
+three-way local reconciliation code via an in-memory revision envelope; it does
+not make CloudKit database calls or require a record schema.
+
+Before opening GameSave, an enabled session checks the current iCloud Documents
+container access off the main thread and binds local sync state to a hash of the
+ubiquity identity token. Account changes/opt-out invalidate pending work. Only
+validated, bounded checkpoint files enter the cloud directory. Offline/local-only
+GameSave states never masquerade as a current remote head. Writes are handed to
+GameSave on directory close and reported as queued, not server-confirmed. Directory
+conflicts require an explicit version choice and durable backups of every known
+checkpoint version first. A running guest cannot have its saves replaced.
+
+Updated build/signing validation for CloudDocuments plus both authorized container
+entitlements. Re-signing remains local-only by default; --enable-game-save is an
+explicit profile-validated exception. GameSave's opt-in does not inherit the old
+CloudKit opt-in. Nothing registers a container or modifies an Apple account.
+
+Validation: production GameSave transport with injected directory states passed
+ASan/UBSan tests for file exchange, stale-revision rejection, offline/local/error
+fallback, conflict backup before resolution, malformed conflict rejection and
+late-completion invalidation. Integrated coordinator tests cover local/cloud
+conflicts, keep-local, queued handoff, subsequent confirmation and a remote save
+arriving while gameplay is active. Runtime opt-in suite and existing CloudKit
+transport/coordinator suite pass; 25 signing/release-boundary/DMG tests pass.
+iOS 17 simulator-target and macOS 14 syntax checks validate availability guards.
+Full iOS host build 38 for simulator and device succeeded using the existing guest
+image; both have Halo/com.LoganShire.Halo and GameSave metadata. The device binary
+weak-links GameSave. Neither bundle contains ISO/XISO/map files. Device product
+is unsigned and the simulator signature was verified by the build tool.
+
+The artifacts have no cloud container configured: live GameSave, account switching,
+conflict UI and cross-device tests still require provisioning and an authorized
+test environment. No personal-device actions or Releases publication occurred.
+Mac source/link packaging supports GameSave, but no new Mac app was built in this
+step. Rebase review and release work remain unfinished.

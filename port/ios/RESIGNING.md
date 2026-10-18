@@ -134,27 +134,39 @@ Apple references: [signing setup](https://developer.apple.com/documentation/xcod
 [provisioning profiles](https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles),
 and [nested signatures and DER entitlements](https://developer.apple.com/documentation/xcode/using-the-latest-code-signature-format).
 
-### Cloud-enabled IPAs
+### Optional GameSave sync (iOS/iPadOS 26+)
 
-Cloud sync is off by default, even in provisioned builds. Enable it explicitly
-in the iCloud Saves panel on each device. Disabling it stops future sync attempts
-and keeps local saves and the existing cloud copy; it does not erase either.
-Saves remain in the app container. An upload already sent may finish after sync
-is disabled. The ISO and extracted game assets are never part of cloud saves.
+In the app’s shake-accessed settings, open **GameSave / iCloud Saves…** and
+choose **Enable GameSave Sync**. Sync defaults off on each device. Local saves
+stay in the app container. GameSave exchanges only validated checkpoint files;
+it never uploads the ISO or extracted maps and never replaces a running game's
+save files. Cloud progress that arrives during play is offered for relaunch.
+Conflicting versions are backed up locally before resolving them.
 
+GameSave requires an iCloud Documents container authorized in the app's signing
+profile. Without it the settings explain that this build uses local saves.
+Older operating systems keep local saves without opening GameSave. A missing
+account, offline state or sync error must not prevent local play. Disabling sync
+keeps local saves and existing cloud copies; uploads already handed to the
+system may still finish. “Queued” is not confirmation of a server upload.
 
-Re-signing defaults to a local-only copy, including when the source IPA supports
-iCloud. No cloud permission is needed for local play. To explicitly retain cloud
-support in an IPA built with iCloud saves, supply `--cloud-environment Development`
-or `--cloud-environment Production`, matching the original build and your other
-clients. These are separate save databases. The profile must explicitly authorize
-the IPA's configured container, CloudKit service, and selected environment. The
-script grants only those capabilities and refuses a mismatched profile before
-signing; it does not register accounts, containers, or devices.
+**Re-signing defaults to local-only**, even for a source IPA with cloud support.
+The script removes HaloCloudContainer and grants no iCloud capabilities. The
+optional `--disable-cloud-saves` flag explicitly selects the same default.
+A settings toggle alone cannot fix an invalid signature: other signing tools
+must also remove unsupported entitlements before installing their local-only copy.
 
-When re-signing under an account that cannot access that container, omit
-`--cloud-environment`. The optional `--disable-cloud-saves` flag also selects this
-local-only default. This removes
-the cloud configuration from the new IPA without modifying the input IPA or
-imported game files. It does not migrate existing saves between cloud accounts.
-An ordinary IPA with no configured cloud container needs neither option.
+To retain GameSave, explicitly pass `--enable-game-save` with a profile authorizing
+that IPA’s container in both `com.apple.developer.icloud-container-identifiers`
+and `com.apple.developer.ubiquity-container-identifiers`, plus the `CloudDocuments`
+service. Someone else's signing account does not automatically gain access to
+our container. To use their own container, they must rebuild with its identifier
+and authorized entitlements. The script never registers accounts or containers,
+and never changes the original IPA or imported data.
+
+Older CloudKit-record IPAs instead use the legacy `--cloud-environment Development`
+or `--cloud-environment Production` option, with a matching profile. Those record
+stores are separate from GameSave's file store; no automatic migration from a
+previous cloud backend is promised. Local checkpoint data remains compatible.
+
+See [Apple's GameSave introduction](https://developer.apple.com/videos/play/wwdc2025/209/).

@@ -265,3 +265,28 @@ ten minutes of half-second timing summaries and shader diagnostics. It does
 not include maps, the ISO or saves. First-use GPU-stall capture is opt-in because
 its GPU synchronization changes performance. Normal timing capture avoids that
 synchronization.
+
+
+### GameSave opt-in
+
+New iOS cloud builds use GameSave (iOS/iPadOS 26+), and configured Mac builds use
+its macOS 26+ counterpart so both can share the same iCloud Documents container.
+The existing `--cloud-container` and `--entitlements` build options now require
+`CloudDocuments` and matching iCloud/ubiquity container identifiers. The selected
+profile must authorize them; merely adding values to an entitlements file does
+not grant access. App Sandbox remains required for the Mac cloud build.
+
+Settings → GameSave / iCloud Saves → Enable GameSave Sync is a separate,
+per-device opt-in, off by default. No GameSave directory or iCloud account lookup
+is started while disabled. Older systems and unprovisioned/re-signed copies keep
+local saves. GameSave files contain validated checkpoint snapshots, never retail
+game data. Live save files remain private to the app and restores require the
+guest to be stopped. An upload handed to GameSave is marked queued until a later
+synchronization confirms it. Conflict resolution backs up all known checkpoint
+versions first. Other cloud backend implementations are retained for existing
+build compatibility, not used concurrently with GameSave.
+
+Tests: `python3 tools/test_apple_game_save.py`,
+`python3 tools/test_apple_cloud_runtime.py`, and
+`python3 -m unittest tools.test_apple_cloud_config` use synthetic accounts,
+profiles and directory states. Passing them is not a live iCloud test.

@@ -70,7 +70,7 @@ def main():
     args = p.parse_args()
     if args.sign and args.platform != 'simulator' and not args.team:
         p.error('--sign requires --team YOUR_TEAM_ID for a device build')
-    validate_cloud_config(args.cloud_container, args.entitlements)
+    validate_cloud_config(args.cloud_container, args.entitlements, backend="GameSave")
     os.chdir(ROOT)
     if args.plugin_only:
         build_plugin()

@@ -56,6 +56,30 @@ class CloudResigning(unittest.TestCase):
             configure_resigned_cloud(info, {}, 'Production')
         self.assertEqual(info, {'HaloCloudContainer': self.container})
 
+    def test_game_save_default_is_local(self):
+        info = {'HaloCloudBackend': 'GameSave', 'HaloCloudContainer': self.container}
+        self.assertEqual(configure_resigned_cloud(info, {}), {})
+        self.assertNotIn('HaloCloudContainer', info)
+
+    def test_game_save_opt_in_requires_documents_and_both_container_permissions(self):
+        info = {'HaloCloudBackend': 'GameSave', 'HaloCloudContainer': self.container}
+        with self.assertRaises(ValueError):
+            configure_resigned_cloud(info, self.allowed, game_save=True)
+        self.allowed['com.apple.developer.ubiquity-container-identifiers'] = [self.container]
+        result = configure_resigned_cloud(info, self.allowed, game_save=True)
+        self.assertEqual(result['com.apple.developer.icloud-services'], ['CloudDocuments'])
+        self.assertNotIn('com.apple.developer.icloud-container-environment', result)
+        self.allowed['com.apple.developer.icloud-services'] = ['CloudKit']
+        with self.assertRaises(ValueError):
+            configure_resigned_cloud(info, self.allowed, game_save=True)
+
+    def test_game_save_does_not_accept_cloudkit_environment_option(self):
+        info = {'HaloCloudBackend': 'GameSave', 'HaloCloudContainer': self.container}
+        with self.assertRaises(ValueError):
+            configure_resigned_cloud(info, self.allowed, 'Production')
+        with self.assertRaises(ValueError):
+            configure_resigned_cloud({'HaloCloudContainer': self.container}, self.allowed, game_save=True)
+
     def test_local_only(self):
         self.assertEqual(cloud_resigning_entitlements(None, {}, None), {})
         with self.assertRaises(ValueError):
