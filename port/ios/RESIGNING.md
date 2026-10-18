@@ -136,6 +136,13 @@ and [nested signatures and DER entitlements](https://developer.apple.com/documen
 
 ### Cloud-enabled IPAs
 
+Cloud sync is off by default, even in provisioned builds. Enable it explicitly
+in the iCloud Saves panel on each device. Disabling it stops future sync attempts
+and keeps local saves and the existing cloud copy; it does not erase either.
+Saves remain in the app container. An upload already sent may finish after sync
+is disabled. The ISO and extracted game assets are never part of cloud saves.
+
+
 For an IPA built with iCloud saves, supply `--cloud-environment Development`
 or `--cloud-environment Production`, matching the original build and your other
 clients. These are separate save databases. The profile must explicitly authorize

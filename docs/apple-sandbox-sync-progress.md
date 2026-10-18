@@ -510,3 +510,25 @@ Installer guards in the current native host. No code changes, build, account
 mutation, device interaction or publication in this review step. Build 37 remains
 the latest local artifact; shared-team provisioning and live cloud tests remain
 pending. No build or simulator job is running.
+
+
+### Optional cloud sync and corrected signing audit
+
+Visor rechecked the actual team identifiers: Aphelion, LLC and LOGAN SHIRE, LLC
+are the same renamed paid team. The previous cross-team blocker was incorrect.
+com.LoganShire.Halo registration, container/profiles and Production schema still
+need provisioning; no account resources were created in this turn.
+
+Cloud sync now persists a per-device opt-in (HaloCloudSyncEnabled), default false.
+The iCloud Saves panel offers Enable/Disable. Disabled startup does not create a
+CKContainer, authenticate, install an account observer/timer, or wait for cloud.
+Turning off invalidates the coordinator and authentication generation and removes
+retries/observers, preserving local and cloud saves. Already-submitted uploads
+may finish. Mid-game enable uses checkpoint snapshots rather than scanning live
+save handles. Tests exercise the production runtime with fake authentication:
+fresh defaults, persisted choices, teardown, account/checkpoint notifications,
+stale completion after disable/re-enable and valid current completion. ASan/UBSan
+runtime and existing transport/coordinator suites passed; iOS simulator-target
+syntax check passed. No live CloudKit or UI test, full app build or publication.
+Apple's GameSave framework is an additional iCloud-backed file-save option worth
+evaluating; no migration from the existing CloudKit implementation was performed.
