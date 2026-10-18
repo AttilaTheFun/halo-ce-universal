@@ -13,7 +13,7 @@ import tempfile
 import zipfile
 from pathlib import Path, PurePosixPath
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from tools.apple_cloud_config import cloud_resigning_entitlements
+from tools.apple_cloud_config import configure_resigned_cloud
 
 
 def run(*args):
@@ -34,7 +34,7 @@ def main():
     parser.add_argument('--device', help='Check that this device UDID is included in the profile')
     cloud = parser.add_mutually_exclusive_group()
     cloud.add_argument('--cloud-environment', choices=['Development', 'Production'], help='Explicit database environment for a cloud-enabled IPA')
-    cloud.add_argument('--disable-cloud-saves', action='store_true', help='Explicitly make this copy local-only when your profile cannot access its cloud container')
+    cloud.add_argument('--disable-cloud-saves', action='store_true', help='Make this copy local-only (the default unless --cloud-environment is supplied)')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('Requires macOS, Xcode command-line tools and Python 3.')
@@ -92,9 +92,7 @@ def main():
         app = apps[0]
         info_path = app/'Info.plist'
         info = plistlib.loads(info_path.read_bytes())
-        if args.disable_cloud_saves:
-            info.pop('HaloCloudContainer', None)
-        entitlements.update(cloud_resigning_entitlements(info.get('HaloCloudContainer'), allowed, args.cloud_environment))
+        entitlements.update(configure_resigned_cloud(info, allowed, args.cloud_environment))
         # Older IPAs still hardcode the extended-VA arena. Missing metadata
         # must retain their entitlement requirement when using a newer kit.
         if info.get('HaloRequiresExtendedVirtualAddressing', True) is not False:

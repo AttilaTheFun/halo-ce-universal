@@ -143,15 +143,18 @@ Saves remain in the app container. An upload already sent may finish after sync
 is disabled. The ISO and extracted game assets are never part of cloud saves.
 
 
-For an IPA built with iCloud saves, supply `--cloud-environment Development`
+Re-signing defaults to a local-only copy, including when the source IPA supports
+iCloud. No cloud permission is needed for local play. To explicitly retain cloud
+support in an IPA built with iCloud saves, supply `--cloud-environment Development`
 or `--cloud-environment Production`, matching the original build and your other
 clients. These are separate save databases. The profile must explicitly authorize
 the IPA's configured container, CloudKit service, and selected environment. The
 script grants only those capabilities and refuses a mismatched profile before
 signing; it does not register accounts, containers, or devices.
 
-When re-signing under an account that cannot access that container, you can
-explicitly use `--disable-cloud-saves` to make your copy local-only. This removes
+When re-signing under an account that cannot access that container, omit
+`--cloud-environment`. The optional `--disable-cloud-saves` flag also selects this
+local-only default. This removes
 the cloud configuration from the new IPA without modifying the input IPA or
 imported game files. It does not migrate existing saves between cloud accounts.
 An ordinary IPA with no configured cloud container needs neither option.
