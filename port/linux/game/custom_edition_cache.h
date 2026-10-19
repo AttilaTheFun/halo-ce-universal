@@ -173,6 +173,9 @@ boolean custom_edition_structure_bsp_reference_valid(
 custom_edition_behaviour, cache_file_formats.h); FALSE when none is loaded. */
 boolean custom_edition_cache_relies_on(
 	short behaviour);
+/* the loaded map was started from competitive_maps (FALSE once it is gone) */
+boolean custom_edition_cache_is_competitive(
+	void);
 void custom_edition_cache_tags_unload(
 	void);
 

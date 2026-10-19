@@ -124,6 +124,7 @@ struct game_options;
 #include "../../port/linux/game/performance_options.h"
 #include "competitive_rules.h" /* port: competitive rules for this map */
 #endif
+#include "competitive_timer.h" /* port: port/linux/game/competitive_timer.c */
 #include "ai/ai.h"
 #include "bink/bink_playback.h"
 #include "bungie_net/network/transport.h"
@@ -390,6 +391,9 @@ void game_tick(
 	decisions that belong to the host. */
 	if (!(network_game_distributed_client() && network_coop_active()))
 		profile_scope(game_tick_hs_section, hs_update();)
+	/* port: a competitive map's announcer is turned off by its own startup
+	script. put it back once the scripts have had this tick */
+	competitive_timer_after_scripts();
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 	performance_options_update();
 #endif

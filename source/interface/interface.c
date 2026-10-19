@@ -105,6 +105,7 @@ symbols in this file:
 #include "units/unit_definitions.h"
 #include "units/units.h"
 #include "map_share.h" /* port: port/linux/game/map_share.c */
+#include "competitive_timer.h" /* port: port/linux/game/competitive_timer.c */
 #include "fork_update_notice.h" /* port: port/linux/game/fork_update_notice.c */
 
 /* ---------- constants */
@@ -381,6 +382,8 @@ void interface_draw_fullscreen_overlays(
 	void)
 {
 	cinematic_render();
+	/* port: a competitive map's match clock, in place of its chapter titles */
+	competitive_timer_render();
 	interface_splitscreen_render();
 	hud_render_timer();
 	/* port: a newer Mac release, in the same place in a game and in the menus */

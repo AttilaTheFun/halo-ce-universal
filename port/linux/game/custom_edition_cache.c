@@ -79,6 +79,8 @@ struct custom_edition_cache_globals
 	/* the Halo PC behaviours the loaded map relies on (enum
 	custom_edition_behaviour, flags) */
 	uint32_t behaviours;
+	/* the map was opened from competitive_maps, until its file is closed */
+	boolean competitive;
 	/* the tag cache and the bytes of it the loaded tags use */
 	uint8_t *tag_cache;
 	uint32_t loaded_bytes;
@@ -395,6 +397,7 @@ static void custom_edition_cache_files_close(
 	}
 	custom_edition_file_close(&globals->map);
 	globals->map_path[0] = 0;
+	globals->competitive = FALSE;
 
 	return;
 }
@@ -974,10 +977,13 @@ struct cache_file_tag_header *custom_edition_cache_tags_load(
 	short type;
 
 	assert(!globals->tags_loaded);
+	globals->competitive = map_name &&
+		!_strnicmp(map_name, COMPETITIVE_LEVEL_NAME_PREFIX, csstrlen(COMPETITIVE_LEVEL_NAME_PREFIX));
 	if (!tag_cache)
 	{
 		error(_error_silent, "custom edition: cannot load the map '%s': %s", map_name,
 			custom_edition_unavailable_reason());
+		globals->competitive = FALSE;
 		return NULL;
 	}
 	if (!custom_edition_map_path(map_name, path) || !custom_edition_file_open(&globals->map, path))
@@ -985,6 +991,7 @@ struct cache_file_tag_header *custom_edition_cache_tags_load(
 		error(_error_silent, "custom edition: cannot open the map '%s' (it is looked for in the %s folder)",
 			map_name, map_name && !_strnicmp(map_name, COMPETITIVE_LEVEL_NAME_PREFIX,
 				csstrlen(COMPETITIVE_LEVEL_NAME_PREFIX)) ? "competitive_maps" : "custom_maps");
+		globals->competitive = FALSE;
 		return NULL;
 	}
 	strcpy(globals->map_path, path);
@@ -1127,6 +1134,12 @@ boolean custom_edition_cache_relies_on(
 		((custom_edition_cache_globals.behaviours >> behaviour) & 1);
 }
 
+boolean custom_edition_cache_is_competitive(
+	void)
+{
+	return custom_edition_cache_globals.competitive;
+}
+
 void custom_edition_cache_tags_unload(
 	void)
 {
@@ -1156,7 +1169,12 @@ void custom_edition_cache_read(
 	unsigned long file_offset;
 	long read_bytes;
 	boolean read;
+	extern boolean stock_hud_read(long tag_index, long offset, long size, void *buffer);
 
+	/* a bitmap injected from the stock map is not in this map's files
+	(port/linux/game/stock_hud.c) */
+	if (stock_hud_read(tag_index, offset, size, buffer))
+		return;
 	if ((unsigned long)offset >= COMBINED_SOUNDS_OFFSET)
 	{
 		file = &globals->resource_files[_resource_map_sounds];

@@ -2103,24 +2103,46 @@ void hs_evaluate_if(
 	}
 	else if (*expression_index==NONE)
 	{
-		if ((boolean)*condition)
+		boolean taken = (boolean)*condition;
+		long branch;
+		long *destination;
+
+		if (taken)
 		{
-			*expression_index = hs_syntax_get(hs_syntax_get(hs_syntax_get(
+			branch = hs_syntax_get(hs_syntax_get(hs_syntax_get(
 				thread->stack->expression_index)->data)->next_node_index)->next_node_index;
 		}
 		else
 		{
-			*expression_index = hs_syntax_get(hs_syntax_get(hs_syntax_get(hs_syntax_get(
+			branch = hs_syntax_get(hs_syntax_get(hs_syntax_get(hs_syntax_get(
 				thread->stack->expression_index)->data)->next_node_index)->
 				next_node_index)->next_node_index;
-			if (*expression_index==NONE)
-			{
-				hs_return(thread_index, 0);
-
-				return;
-			}
 		}
 
+		/* port: the branch is the last thing an if does, so it runs in the
+		if's place. a chain of else-ifs, which is how a match clock announces
+		each minute, is deeper than a thread's stack when every if stays
+		until its branch returns */
+		if (thread->stack->previous)
+		{
+			destination = thread->stack->previous->result;
+			thread->stack = thread->stack->previous;
+			if (branch==NONE)
+				*(long *)destination = 0;
+			else
+				hs_evaluate(thread_index, branch, destination);
+
+			return;
+		}
+
+		if (branch==NONE)
+		{
+			hs_return(thread_index, 0);
+
+			return;
+		}
+
+		*expression_index = branch;
 		hs_evaluate(thread_index, *expression_index, result);
 	}
 	else

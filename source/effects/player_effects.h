@@ -88,6 +88,12 @@ void player_effect_start(
 	real_vector3d const *direction,
 	real scale,
 	real total_damage);
+/* port: the blast's aim kick alone, with no flash and no damage */
+void player_effect_port_blast_kick(
+	long player_index,
+	struct damage_data const *damage,
+	real_vector3d const *direction,
+	real scale);
 void scripted_player_effect_set_translation(
 	real horizontal,
 	real vertical,

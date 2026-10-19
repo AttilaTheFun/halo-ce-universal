@@ -137,6 +137,9 @@ static const struct config_setting config_settings[] =
 		"Draw the HUD (meters, counters, panels, motion sensor, reticles,\n"
 		"waypoints, scopes) from the high-res assets (8x the maps' bitmaps);\n"
 		"false draws the maps' own bitmaps." },
+	{ "display.campaign_hud", _config_boolean, "false", "HALO_CAMPAIGN_HUD", _environment_value, _platform_all,
+		"On a Custom Edition map, draw the campaign HUD. The reticle stays\n"
+		"the map's. false draws the map's HUD. The next map loaded uses the choice." },
 	{ "display.high_res_text", _config_boolean, "true", "HALO_HIGH_RES_TEXT", _environment_value, _platform_all,
 		"Draw the menus' and HUD's text with the fonts in port/assets/fonts\n"
 		"(Overpass) at the resolution the game draws at, and the menus' titles\n"

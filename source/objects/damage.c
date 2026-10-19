@@ -141,6 +141,8 @@ symbols in this file:
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
+/* port: the loaded map came from competitive_maps */
+boolean custom_edition_cache_is_competitive(void);
 /* port/linux/game/network_damage.c's */
 boolean network_damage_deals(struct damage_data const *damage, long object_index, short node_index,
 	short region_index, short material_index, real_vector3d const *object_normal, boolean authorized);
@@ -2366,6 +2368,92 @@ static void object_destroy_region(
 	return;
 }
 
+/* port: a competitive map blocks the grenade's line more often than a
+classic room, and the aim kick is dropped with that line. the kick still
+runs for a player inside the blast, at the tag's angle and falloff.
+damage stays blocked. a client's own grenade is kicked on that machine.
+the host sends every other one. */
+static void port_competitive_blast_aim_kick(
+	struct damage_data *damage,
+	struct damage_effect_definition *damage_effect,
+	struct object_datum *object,
+	long object_index,
+	real_point3d const *epicenter)
+{
+	long player_index;
+	struct player_datum *owner;
+	real distance;
+	real radius_delta;
+	real scale;
+
+	if (!custom_edition_cache_is_competitive())
+		return;
+	if (damage_effect->camera_impulse.permanent_angle == 0.f &&
+		damage_effect->camera_impulse.temporary_rotation == 0.f)
+		return;
+	if (TEST_FLAG(object->object.flags, _object_invisible_bit))
+		return;
+	if (TEST_FLAG(damage_effect->damage.flags, _damage_does_not_hurt_owner_bit) &&
+		object_index == damage->owner_object_index)
+		return;
+	if (TEST_FLAG(damage_effect->damage.flags, _damage_does_not_hurt_friends_bit) &&
+		!game_team_is_enemy(object->object.owner_team_index, damage->owner_team_index))
+		return;
+
+	player_index = player_index_from_unit_index(object_index);
+	if (player_index == NONE)
+		return;
+
+	owner = damage->owner_player_index == NONE ? NULL :
+		player_try_and_get(damage->owner_player_index);
+	if (network_game_distributed_client())
+	{
+		if (!owner || owner->local_player_index == NONE)
+			return;
+	}
+	else if (owner && owner->local_player_index == NONE && !owner->quit_out_of_game)
+	{
+		return;
+	}
+
+	vector_from_points3d(
+		epicenter,
+		&object->object.bounding_sphere_center,
+		&damage->direction);
+	distance = normalize3d(&damage->direction);
+	radius_delta = damage_effect->cutoff_radius - damage_effect->falloff_radius;
+	if (radius_delta > 0.f)
+	{
+		scale = PIN(
+			1.f - (distance - damage_effect->falloff_radius) / radius_delta,
+			0.f,
+			1.f);
+	}
+	else
+	{
+		scale = 1.f;
+	}
+
+	if (!TEST_FLAG(
+		damage_effect->flags,
+		_damage_effect_dont_scale_damage_by_distance_bit))
+	{
+		damage->scale = scale;
+	}
+	if (scale <= 0.f)
+		return;
+
+	network_damage_player_effect(player_index, damage, 0.f);
+	if (!network_damage_replaying_kill())
+	{
+		player_effect_port_blast_kick(
+			player_index,
+			damage,
+			&damage->direction,
+			scale);
+	}
+}
+
 static void area_of_effect_cause_damage_to_object(
 	struct damage_data *damage,
 	long object_index,
@@ -2373,6 +2461,7 @@ static void area_of_effect_cause_damage_to_object(
 {
 	boolean did_damage;
 	boolean collision_blocked;
+	boolean line_blocked;
 	boolean infection_form;
 	struct object_datum *object;
 	struct object_definition *object_definition;
@@ -2495,6 +2584,7 @@ static void area_of_effect_cause_damage_to_object(
 			&direct_collision);
 	}
 
+	line_blocked = collision_blocked;
 	if (collision_blocked)
 		can_damage = FALSE;
 
@@ -2618,6 +2708,15 @@ static void area_of_effect_cause_damage_to_object(
 				}
 			}
 		}
+	}
+	else if (line_blocked)
+	{
+		port_competitive_blast_aim_kick(
+			damage,
+			damage_effect,
+			object,
+			object_index,
+			epicenter);
 	}
 
 	if (infection_form && (!can_damage || did_damage))
