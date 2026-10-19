@@ -16,16 +16,20 @@ presentation. On October 3, the version-11 wire record and required received-inp
 handling from `c9ee319ab5f2964a32372fffdc7756111e39727d` were selectively ported,
 preserving the fork's native menus, PB Options and existing gameplay rules.
 Unsupported upstream PC gametype settings are refused before precache/play.
-See the [v10 review](upstream-review-2026-10-02.md) and
-[current per-commit review and validation record](upstream-review-2026-10-03.md).
+See the [v10 review](upstream-review-2026-10-02.md),
+[the October 3 review](upstream-review-2026-10-03.md), and
+[the October 18 review](upstream-review-2026-10-18.md).
 This does not integrate intervening upstream changes. During upstream-update work, review all
 changes since the last recorded review so useful core improvements are not missed.
 Fetching upstream does not authorize merging it. Do not merge upstream `main`
 wholesale; select focused changes and split mixed commits when necessary.
 
-The last review covered new commits through upstream revision
-`23b542601f2ca505c7a0143703e92fbda6075e18` on October 3, 2026. The current review
-records all seven new commits since the October 2 review. The following
+The last review compared this fork with upstream `main` at
+`c20866353` on October 18, 2026. The WebRTC gap recovery was adopted.
+The halo-1 reconcile's restored original bugs, the PC pause pitch, and the
+HUD button styles were not. The web build stays deferred. The October 3
+record still covers the seven commits through
+`23b542601f2ca505c7a0143703e92fbda6075e18`. The following
 earlier exclusions also remain in force; neither is integrated:
 
 | Upstream change | Category and effect | Decision and reason | Validation / integration status |
