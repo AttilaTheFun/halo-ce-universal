@@ -133,10 +133,14 @@ static const struct config_setting config_settings[] =
 	{ "display.viewmodel_visible", _config_boolean, "true", "HALO_VIEWMODEL_VIS", _environment_value, _platform_all,
 		"Draw the first-person weapon, hands and attached visuals. Turning\n"
 		"this off does not change firing, animation, sound or world lights." },
-	{ "display.high_res_hud", _config_boolean, "false", "HALO_HIGH_RES_HUD", _environment_value, _platform_all,
+	{ "display.high_res_hud", _config_boolean, "true", "HALO_HIGH_RES_HUD", _environment_value, _platform_all,
 		"Draw the HUD (meters, counters, panels, motion sensor, reticles,\n"
 		"waypoints, scopes) from the high-res assets (8x the maps' bitmaps);\n"
 		"false draws the maps' own bitmaps." },
+	{ "display.hud_button_style", _config_string, "\"classic\"", "HALO_HUD_BUTTON_STYLE", _environment_value, _platform_all,
+		"High-res gameplay controller buttons: classic uses plain Xbox faces;\n"
+		"gems uses shaded Xbox faces; menu_gems uses the menu's button art.\n"
+		"Requires display.high_res_hud." },
 	{ "display.campaign_hud", _config_boolean, "false", "HALO_CAMPAIGN_HUD", _environment_value, _platform_all,
 		"On a Custom Edition map, draw the campaign HUD. The reticle stays\n"
 		"the map's. false draws the map's HUD. The next map loaded uses the choice." },
@@ -157,6 +161,10 @@ static const struct config_setting config_settings[] =
 	{ "display.menus", _config_string, "\"pc\"", "HALO_MENUS", _environment_value, _platform_all,
 		"The menus: \"pc\" for the PC version's main menu (Quit, and Join Game's\n"
 		"Server Browser), \"xbox\" for the Xbox's." },
+	{ "display.menu_language", _config_string, "\"maps\"", "HALO_MENU_LANGUAGE", _environment_value, _platform_all,
+		"The PC menus' language: \"maps\" for the language of the Custom Edition\n"
+		"whose loc.map is in custom_maps (as that edition shows them; English\n"
+		"without one), \"english\" for English. The port's own lines are English." },
 	{ "display.player_names", _config_string, "\"all\"", "HALO_PLAYER_NAMES", _environment_value, _platform_all,
 		"In multiplayer, whose names are drawn above their heads: \"all\",\n"
 		"\"allies\", \"enemies\" or \"none\". An enemy's shows only within the\n"
@@ -166,6 +174,11 @@ static const struct config_setting config_settings[] =
 	{ "display.player_name_scale", _config_real, "1.0", "HALO_PLAYER_NAME_SCALE", _environment_value, _platform_all,
 		"How large the players' names are drawn: 1.0 three quarters of the size of\n"
 		"the HUD's text, 0.25 to 4." },
+	{ "display.match_timer", _config_boolean, "false", "HALO_MATCH_TIMER", _environment_value, _platform_all,
+		"Draw the match clock at the bottom right in multiplayer. It counts up\n"
+		"from the game's first tick, which the items' respawn periods count from\n"
+		"too: a weapon is back on the map at every multiple of its period on the\n"
+		"clock." },
 	{ "display.scoreboard_team_layout", _config_string, "\"teams\"", "HALO_SCOREBOARD_TEAM_LAYOUT", _environment_value,
 		_platform_all,
 		"How the scoreboard lists a team game's players: \"teams\" in a column for\n"
@@ -184,6 +197,19 @@ static const struct config_setting config_settings[] =
 		"pixel by the lights the game gives them, without the facets the light\n"
 		"of each vertex shows across curved surfaces; false lights each vertex,\n"
 		"as the Xbox does." },
+	{ "display.model_detail", _config_string, "\"stock\"", "HALO_MODEL_DETAIL", _environment_value, _platform_all,
+		"Which of their levels of detail models are drawn at: \"stock\" chooses by\n"
+		"their size on the Xbox's 480 lines, at any resolution; \"native\" by their\n"
+		"size on the display's, so that more detail is kept at a distance at high\n"
+		"resolutions; \"highest\" draws the models \"native\" does, each at its most\n"
+		"detailed level." },
+	{ "display.structure_culling", _config_integer, "31", "HALO_STRUCTURE_CULLING", _environment_value,
+		_platform_all,
+		"Which tests skip the level's triangles the camera cannot see, as bits\n"
+		"added together: 1 outside the view, 2 groups facing away, 4 triangles\n"
+		"facing away, 8 smaller groups, 16 nearer rooms first; 0 walks them as\n"
+		"the Xbox does. The console's structure_culling changes it until the\n"
+		"game quits." },
 
 	{ "audio.enabled", _config_boolean, "true", "HALO_NO_AUDIO", _environment_set_is_false, _platform_all,
 		"Play sound." },
@@ -246,6 +272,8 @@ static const struct config_setting config_settings[] =
 		"How far the view turns for the mouse's movement." },
 	{ "input.invert_mouse", _config_boolean, "false", "HALO_MOUSE_INVERT", _environment_set_is_true, _platform_desktop,
 		"Moving the mouse forward looks down." },
+	{ "network.block_mouse_aim_assist", _config_boolean, "false", "HALO_NET_BLOCK_MOUSE_AIM_ASSIST", _environment_value,
+		_platform_all, "Host: disable optional mouse magnetism for mouse/keyboard players. Controllers and touch keep their own assist." },
 	{ "input.mouse_aim_assist", _config_boolean, "false", "HALO_MOUSE_AIM_ASSIST", _environment_value, _platform_desktop,
 		"Magnetism while aiming with the mouse, as with a controller: the view\n"
 		"slowed and dragged along by a target. The last of the mouse and the\n"
@@ -258,7 +286,13 @@ static const struct config_setting config_settings[] =
 
 	/* the keyboard and mouse's own controls (port/linux/src/xinput_sdl.c) */
 	{ "controls.move_forward", _config_string, "\"W\"", "HALO_KEY_MOVE_FORWARD", _environment_value, _platform_all,
-		"Moving forward. Up to two keys or buttons, separated by a comma." },
+		"The keyboard and mouse's controls, which Settings > Controls Setup\n"
+		"changes: up to two keys or buttons each, separated by a comma. Keys by\n"
+		"their names on a US keyboard (\"W\", \"Space\", \"Left Ctrl\", \"F1\"): a key\n"
+		"is the one in that place on any keyboard, which the menus show by its\n"
+		"own label. Buttons: \"Mouse Left\", \"Mouse Right\", \"Mouse Middle\",\n"
+		"\"Mouse 4\", \"Mouse 5\", \"Wheel\" (either way), \"Wheel Up\" and \"Wheel\n"
+		"Down\"; empty for none. Moving forward:" },
 	{ "controls.move_backward", _config_string, "\"S\"", "HALO_KEY_MOVE_BACKWARD", _environment_value, _platform_all,
 		"Moving backward." },
 	{ "controls.strafe_left", _config_string, "\"A\"", "HALO_KEY_STRAFE_LEFT", _environment_value, _platform_all,
@@ -357,6 +391,20 @@ static const struct config_setting config_settings[] =
 		"shield's own) or a multiplayer armor color: white, black, red, blue,\n"
 		"gray, yellow, green, pink, purple, cyan, cobalt, orange, teal, sage,\n"
 		"brown, tan, maroon or salmon." },
+
+	{ "game.unlock_all_levels", _config_boolean, "false", "HALO_UNLOCK_ALL_LEVELS", _environment_value, _platform_all,
+		"true: a profile made from now on starts with every campaign level\n"
+		"finished on every difficulty, so any level can be played. false: a new\n"
+		"profile starts at The Pillar of Autumn and opens each level as the one\n"
+		"before it is finished, as on the Xbox. Profiles already made keep their\n"
+		"progress; the console's profile_reset_campaign starts one over." },
+
+	{ "game.downloaded_maps", _config_string, "\"\"", "HALO_DOWNLOADED_MAPS", _environment_value, _platform_all,
+		"Maps played as downloaded ones (until the game downloads maps itself):\n"
+		"their names, as the game names them (bloodgulch, hugeass@ce), separated\n"
+		"by commas, or \"*\" for every map. A downloaded map's scripts may not\n"
+		"change the player's settings or other players' games (debug.txt names\n"
+		"what they were refused)." },
 
 	{ "paths.data", _config_string, "\"\"", "HALO_DATA_ROOT", _environment_value, _platform_desktop,
 		"The folder holding the game data's maps folder; empty looks in the\n"
@@ -470,6 +518,13 @@ static const struct config_setting config_settings[] =
 		"\"on\", \"shields_only\" or \"explosives_only\" (FRIENDLY FIRE in\n"
 		"co-op's Server Setup > Co-op Options writes its choice here). Their AI\n"
 		"allies they always can, as in the campaign." },
+	{ "network.coop_own_friendly_fire", _config_boolean, "true", "HALO_NET_COOP_OWN_FRIENDLY_FIRE",
+		_environment_value, _platform_all,
+		"Whether this machine's players hurt, and are hurt by, the other players\n"
+		"of an online co-op game: two players hurt each other only if both have\n"
+		"it true. FRIENDLY FIRE in that game's pause menu writes its choice\n"
+		"here. A player away from the controls for over 70 seconds is hurt by\n"
+		"every player, whatever either chose." },
 	{ "network.coop_player_collisions", _config_boolean, "true", "HALO_NET_COOP_PLAYER_COLLISIONS", _environment_value,
 		_platform_all,
 		"Whether the players of an online co-op game bump into each other;\n"
@@ -483,6 +538,17 @@ static const struct config_setting config_settings[] =
 		"\"multiplier\" (each is coop_enemies_multiplier times as large, for any\n"
 		"number of players). EXTRA ENEMIES in co-op's Server Setup > Co-op\n"
 		"Options writes its choice here." },
+	{ "network.coop_pickups", _config_string, "\"none\"", "HALO_NET_COOP_PICKUPS", _environment_value, _platform_all,
+		"Extra campaign weapons, grenades, health kits, overshields and camouflage.\n"
+		"Modes: \"none\", \"per_player\" (coop_enemies percent per extra player),\n"
+		"or \"multiplier\" (coop_enemies_multiplier times as many), up to 8 times\n"
+		"the original pickups. Only safe nearby places receive copies." },
+	{ "network.coop_vehicles", _config_string, "\"none\"", "HALO_NET_COOP_VEHICLES", _environment_value, _platform_all,
+		"Extra campaign vehicles: \"none\", \"per_player\" or \"multiplier\".\n"
+		"After a player clears its unloaded starting place by both bounding\n"
+		"radii plus 15 percent, make one more there, up to\n"
+		"floor((players - 1) * coop_enemies * 2 / 300) extras, or floor((coop_enemies_multiplier - 1) * 2 / 3) in static mode.\n"
+		"The host alone creates them, and waits while the starting place is blocked." },
 	{ "network.coop_enemies", _config_integer, "50", "HALO_NET_COOP_ENEMIES", _environment_value, _platform_all,
 		"Online co-op's extra enemies per player, a percentage: for each player\n"
 		"past the first, each squad of enemies a level places gets this much of\n"
@@ -490,8 +556,9 @@ static const struct config_setting config_settings[] =
 		"Server Setup > Co-op Options writes its choice here." },
 	{ "network.coop_enemies_multiplier", _config_integer, "2", "HALO_NET_COOP_ENEMIES_MULTIPLIER", _environment_value,
 		_platform_all,
-		"Online co-op's static multiplier of its enemies: each squad of enemies\n"
-		"a level places is this many times as large (2 to 32). MULTIPLIER in\n"
+		"Online co-op's shared static multiplier (2 to 32). Pickups are capped\n"
+		"at 8 times their original count; extra vehicle growth uses two thirds\n"
+		"of (multiplier - 1), rounded down. MULTIPLIER in\n"
 		"co-op's Server Setup > Co-op Options writes its choice here." },
 	{ "network.brokers_file", _config_string, "\"brokers.txt\"",
 		"HALO_NET_BROKERS_FILE", _environment_value, _platform_all,

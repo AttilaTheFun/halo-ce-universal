@@ -129,6 +129,59 @@ float halo_screen_scale(void)
 	return screen_scale[0] > screen_scale[1] ? screen_scale[0] : screen_scale[1];
 }
 
+/* display.model_detail, the same choice the GL frontend makes. The Mac
+guest does not link that file. Stock keeps the Xbox's 480-line measure.
+Native and highest measure in this display's lines. */
+enum
+{
+	_model_detail_stock,
+	_model_detail_native,
+	_model_detail_highest,
+};
+
+static int model_detail = -1;
+static unsigned long model_detail_read_at;
+
+static int model_detail_setting(void)
+{
+	if (model_detail < 0 || model_detail_read_at != config_changes())
+	{
+		const char *setting = config_string("display.model_detail");
+		int value = !strcmp(setting, "native") ? _model_detail_native :
+			!strcmp(setting, "highest") ? _model_detail_highest : _model_detail_stock;
+
+		model_detail_read_at = config_changes();
+		if (value != model_detail)
+		{
+			if (value == _model_detail_stock && strcmp(setting, "stock"))
+				platform_log("model detail: \"%s\" is unknown, so stock", setting);
+			else
+				platform_log("model detail: %s", setting);
+		}
+		model_detail = value;
+	}
+	return model_detail;
+}
+
+int halo_model_detail_stock(void)
+{
+	return model_detail_setting() == _model_detail_stock;
+}
+
+float halo_model_detail_scale(int level)
+{
+	float display_scale;
+
+	model_detail_setting();
+	if (model_detail == _model_detail_stock)
+		return 1.0f;
+	if (model_detail == _model_detail_highest && level)
+		return 1.0e6f;
+	(void)halo_screen_width();
+	display_scale = screen_scale[1];
+	return display_scale > 1.0f ? display_scale : 1.0f;
+}
+
 #define SHADOW_MAP_SIZE 128
 #define SHADOW_MAP_MAXIMUM_SCALE 8
 static long shadow_scale;

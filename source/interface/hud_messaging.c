@@ -465,6 +465,9 @@ static void render_state_text(
 	rectangle2d *cursor_bounds,
 	wchar_t const *text,
 	boolean custom);
+/* port: the high-res controller button, port/linux/game/hud_hires_tags.c */
+boolean hud_hires_button_draw(struct icon_hud_element_definition const *icon,
+	rectangle2d *cursor, pixel32 color);
 static void render_state_bitmap(
 	rectangle2d *bounds,
 	rectangle2d *cursor_bounds,
@@ -532,6 +535,11 @@ static void render_state_bitmap(
 	real scale;
 	point2d point;
 
+	/* port: the high-res button, before the map's own picture. a Custom
+	Edition map's message icons have 13 sequences to the Xbox's 24, so a
+	prompt past them was not drawn */
+	if (hud_hires_button_draw(icon, cursor_bounds, color))
+		return;
 	if (icon->frame_rate)
 		frame_index = game_time_get() / icon->frame_rate;
 	hud_retrieve_bitmap_and_bounding_rect(
@@ -543,6 +551,7 @@ static void render_state_bitmap(
 	if (bitmap && _texture_cache_bitmap_get_hardware_format(
 		(struct bitmap_data *)bitmap, FALSE, TRUE))
 	{
+		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index);
 		scale = local_player_count() > 1 ? 0.75f : 1.0f;
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0);
 		point.y = (short)(cursor_bounds->y1 - icon->offset.y * scale);

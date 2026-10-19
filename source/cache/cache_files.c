@@ -603,7 +603,7 @@ long cache_files_register_runtime_ui_tag(
 	struct cache_file_tag_instance *instance;
 
 	if (!cache_file_globals.tags_loaded || !global_tag_instances ||
-		(group_tag != 'DeLa' && group_tag != 'ustr') ||
+		(group_tag != 'DeLa' && group_tag != 'ustr' && group_tag != 'bitm') ||
 		!name || !name[0] || !definition)
 	{
 		return NONE;
@@ -1452,9 +1452,9 @@ long scenario_tags_load(
 			}
 			/* port: the bitmaps the high-res HUD stands for (port/linux/game/hud_hires_tags.c) */
 			{
-				extern void hud_hires_tags_loaded(void);
+				extern void hud_hires_tags_loaded(long scenario_index);
 
-				hud_hires_tags_loaded();
+				hud_hires_tags_loaded(cache_file_globals.tag_header->scenario_tag_index);
 			}
 			/* port: the mods' sounds, bitmaps, text and models played over
 			the map's, last, over the menus' tags too, and with the high-res

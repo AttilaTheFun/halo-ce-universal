@@ -77,6 +77,8 @@ void host_sdl_get_clipboard_text(char *buffer, unsigned int size);
 /* the keyboard's keys by name (the controls' bindings, xinput_sdl.c) */
 void host_sdl_scancode_name(int scancode, char *buffer, unsigned int size);
 int host_sdl_scancode_from_name(const char *name);
+/* the character printed on that key, for the menus' labels */
+int host_sdl_key_from_scancode(int scancode);
 int host_sdl_show_toast(const char *message, int duration, int gravity, int x, int y);
 int host_sdl_show_simple_message_box(unsigned int flags, const char *title, const char *message);
 /* SDL_ShowMessageBox of up to three buttons (SDL_MessageBoxData has not the

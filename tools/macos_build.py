@@ -329,7 +329,6 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
         (ROOT / "build/android/third_party/musl-1.2.5/COPYRIGHT", "musl.txt"),
         (ROOT / "port/third_party/kcp/LICENSE", "KCP.txt"),
         (ROOT / "port/third_party/miniupnpc/LICENSE", "miniupnpc.txt"),
-        (ROOT / "port/third_party/extract-xiso/LICENSE.TXT", "extract-xiso.txt"),
         (ROOT / "port/third_party/tomlc17/LICENSE", "tomlc17.txt"),
         (ROOT / "port/third_party/mbedtls/LICENSE", "mbedtls.txt"),
         (SPARKLE_DIRECTORY / "LICENSE", "Sparkle.txt"),

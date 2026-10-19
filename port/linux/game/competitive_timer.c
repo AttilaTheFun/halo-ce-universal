@@ -1,11 +1,9 @@
 /*
 COMPETITIVE_TIMER.C
 
-A competitive map draws its match clock as three chapter titles, one for the
-minutes, the tens and the seconds, and speaks the minutes from a chain of
-else-ifs. The titles sit mid-screen and the chain used to stop the script, so
-the seconds and the callouts never happened. The clock here is one time at the
-bottom right, from the game's own ticks, and the announcer is left running.
+A competitive match draws one clock at the bottom right, from the game's own
+ticks, on whichever map it started. A map that still speaks from talking_timer
+and power_call is left running. Classic games do not draw the clock.
 */
 
 #include "cseries.h"
@@ -14,6 +12,7 @@ bottom right, from the game's own ticks, and the announcer is left running.
 #include "game/game.h"
 #include "game/players.h"
 #include "interface/hud.h"
+#include "interface/hud_messaging.h"
 #include "interface/hud_definitions.h"
 #include "interface/ui_widget.h"
 #include "memory/data.h"
@@ -22,6 +21,7 @@ bottom right, from the game's own ticks, and the announcer is left running.
 #include "text/draw_string.h"
 #include "hs/hs.h"
 #include "custom_edition_cache.h"
+#include "competitive_rules.h"
 #include "competitive_timer.h"
 
 /* the minutes field of those titles starts at column 534 of 640, on the row
@@ -107,11 +107,14 @@ void competitive_timer_render(
 	rectangle2d bounds;
 	short shift;
 
-	if (!custom_edition_cache_is_competitive() || !game_in_progress() ||
+	/* port: the match, not the map folder. a classic game does not set it. */
+	if (!competitive_rules_active() || !game_in_progress() ||
 		ui_widgets_active() || local_player_count()<=0 || !hud_globals)
 		return;
 
 	font_index = hud_globals->messaging.single_player_font.index;
+	if (font_index==NONE)
+		font_index = hud_get_font_index();
 	if (font_index==NONE)
 		return;
 

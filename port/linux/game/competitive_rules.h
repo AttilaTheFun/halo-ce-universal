@@ -38,16 +38,20 @@ struct competitive_rules
 	unsigned char pistol_spread;    /* 0 the tag, 1 tight, 2 wide, 3 double */
 	unsigned char shotgun_spread;
 	unsigned char wall_jump;        /* a second jump off a wall while airborne */
+	unsigned char random_areas;     /* 1 draws the darker teammate respawn volumes */
 };
 
-typedef char competitive_rules_size_assert[sizeof(struct competitive_rules) == 27 ? 1 : -1];
+typedef char competitive_rules_size_assert[sizeof(struct competitive_rules) == 28 ? 1 : -1];
 
 void competitive_rules_defaults(struct competitive_rules *rules);
 struct competitive_rules *competitive_rules_editing(void);
 void competitive_rules_reset_editing(void);
 void competitive_rules_commit(void);
+/* A classic mode was chosen. The match that was started stays until then. */
+void competitive_rules_clear_session(void);
 
 boolean competitive_rules_active(void);
+boolean competitive_rules_random_areas(void);
 const struct competitive_rules *competitive_rules_live(void);
 
 void competitive_rules_begin_map(void);

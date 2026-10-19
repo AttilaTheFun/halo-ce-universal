@@ -387,7 +387,17 @@ static long current_line(struct reader *reader)
 	return (long)XML_GetCurrentLineNumber(reader->parser);
 }
 
-/* whether the element is for this platform (its platform attribute) */
+/* this build's platform, as the platform attribute names it */
+#ifdef HALO_ANDROID
+#define MENU_PLATFORM "android"
+#else
+#define MENU_PLATFORM "desktop"
+#endif
+
+/* whether the element is for this platform (its platform attribute: the
+platforms it is for, separated by spaces). web is a name the files use.
+This build is not that port, so a web row is left out. An unknown name
+still fails the menus, which is the whole set or none of it. */
 static int for_this_platform(struct reader *reader, const XML_Char **attributes)
 {
 	int index;
@@ -396,18 +406,30 @@ static int for_this_platform(struct reader *reader, const XML_Char **attributes)
 	{
 		if (!strcmp(attributes[index], "platform"))
 		{
-			const char *platform = attributes[index + 1];
+			const char *name = attributes[index + 1];
+			int found = 0;
 
-			if (strcmp(platform, "desktop") && strcmp(platform, "android"))
+			while (*name)
 			{
-				reader_error(reader, "platform=\"%s\" is not \"desktop\" or \"android\"", platform);
-				return 1;
+				size_t length = strcspn(name, " ");
+
+				if (length)
+				{
+					if ((length != 7 || strncmp(name, "desktop", 7)) && (length != 7 || strncmp(name, "android", 7)) &&
+						(length != 3 || strncmp(name, "web", 3)))
+					{
+						reader_error(reader, "platform=\"%s\" names one that is not desktop, android or web",
+							attributes[index + 1]);
+						return 1;
+					}
+					if (length == strlen(MENU_PLATFORM) && !strncmp(name, MENU_PLATFORM, length))
+						found = 1;
+				}
+				name += length;
+				while (*name == ' ')
+					name++;
 			}
-#ifdef HALO_ANDROID
-			return !strcmp(platform, "android");
-#else
-			return !strcmp(platform, "desktop");
-#endif
+			return found;
 		}
 	}
 	return 1;
@@ -555,7 +577,7 @@ static void read_strings(struct reader *reader, const XML_Char **attributes)
 {
 	struct halo_menus *menus = &reader->menus;
 	struct halo_menu_strings strings;
-	struct attribute table[] = { { "name", &strings.name } };
+	struct attribute table[] = { { "name", &strings.name }, { "map", &strings.map } };
 
 	memset(&strings, 0, sizeof(strings));
 	strings.first = menus->string_count;
@@ -572,11 +594,16 @@ static void read_string(struct reader *reader, const XML_Char **attributes, long
 {
 	struct halo_menus *menus = &reader->menus;
 	const char *text = NULL;
-	struct attribute table[] = { { "text", &text } };
+	long map = HALO_MENU_NONE, map_given = 0;
+	struct attribute table[] = { { "text", &text }, { "map", NULL, &map, &map_given } };
 
 	read_attributes(reader, "string", attributes, table, sizeof(table) / sizeof(*table));
 	if (!reader->failed && !text)
 		reader_error(reader, "a <string> needs text");
+	if (!reader->failed && map_given && (map < 0 || !menus->string_lists[owner].map))
+		reader_error(reader, "a <string>'s map= is an index in its <strings>' map list");
+	GROW(reader, menus->string_maps, menus->string_count);
+	menus->string_maps[menus->string_count] = map_given ? map : HALO_MENU_NONE;
 	GROW(reader, menus->strings, menus->string_count);
 	menus->strings[menus->string_count++] = text ? text : "";
 	menus->string_lists[owner].count++;

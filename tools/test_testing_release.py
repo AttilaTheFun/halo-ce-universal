@@ -196,7 +196,7 @@ class TestingReleaseTests(unittest.TestCase):
     def test_fork_android_apks_increment_install_code_without_enabling_updater(self):
         (self.root / ci_build.APKS["release"]).parent.mkdir(parents=True)
         (self.root / ci_build.APKS["release"]).write_bytes(b"fixture APK")
-        for dependency in ("extract-xiso", "miniupnpc"):
+        for dependency in ("miniupnpc",):
             license = self.root / "port/third_party" / dependency / "LICENSE.TXT"
             if dependency == "miniupnpc":
                 license = license.with_name("LICENSE")

@@ -52,6 +52,15 @@ SDL_Scancode SDL_GetScancodeFromName(const char *name)
 	return (SDL_Scancode)host_sdl_scancode_from_name(name);
 }
 
+SDL_Keycode SDL_GetKeyFromScancode(SDL_Scancode scancode, SDL_Keymod modstate, bool key_event)
+{
+	/* the menus ask for the key with no modifiers, as a key event, so a
+	French number row shows its numbers */
+	(void)modstate;
+	(void)key_event;
+	return (SDL_Keycode)host_sdl_key_from_scancode((int)scancode);
+}
+
 Uint64 SDL_GetTicks(void)
 {
 	return (Uint64)host_sdl_ticks();

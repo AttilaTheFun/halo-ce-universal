@@ -79,6 +79,9 @@ SCREENS = {
              "In first person, turn the view the moment the\nmouse moves, not up to two ticks later.", "desktop"),
             ("HIGH-RES HUD:", "display.high_res_hud", ON_OFF,
              "Draw the HUD from the high-res redraws; off\ndraws the game's own pictures.", None),
+            ("BUTTON STYLE:", "display.hud_button_style",
+             [("CLASSIC", "classic"), ("GEMS", "gems"), ("DARK GEMS", "menu_gems")],
+             "Classic: plain Xbox buttons. Gems: shaded Xbox\nbuttons. Dark Gems: the menu's button artwork.", None),
             ("CAMPAIGN HUD:", "display.campaign_hud", ON_OFF,
              "On a custom map, draw the campaign HUD. The reticle\nstays the map's. The next map uses the choice.", None),
             ("HIGH-RES TEXT:", "display.high_res_text", ON_OFF,
@@ -98,10 +101,14 @@ SCREENS = {
              None),
             ("PER-PIXEL LIGHTING:", "display.per_pixel_lighting", ON_OFF,
              "Light models for each pixel, without the facets\nof the Xbox's lighting for each vertex.", None),
+            ("MODEL DETAIL:", "display.model_detail", [("STOCK", "stock"), ("NATIVE", "native"), ("HIGHEST", "highest")],
+             "Stock picks models' detail by the Xbox's 480 lines;\nnative by this display's; highest, always the best.", None),
             ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
              "Shields light their surroundings as they flare,\nin the shield's own color.", None),
             ("GLOW INTENSITY:", "display.shield_glow_intensity", [("DEFAULT", "default"), ("LIGHT SHOW", "light_show")],
              "Light Show: the shield glow three times as far,\nat full from a third of the flare.", None),
+            ("MATCH TIMER:", "display.match_timer", ON_OFF,
+             "Draw a clock at the bottom right in multiplayer,\ncounting up from the start of the game.", None),
         ],
     },
     "mouse_settings": {
@@ -185,7 +192,7 @@ SCREENS = {
              "Level the view while walking.", None),
             ("BUTTON LAYOUT:", "profile.button_preset",
              [("DEFAULT", "0"), ("SWAP TRIGGERS", "1"), ("SWAP A, L TRIGGER", "2"), ("SWAP B, L TRIGGER", "3"),
-              ("SWAP B, R STICK", "4")],
+              ("SWAP B, R STICK", "4"), ("BUMPER JUMPER", "5")],
              "Which of the controller's buttons does what (not\nthe keyboard's: Controls Setup sets those).", None),
             ("STICK LAYOUT:", "profile.joystick_preset",
              [("DEFAULT", "0"), ("SOUTHPAW", "1"), ("LEGACY", "2"), ("LEGACY SOUTHPAW", "3")],
@@ -199,19 +206,27 @@ SCREENS = {
 # Video Setup's categories open ordinary settings screens. Each has the same
 # pending edits, Defaults, OK and Cancel as the other settings screens.
 _video = SCREENS["video_settings"]
-_graphics = {"display.high_res_hud", "display.campaign_hud", "display.high_res_text", "display.anti_aliasing",
-             "display.shadow_resolution", "display.per_pixel_lighting",
-             "display.shield_glow", "display.shield_glow_intensity"}
+_graphics = {"display.high_res_hud", "display.hud_button_style", "display.campaign_hud", "display.high_res_text", "display.anti_aliasing",
+             "display.shadow_resolution", "display.per_pixel_lighting", "display.model_detail",
+             "display.match_timer"}
+# (the visual modifiers: a screen of their own, Extra Effects)
+_extra_effects = {"display.shield_glow", "display.shield_glow_intensity"}
 SCREENS["video_settings/graphics"] = {
     "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 30,
     "same_place": ["anti_aliasing_android"],
     "rows": [row for row in _video["rows"] if row[1] in _graphics],
 }
-_video["rows"] = [row for row in _video["rows"] if row[1] not in _graphics]
+SCREENS["video_settings/extra_effects"] = {
+    "screen": "extra_effects_settings_screen", "header": _video["header"], "spacing": 30,
+    "rows": [row for row in _video["rows"] if row[1] in _extra_effects],
+}
+_video["rows"] = [row for row in _video["rows"] if row[1] not in _graphics | _extra_effects]
 _video["categories"] = [
     ("GRAPHICS:", "video_settings/graphics", "The HUD, text, anti-aliasing, shadows and\nlighting."),
     ("FOV AND VIEWMODELS:", "video_settings/fov_viewmodels",
      "Optional field of view and first-person weapon\ndisplay settings. Defaults keep the original view."),
+    ("EXTRA EFFECTS:", "video_settings/extra_effects",
+     "Visual modifiers the stock game does not\nhave, such as the shield glow."),
 ]
 SCREENS["video_settings/fov_viewmodels"] = {
     "screen": "fov_viewmodel_settings_screen", "header": _video["header"], "spacing": 30,
@@ -609,7 +624,15 @@ MT = "main_menu/multiplayer_type_select"
 # and their helps after the five of its own (its helps are the rows' values'
 # in turn: menu_functions.c's gametype_option_help)
 SLAYER_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit/slayer_edit"
+PLAYER_EDIT = "main_menu/settings_select/multiplayer_setup/player_options_edit"
+AIM_ASSIST_HELP = [
+    "Players keep their current mouse aim assist setting.",
+    "Disable mouse aim assist for mouse/keyboard players.\\nController and touch aim assist are unchanged.",
+]
+
 STRING_INSERTS = {
+    f"{PLAYER_EDIT}/player_options_labels": [(8, ["AIM ASSIST:"])],
+    f"{PLAYER_EDIT}/cap_player_options": [(28, AIM_ASSIST_HELP)],
     # (Teamplay Options' voice chat and vote kick rows, after its own:
     # TEAMPLAY_ROWS)
     f"{TEAMPLAY_EDIT}/teamplay_options_labels": [(3, [label for _, label, *_ in TEAMPLAY_ROWS])],
@@ -650,7 +673,7 @@ STRING_OVERRIDES.update({
         "Host a game on your LAN\\nonly.",
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
-        "A separate game. Its maps are\\nin competitive_maps, next to\\ncustom_maps.",
+        "A separate game on the classic\\nmaps and the custom maps.",
     ],
     "main_menu/gametype_select/var_gametype_banks": ["STANDARD", "CUSTOM"],
     # (the PC's weapon sets, then the Xbox's NO GRENADES: menu_functions.c's
@@ -691,6 +714,24 @@ STRING_OVERRIDES.update({
         "SHORT RANGE", "HUMAN", "COVENANT", "CLASSIC", "HEAVY WEAPONS", "NO GRENADES"],
 })
 
+# which of STRING_OVERRIDES' strings say what one of the PC version's own
+# says: its index in the PC version's list, or None (the port's own). A map
+# in another language than English has those in its language (map=,
+# menu_tags.c's map_strings); the inserted strings (STRING_INSERTS) are the
+# port's own, the rest of their lists the PC version's
+OVERRIDE_ORIGINALS = {
+    f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
+    f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
+    f"{MT}/multiplayer_option_descriptions": [0, 1, None, None, 4, None, 5],
+    "main_menu/gametype_select/var_gametype_banks": [0, 2],
+    "main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_labels": [0, 1, 2, 3, 4] + [None] * 4,
+    # (the first's note that infinite grenades work only with 4 players or
+    # fewer is left out: not so here)
+    "main_menu/settings_select/multiplayer_setup/item_options_edit/cap_item_options":
+        [None] + list(range(1, 15)) + [None, 15, 16] + [None] * 24,
+    "main_menu/settings_select/multiplayer_setup/item_options_edit/var_weapon_set": list(range(13)) + [None],
+}
+
 # the map lists' first row: SINGLEPLAYER, MULTIPLAYER, CUSTOM SINGLEPLAYER or
 # CUSTOM MULTIPLAYER maps (_map_kind)
 MAP_KIND_CHOOSER = "main_menu/new_select/list_item_0_map_kind"
@@ -706,6 +747,10 @@ WIDGET_PATCHES = {
     # (the main menu's MODS, before Quit: _mods)
     "main_menu/main_menu_select_list": {"insert_before": {"main_menu/main_menu_item_quit_game": [
         f'<child widget="main_menu/main_menu_item_mods" x="{MODS_ITEM_PLACE[0]}" y="{MODS_ITEM_PLACE[1]}"/>']}},
+    f"{PLAYER_EDIT}/player_options_menu": {"insert_before": {
+        f"{PLAYER_EDIT}/player_button_bar": [
+            f'<child widget="{PLAYER_EDIT}/op_aim_assist" x="54" y="313"/>']}},
+    f"{PLAYER_EDIT}/player_options_help": {"set": {"top": 345, "height": 60}},
     # (the profile settings' picture: on Gamepad Setup's row, the profile's
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)
@@ -730,7 +775,6 @@ WIDGET_PATCHES = {
     # (Co-op, after Create Game's: _coop)
     f"{MT}/multiplayer_type_select_list": {"insert_before": {
         f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="309"/>'],
-        f"{MT}/multiplayer_type_button_bar": [f'<child widget="{MT}/multiplayer_type_competitive_item" y="391"/>'],
     }},
     # (the Map screen's and New Game's lists: SINGLEPLAYER or MULTIPLAYER
     # maps, the first row's chooser's (_map_kind); B on the Map screen goes
@@ -841,10 +885,12 @@ def title_backdrop(width: float) -> str:
 # hold each number of buttons, one frame each (the Xbox's 2-button box is
 # 159 units high, and each button 35 more)
 PAUSE_BOX_BUTTONS = [3, 4]
-# the campaign pause box, tall enough for five rows at the profile settings
-# list's pitch (33) with the prompts still under the last row: the stock box
-# is 159, and those rows need 48 more
-PAUSE_BOX_EXTRA_HEIGHTS = [207]
+# the campaign pause box, tall enough for five rows (SETTINGS added) or six
+# (network co-op's FRIENDLY FIRE too) at the PC version's pause menu's pitch
+# (30) with the prompts still under the last row: the stock box is 159, and
+# those rows need 36 and 66 more (menu_tags.c's pause_campaign_patch); the
+# mission objectives' box beside it grows with it
+PAUSE_BOX_EXTRA_HEIGHTS = [195, 225]
 
 
 def pause_box_height(buttons: int) -> int:
@@ -1160,16 +1206,26 @@ COOP_SETUP_SCREENS = [
             "Damage from the other players will only reduce\\nshields. Health will be unaffected.",
             "Players can be hurt by damage from explosives\\nfired by the other players.",
         ]),
-        ("coop_extra_enemies", "EXTRA ENEMIES:", ["NONE", "PER PLAYER", "STATIC MULTIPLIER"], [
+        ("coop_extra_enemies", "EXTRA ENEMIES:", ["PER PLAYER", "STATIC MULTIPLIER", "NONE"], [
+            "Enemy squads grow with the players: by the value of\\n'Per Player' for each player past the first.",
+            "Enemy squads use 'Multiplier', however many players\\nthere are.",
             "Enemy squads are as the campaign has them.",
-            "Enemy squads grow with the players: by the amount\\nbelow for each player past the first.",
-            "Enemy squads are the amount below times as large,\\nhowever many players there are.",
         ]),
-        ("coop_enemies_per_player", "PER PLAYER:", [f"{value}%" for value in COOP_ENEMIES_PERCENTAGES],
-         ["For each player past the first, enemy squads get\\nthis much more of themselves (100%: as many again)."] *
-         len(COOP_ENEMIES_PERCENTAGES)),
+        ("coop_extra_pickups", "EXTRA PICKUPS:", ["PER PLAYER", "STATIC MULTIPLIER", "NONE"], [
+            "Pickups grow with the players: by the value of\\n'Per Player' for each player past the first.",
+            "Pickups use 'Multiplier', up to eight times as many,\\nhowever many players there are.",
+            "Pickups are as the campaign has them.",
+        ]),
+        ("coop_extra_vehicles", "EXTRA VEHICLES:", ["PER PLAYER", "STATIC MULTIPLIER", "NONE"], [
+            "Vehicles respawn after being driven a short distance\\nbased on the number of players: by two thirds the value of\\n'Per Player' for each player past the first.",
+            "Vehicles respawn after being driven a short distance,\\nwith extra copies equal to ('Multiplier' - 1) * 2/3,\\nrounded down, however many players there are.",
+            "Vehicles are as the campaign has them.",
+        ]),
         ("coop_enemies_multiplier", "MULTIPLIER:", [f"{value}X" for value in COOP_ENEMIES_MULTIPLIERS],
-         ["Each enemy squad is this many times as large."] * len(COOP_ENEMIES_MULTIPLIERS)),
+         ["Static amounts for the options set to this mode.\\nPickups are capped at eight times as many."] * len(COOP_ENEMIES_MULTIPLIERS)),
+        ("coop_enemies_per_player", "PER PLAYER:", [f"{value}%" for value in COOP_ENEMIES_PERCENTAGES],
+         ["For each player past the first, options set to Per\\nPlayer get this much more (100%: as many again)."] *
+         len(COOP_ENEMIES_PERCENTAGES)),
         ("coop_player_collisions", "PLAYER COLLISIONS:", ["ON", "OFF"], [
             "Players bump into each other, as in the campaign.",
             "Players walk through each other, so that no one\\nblocks a doorway. The AI's characters still block.",
@@ -1200,7 +1256,7 @@ TITLES.update({f"{MT}/server_settings/{key}/header_{key}": title
                for key, title, _, _ in [*COOP_SETUP_SCREENS, MAP_SHARE_SETUP]})
 # (the rows of a co-op options screen in one place, the one shown: PER
 # PLAYER's and MULTIPLIER's, by EXTRA ENEMIES')
-SETUP_OPTION_SAME_PLACE = {"coop_enemies_multiplier"}
+SETUP_OPTION_SAME_PLACE = set()
 
 
 def _setup_option_screen(base: str, key: str, rows: list) -> list:
@@ -1512,6 +1568,27 @@ def _item_options_extras() -> list:
     return lines
 
 
+def _player_options_extras() -> list:
+    """The host's aim-assist policy, hidden while editing saved gametypes."""
+    base = PLAYER_EDIT
+    lines = _widget(f"{base}/op_aim_assist", [("width", 512), ("height", 28),
+        ("flags", "pass_unhandled_to_focused_child"), ("bitmap", "bitmaps/option_bkds"),
+        ("color", "#FF2896FF")], [f'<child widget="{base}/aim_assist_label"/>',
+        f'<child widget="{base}/aim_assist_spinner" x="286" y="1"/>'])
+    lines += _widget(f"{base}/aim_assist_label", [("type", "text"), ("controller", 1),
+        ("width", 280), ("height", 22), ("string_list", f"{base}/player_options_labels"),
+        ("string_index", 8), ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
+        ("text_x", 13), ("text_y", 4)], [])
+    lines += _widget(f"{base}/aim_assist_spinner", [("type", "spinner"), ("top", 2),
+        ("width", 206), ("height", 20), ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+        ("string_list", f"{base}/var_aim_assist"), ("font", "ui\\large_ui"),
+        ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4),
+        ("list_flags", "items_from_strings"), ("header_bitmap", "bitmaps/arrow_sm_left"),
+        ("footer_bitmap", "bitmaps/arrow_sm_right"), ("header_bounds", "7 -13 19 -7"),
+        ("footer_bounds", "7 208 19 214")], ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+    return lines + _strings(f"{base}/var_aim_assist", ["ALLOWED", "BLOCK M+KB"])
+
+
 def _teamplay_options_extras() -> list:
     """Teamplay Options' rows of the port's: the host's voice chat
     (port/linux/game/network_voice.c) and vote kicks (network_votekick.c),
@@ -1638,6 +1715,7 @@ def _competitive_rule_pages(base: str) -> list:
     ]
     world = [
         ("random_pct", "RANDOM % VISIBLE", "NO|YES"),
+        ("random_areas", "RANDOM AREAS", "NO|YES"),
         ("omit_first", "OMIT FIRST SPAWN", "NO|YES|POWER"),
         ("item_spawn", "ITEM SPAWN", "OFF|15 S|30 S|45 S|60 S|90 S|120 S"),
         ("camo", "CAMO VARIANT", "XBOX|MCC|CUSTOM"),
@@ -1706,11 +1784,31 @@ def _competitive_rule_pages(base: str) -> list:
     return lines
 
 
+def _competitive_field(base: str, key: str, label: str, run: str) -> list:
+    """a server row whose value is typed (the screen's back ends the edit)"""
+    lines = _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
+                                         ("flags", "pass_unhandled_to_focused_child"),
+                                         ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                    [f'<on event="a" run="{run}"/>', f'<on event="start" run="{run}"/>', *FIELD_BACK,
+                     '<on event="left_mouse" run="mouse emit accept event"/>',
+                     f'<child widget="{base}/{key}_label"/>',
+                     f'<child widget="{base}/{key}_value" x="230" y="1"/>'])
+    lines += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 220),
+                                             ("height", 22), ("text", label), ("font", "ui\\large_ui"),
+                                             ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    lines += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", 270),
+                                             ("height", 22), ("font", "ui\\small_ui"), ("color", "#FF2896FF"),
+                                             ("align", "center"), ("text_y", 5), ("text_flags", "no_focus_test")], [])
+    return lines
+
+
 def _competitive_screen() -> list:
-    """Competitive, its own game. Maps come from competitive_maps. Classic
-    gametypes and custom_maps are not this screen."""
+    """Competitive, its own game. The list is multiplayer or custom
+    multiplayer, then the server page (name, players, listing). Classic
+    gametypes are not this screen."""
     base = "main_menu/settings_select/multiplayer_setup/competitive_options_edit"
     lobby = f"{MT}/lobby/lobby_screen"
+    server = f"{base}/competitive_server_screen"
     lines = _widget(f"{base}/competitive_screen", [("width", 640), ("height", 480),
                                                    ("flags", "pass_unhandled_to_focused_child pause_game"),
                                                    ("bitmap", "bitmaps/gradient")],
@@ -1719,7 +1817,8 @@ def _competitive_screen() -> list:
     lines += _widget(f"{base}/header_competitive", [("type", "text"), ("controller", 1), ("left", 51), ("top", 18),
                                                     ("width", 400), ("height", 36), ("text", "COMPETITIVE"),
                                                     ("font", "ui\\large_ui"), ("color", "#FF2896FF")], [])
-    rows = [f'<child widget="{base}/list_item_{index}" x="51" y="{73 + 33 * index}"/>' for index in range(8)]
+    rows = [f'<child widget="{base}/competitive_kind" x="51" y="73"/>']
+    rows += [f'<child widget="{base}/list_item_{index}" x="51" y="{106 + 33 * index}"/>' for index in range(7)]
     lines += _widget(f"{base}/competitive_list", [("type", "column_list"), ("width", 640), ("height", 480),
                                                   ("flags", "pass_unhandled_to_focused_child up_down_tabs_children"),
                                                   ("description", f"{base}/competitive_desc")],
@@ -1728,13 +1827,24 @@ def _competitive_screen() -> list:
                       '<on event="b" run="port competitive leave" back="true"/>',
                       '<on event="back" run="port competitive leave" back="true"/>'] + rows +
                      [f'<child widget="{base}/map_button_bar" y="414"/>'])
-    for index in range(8):
+    lines += _widget(f"{base}/competitive_kind", [("width", 280), ("height", 28),
+                                                  ("flags", "pass_unhandled_to_focused_child"),
+                                                  ("bitmap", "bitmaps/option_bkds_sm"), ("color", "#FF2896FF")],
+                     [f'<child widget="{base}/competitive_kind_spinner" x="6" y="2"/>'])
+    lines += _widget(f"{base}/competitive_kind_spinner",
+                     [("type", "spinner"), ("width", 268), ("height", 22), ("flags", "left_right_tabs_items"),
+                      ("strings", "MULTIPLAYER|CUSTOM MULTIPLAYER"), ("font", "ui\\large_ui"),
+                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 1),
+                      ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 258 19 264")],
+                     ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+    for index in range(7):
         lines += _widget(f"{base}/list_item_{index}", [("type", "text"), ("width", 280), ("height", 28),
                                                        ("bitmap", "bitmaps/list_item_bkd"),
                                                        ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
                                                        ("text_x", 13), ("text_y", 5)],
-                         [f'<on event="a" run="port competitive choose" open="{base}/competitive_setup_screen"/>',
-                          f'<on event="start" run="port competitive choose" open="{base}/competitive_setup_screen"/>',
+                         [f'<on event="a" run="port competitive choose" open="{server}"/>',
+                          f'<on event="start" run="port competitive choose" open="{server}"/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>'])
     lines += _widget(f"{base}/competitive_desc", [("width", 640), ("height", 480)],
                      [f'<child widget="{base}/competitive_help" x="360" y="90"/>'])
@@ -1742,9 +1852,10 @@ def _competitive_screen() -> list:
                                                   ("string_list", f"{base}/competitive_help_strings"),
                                                   ("font", "ui\\small_ui"), ("color", "#FF2896FF")], [])
     lines += _strings(f"{base}/competitive_help_strings", [
-        "Put this game's maps in\\ncompetitive_maps, next to\\ncustom_maps.",
-        "This file is not a multiplayer\\nmap this game can start.",
-        "Anniversary shot movement.\\nClassic multiplayer is left\\nas it is.",
+        "No maps of this kind\\nare installed.",
+        "This map cannot be started.",
+        "This map. Classic\\nmultiplayer is left as it is.",
+        "Left and right choose multiplayer\\nmaps or custom maps.",
     ])
     lines += _widget(f"{base}/map_button_bar", [("type", "column_list"), ("width", 640), ("height", 28),
                                                 ("flags", "pass_unhandled_to_focused_child left_right_tabs_items")],
@@ -1762,6 +1873,7 @@ def _competitive_screen() -> list:
                                             ("flags", "pass_unhandled_to_focused_child up_down_tabs_children"),
                                             ("description", f"{base}/setup_desc")],
                      ['<data input="port competitive setup"/>',
+                      '<on event="created" run="port competitive setup open"/>',
                       '<on event="b" back="true"/>',
                       '<on event="back" back="true"/>',
                       f'<child widget="{base}/rules_row" x="54" y="73"/>',
@@ -1860,6 +1972,113 @@ def _competitive_screen() -> list:
                       f'<on event="start" run="port competitive start" open="{lobby}"/>',
                       '<on event="left_mouse" run="mouse emit accept event"/>'])
     lines += _competitive_rule_pages(base)
+    share = f"{MT}/server_settings/map_share_options/map_share_options_screen"
+    lines += _widget(f"{base}/competitive_server_screen", [("width", 640), ("height", 480),
+                                                           ("flags", "pass_unhandled_to_focused_child pause_game"),
+                                                           ("bitmap", "bitmaps/gradient")],
+                     [f'<child widget="{base}/server_list"/>',
+                      f'<child widget="{base}/header_server"/>'])
+    lines += _widget(f"{base}/header_server", [("type", "text"), ("controller", 1), ("left", 51), ("top", 18),
+                                               ("width", 400), ("height", 36), ("text", "SERVER SETUP"),
+                                               ("font", "ui\\large_ui"), ("color", "#FF2896FF")], [])
+    lines += _widget(f"{base}/server_list", [("type", "column_list"), ("width", 640), ("height", 480),
+                                             ("flags", "pass_unhandled_to_focused_child up_down_tabs_children"),
+                                             ("description", f"{base}/server_desc")],
+                     ['<data input="port competitive server"/>',
+                      '<on event="created" run="port competitive server open"/>',
+                      '<on event="b" run="gamespy back handler"/>',
+                      '<on event="back" run="gamespy back handler"/>',
+                      f'<child widget="{base}/op_server_name" x="54" y="73"/>',
+                      f'<child widget="{base}/op_max_players" x="54" y="106"/>',
+                      f'<child widget="{base}/op_invite" x="54" y="139"/>',
+                      f'<child widget="{base}/op_listing" x="54" y="172"/>',
+                      f'<child widget="{base}/op_password" x="54" y="205"/>',
+                      f'<child widget="{base}/op_map_share" x="54" y="238"/>',
+                      f'<child widget="{base}/op_game_rules" x="54" y="271"/>',
+                      f'<child widget="{base}/server_button_bar" y="414"/>'])
+    lines += _competitive_field(base, "server_name", "GAME NAME", "ss edit server name")
+    lines += _widget(f"{base}/op_max_players", [("width", 512), ("height", 28),
+                                                ("flags", "pass_unhandled_to_focused_child"),
+                                                ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                     [f'<child widget="{base}/max_players_label"/>',
+                      f'<child widget="{base}/max_players_spinner" x="250" y="1"/>'])
+    lines += _widget(f"{base}/max_players_label", [("type", "text"), ("controller", 1), ("width", 240),
+                                                   ("height", 22), ("text", "MAXIMUM PLAYERS"),
+                                                   ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
+                                                   ("text_x", 13), ("text_y", 4)], [])
+    lines += _widget(f"{base}/max_players_spinner",
+                     [("type", "spinner"), ("top", 2), ("width", 230), ("height", 20),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                      ("strings", "|".join(str(count) for count in MAXIMUM_PLAYERS)),
+                      ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("align", "center"), ("text_y", 1),
+                      ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 220 19 226")],
+                     ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+    lines += _competitive_field(base, "invite", "INVITE LINK", "ss copy invite")
+    lines += _widget(f"{base}/op_listing", [("width", 512), ("height", 28),
+                                            ("flags", "pass_unhandled_to_focused_child"),
+                                            ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                     [f'<child widget="{base}/listing_label"/>',
+                      f'<child widget="{base}/listing_spinner" x="250" y="1"/>'])
+    lines += _widget(f"{base}/listing_label", [("type", "text"), ("controller", 1), ("width", 240),
+                                               ("height", 22), ("text", "LISTING"), ("font", "ui\\large_ui"),
+                                               ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    lines += _widget(f"{base}/listing_spinner",
+                     [("type", "spinner"), ("top", 2), ("width", 230), ("height", 20),
+                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                      ("strings", "PUBLIC|PRIVATE"), ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
+                      ("align", "center"), ("text_y", 1),
+                      ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
+                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 220 19 226")],
+                     ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+    lines += _competitive_field(base, "password", "PASSWORD", "ss edit server password")
+    lines += _widget(f"{base}/op_map_share", [("width", 512), ("height", 28),
+                                              ("flags", "pass_unhandled_to_focused_child"),
+                                              ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                     [f'<on event="a" open="{share}"/>', f'<on event="start" open="{share}"/>',
+                      '<on event="left_mouse" run="mouse emit accept event"/>',
+                      f'<child widget="{base}/map_share_label"/>'])
+    lines += _widget(f"{base}/map_share_label", [("type", "text"), ("controller", 1), ("width", 300),
+                                                 ("height", 22), ("text", "MAP SHARING"), ("font", "ui\\large_ui"),
+                                                 ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    lines += _widget(f"{base}/op_game_rules", [("width", 512), ("height", 28),
+                                               ("flags", "pass_unhandled_to_focused_child"),
+                                               ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                     [f'<on event="a" run="port competitive prepare" open="{base}/competitive_setup_screen"/>',
+                      f'<on event="start" run="port competitive prepare" open="{base}/competitive_setup_screen"/>',
+                      '<on event="left_mouse" run="mouse emit accept event"/>',
+                      f'<child widget="{base}/game_rules_label"/>'])
+    lines += _widget(f"{base}/game_rules_label", [("type", "text"), ("controller", 1), ("width", 300),
+                                                  ("height", 22), ("text", "GAME RULES"), ("font", "ui\\large_ui"),
+                                                  ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+    lines += _widget(f"{base}/server_desc", [("width", 640), ("height", 480)],
+                     [f'<child widget="{base}/server_help" x="68" y="320"/>'])
+    lines += _widget(f"{base}/server_help", [("type", "text"), ("controller", 1), ("width", 482), ("height", 80),
+                                             ("string_list", f"{base}/server_help_strings"),
+                                             ("font", "ui\\small_ui"), ("color", "#FF2896FF")], [])
+    lines += _strings(f"{base}/server_help_strings", [
+        "",
+        "The name the game shows in the lists of games.\\nEnter changes it.",
+        "The most players the game takes (up to 128).",
+        "Players join this game by its invite link.\\nEnter copies the link.",
+        "Anyone can see and join your game: it is listed\\nin everyone's Server Browser.",
+        "Only players with your invite link can join.",
+        "Players from the Server Browser must type it to\\njoin. Enter sets it.",
+        "Sending players who join without the map the map.",
+        "Slayer, CTF, oddball or crazy king, and the\\ncompetitive rules. A classic gametype is not used.",
+    ])
+    lines += _widget(f"{base}/server_button_bar", [("type", "column_list"), ("width", 640), ("height", 28),
+                                                   ("flags", "pass_unhandled_to_focused_child left_right_tabs_items")],
+                     ['<data input="common button bar update"/>',
+                      f'<child widget="{base}/server_ok" x="380" y="1"/>',
+                      '<child widget="common_button_back" x="510" y="1"/>'])
+    lines += _widget(f"{base}/server_ok", [("type", "text"), ("width", 128), ("height", 24),
+                                           ("bitmap", "bitmaps/text_button_background"), ("text", "START GAME"),
+                                           ("font", "ui\\small_ui"), ("color", "#FFFFFFFF"), ("align", "center"),
+                                           ("text_y", 2)],
+                     [f'<on event="a" run="port competitive start" open="{lobby}"/>',
+                      f'<on event="start" run="port competitive start" open="{lobby}"/>',
+                      '<on event="left_mouse" run="mouse emit accept event"/>'])
     lines += _widget(f"{MT}/multiplayer_type_competitive_item", [("type", "text"), ("left", 51), ("width", 232),
                                                                  ("height", 32), ("bitmap", "bitmaps/list_item_bkd"),
                                                                  ("text", "COMPETITIVE"), ("font", "ui\\large_ui"),
@@ -1882,6 +2101,7 @@ def multiplayer_files() -> dict:
         f"{MT}/coop".replace("/", ".") + ".xml": head + _coop() + ["</menus>", ""],
         "main_menu/new_select".replace("/", ".") + ".port.xml": head + _map_kind() + ["</menus>", ""],
         "main_menu/settings_select/multiplayer_setup/item_options_edit".replace("/", ".") + ".port.xml": head + _item_options_extras() + ["</menus>", ""],
+        PLAYER_EDIT.replace("/", ".") + ".port.xml": head + _player_options_extras() + ["</menus>", ""],
         TEAMPLAY_EDIT.replace("/", ".") + ".port.xml": head + _teamplay_options_extras() + ["</menus>", ""],
         "main_menu/settings_select/multiplayer_setup/competitive_options_edit".replace("/", ".") + ".xml":
             head + _competitive_screen() + ["</menus>", ""],

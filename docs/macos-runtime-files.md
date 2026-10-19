@@ -27,7 +27,6 @@ OpenCE.app/Contents/Resources/Licenses/KCP.txt
 OpenCE.app/Contents/Resources/Licenses/Project.txt
 OpenCE.app/Contents/Resources/Licenses/SDL3.txt
 OpenCE.app/Contents/Resources/Licenses/Sparkle.txt
-OpenCE.app/Contents/Resources/Licenses/extract-xiso.txt
 OpenCE.app/Contents/Resources/Licenses/mbedtls.txt
 OpenCE.app/Contents/Resources/Licenses/miniupnpc.txt
 OpenCE.app/Contents/Resources/Licenses/musl.txt

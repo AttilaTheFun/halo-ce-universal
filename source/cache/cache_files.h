@@ -190,8 +190,9 @@ tags are in: this build's, or a Custom Edition map's own */
 boolean cache_file_tag_cache_contains(void const *address, long size);
 
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
-/* Native UI definitions can reuse the stock widget engine without changing
-the map's tag table or checksum. Only DeLa and ustr are accepted. The name and
+/* Native definitions can reuse the stock tag lookup without changing the
+map's tag table or checksum. DeLa, ustr, and bitm are accepted. bitm is the
+competitive spawn pad's texture, which is not in a classic map. The name and
 definition are borrowed and must remain valid until scenario_tags_unload().
 The exact same registration is idempotent; conflicting names or aliases fail.
 Returns NONE on failure. These tags are not part of the cache tag iterator. */

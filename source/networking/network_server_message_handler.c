@@ -593,6 +593,14 @@ static boolean network_game_server_handle_message_client_graceful_game_exit_post
 
 /* ---------- globals */
 
+/* port: where each machine's distributed datagrams come from, by slot.
+The host replies there, since a client may not be on the client port. */
+static struct
+{
+	struct network_connection *connection;
+	struct transport_address address;
+} network_distributed_return_addresses[MAXIMUM_NETWORK_MACHINE_COUNT];
+
 /* ---------- private code */
 
 /* port: a name a machine sends (its machine's, or a player's: they come
@@ -786,10 +794,12 @@ static void competitive_rules_send_settings(
 	struct network_game_server_client_machine *only)
 {
 	unsigned char message[40];
-	struct game_variant const *variant = game_engine_get_variant();
+	struct network_game *game = network_game_server_get_game(server);
+	struct game_variant const *variant = game ? &game->variant : NULL;
 	long index;
 
-	/* The server struct is opaque here. The live variant is the one just given to it. */
+	/* port: the engine's variant is still the map already loaded. the
+	   lobby's copy is the one this match will start. */
 	if (!server || !variant || !TEST_FLAG(variant->universal_variant.flags, _game_variant_anniversary_rules_bit))
 		return;
 	if (!competitive_rules_write_message(message, (long)sizeof(message)))
@@ -919,11 +929,16 @@ boolean network_distributed_server_send_to_machine(
 	connection = network_game_server_get_client_connection(machine);
 	if (!connection || !network_connection_active(connection))
 		return FALSE;
-	/* from the game's public datagram endpoint (the one clients send
-	their game updates to) to the client's, at the address its
-	connection comes from (the write swaps the header in place) */
+	/* to where the client's datagrams come from, else the client port at
+	its connection's address (the write swaps the header in place) */
 	network_connection_get_address(connection, &address, NULL);
 	address.port = NETWORK_GAME_CLIENT_PORT;
+	if (network_distributed_return_addresses[machine_index].connection == connection &&
+		network_distributed_return_addresses[machine_index].address.address.long_words[0] ==
+			address.address.long_words[0])
+	{
+		address = network_distributed_return_addresses[machine_index].address;
+	}
 	csmemcpy(buffer, message, size);
 	return network_game_server_write(network_game_server_get_connection(server), buffer, size, &address, 0);
 }
@@ -1667,7 +1682,7 @@ boolean network_game_server_handle_datagram(
 				if (network_game_server_get_state(server, NULL) == _network_game_server_state_ingame)
 				{
 					struct network_game_server_client_machine *client_machine =
-						network_game_server_get_client_machine_at_address(server, source_address->address.long_words[0]);
+						network_game_server_get_remote_client_machine_at_address(server, source_address->address.long_words[0]);
 
 					/* (and has loaded it, as for its reliable messages) */
 					if (client_machine && network_game_server_client_machine_is_loaded(server, client_machine))
@@ -1676,6 +1691,12 @@ boolean network_game_server_handle_datagram(
 
 						network_game_server_client_machine_heard(server, client_machine);
 						network_game_server_get_client_machine(server, client_machine, &machine_index);
+						if (VALID_INDEX(machine_index, MAXIMUM_NETWORK_MACHINE_COUNT))
+						{
+							network_distributed_return_addresses[machine_index].connection =
+								network_game_server_get_client_connection(client_machine);
+							network_distributed_return_addresses[machine_index].address = *source_address;
+						}
 						network_distributed_handle_message(machine_index, message, datagram_size);
 					}
 				}
@@ -1748,9 +1769,12 @@ static boolean network_game_server_handle_message_client_broadcast_game_search(
 	boolean result = TRUE;
 	/* port: the advertisement is broadcast (to every internet play peer
 	too): one each so often answers every machine searching, and a flood of
-	searches no more */
+	searches no more. A searcher not on the client port hears no broadcast,
+	so it is answered directly every time. */
 	static unsigned long last_advertised_time = 0;
 	unsigned long now = system_milliseconds();
+	boolean broadcast_due = !last_advertised_time || now - last_advertised_time >= GAME_ADVERTISEMENT_INTERVAL;
+	boolean answer_directly = source_address && source_address->port != NETWORK_GAME_CLIENT_PORT;
 
 	match_assert(
 		"c:\\halo\\SOURCE\\networking\\network_server_message_handler.c",
@@ -1761,7 +1785,7 @@ static boolean network_game_server_handle_message_client_broadcast_game_search(
 		struct network_game *game = network_game_server_get_game(server);
 
 		/* (the time taken only by a search answered) */
-		if (game && last_advertised_time && now - last_advertised_time < GAME_ADVERTISEMENT_INTERVAL)
+		if (game && !broadcast_due && !answer_directly)
 			return TRUE;
 		if (game)
 		{
@@ -1841,22 +1865,24 @@ static boolean network_game_server_handle_message_client_broadcast_game_search(
 				sizeof(advertisement));
 			if (reply)
 			{
-				word message_size = GET_MESSAGE_SIZE(reply->header);
 				struct network_connection *connection =
 					network_game_server_get_connection(server);
 
-				last_advertised_time = now ? now : 1;
-				result = network_game_server_write(
-					connection,
-					reply,
-					message_size,
-					&address,
-					0);
-				if (!result)
+				if (broadcast_due)
 				{
-					network_event(
-						"network_game_server_write() failed in handle_message_client_broadcast_game_search()");
+					last_advertised_time = now ? now : 1;
+					result = network_game_server_write(connection, reply, GET_MESSAGE_SIZE(reply->header), &address, 0);
+					if (!result)
+					{
+						network_event(
+							"network_game_server_write() failed in handle_message_client_broadcast_game_search()");
+					}
+					/* (the write swapped the header in place: a fresh copy for the next) */
+					reply = answer_directly ? create_network_game_message(_message_server_game_advertise,
+						&advertisement, sizeof(advertisement)) : NULL;
 				}
+				if (answer_directly && reply)
+					network_game_server_write(connection, reply, GET_MESSAGE_SIZE(reply->header), source_address, 0);
 			}
 			else
 			{

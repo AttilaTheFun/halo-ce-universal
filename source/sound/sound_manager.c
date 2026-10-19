@@ -2654,9 +2654,14 @@ long sound_new_impulse(
 		}
 		else
 		{
+			/* (port: which sound, and what it is) */
 			error(
 				_error_silent,
-				"attempt to play a sound that was not a mono 22k compressed sound or a stereo 22k or 44k compressed sound.");
+				"attempt to play a sound that was not a mono 22k compressed sound or a stereo 22k or 44k compressed sound: %s (compression %d, encoding %d, sample rate %d)",
+				tag_get_name(definition_index),
+				definition->compression,
+				definition->encoding,
+				definition->sample_rate);
 		}
 	}
 
@@ -3320,6 +3325,31 @@ void sound_dispose_from_old_map(
 	if (looping_sound_data)
 	{
 		data_delete_all(looping_sound_data);
+	}
+
+	/* port: a channel still holding a permutation that no sound owns any
+	longer (a weapon's charging loop, as a network game ended) stopped too,
+	so that its cache count is given back while the map's sounds are still
+	there; else the next map's sound_render finished it against the next
+	map's sound cache (sound_cache_sound_finished: "xbox sound index ... is
+	unused or changed") */
+	if (sound_manager_globals.initialized)
+	{
+		short channel_index;
+
+		for (
+			channel_index = 0;
+			channel_index < sound_manager_globals.channel_count;
+			channel_index++)
+		{
+			struct sound_channel_datum *channel = channel_get(channel_index);
+
+			if (channel->playing_permutation || channel->queued_permutation)
+			{
+				channel_stop(channel_index);
+				channel->sound_index = NONE;
+			}
+		}
 	}
 
 	return;

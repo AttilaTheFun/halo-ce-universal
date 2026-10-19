@@ -134,6 +134,9 @@ enum
 	may chat and send links, to every client, reliably */
 	_distributed_message_chat_config = 89,
 
+	/* The host's mouse aim-assist policy, reliably on ready and on change. */
+	_distributed_message_aim_assist_policy = 90,
+
 	NUMBER_OF_DISTRIBUTED_MESSAGES
 };
 

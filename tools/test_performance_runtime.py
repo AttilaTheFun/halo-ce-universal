@@ -141,7 +141,7 @@ static long game_time_get(void) { return local_ticks; }
 static boolean cinematic_in_progress(void) { return cinematic; }
 static boolean game_engine_showing_postgame(void) { return postgame; }
 int halo_performance_audio_play(const char *cue,float volume) {
-    assert(volume == 1.0f && audio_plays<(int)NUMBEROF(audio_history));
+    assert(volume == 0.4f && audio_plays<(int)NUMBEROF(audio_history));
     audio_history[audio_plays].tick=client ? host_ticks:local_ticks;
     snprintf(audio_history[audio_plays].cue,sizeof(audio_history[audio_plays].cue),"%s",cue);
     audio_plays++; snprintf(audio_cue,sizeof(audio_cue),"%s",cue);
@@ -165,6 +165,19 @@ unsigned performance_timer_items_due(long previous,long current) {
 }
 static float cosine(float angle) { return cosf(angle); }
 static float sine(float angle) { return sinf(angle); }
+boolean competitive_rules_active(void) { return FALSE; }
+void competitive_rules_tick(void) {}
+void competitive_rules_render(void) {}
+boolean performance_spawn_marker_ready(void) { return FALSE; }
+void performance_spawn_marker_render(const struct player_starting_location *starts, short count) {
+    (void)starts; (void)count;
+}
+void performance_spawn_marker_reset(void) {}
+boolean competitive_rules_random_areas(void) { return FALSE; }
+void performance_random_area_render(const struct player_starting_location *starts, short count) {
+    (void)starts; (void)count;
+}
+void performance_random_area_reset(void) {}
 static void rasterizer_debug_line(const real_point3d *from,const real_point3d *to,const real_argb_color *color) {
     assert(isfinite(from->x) && isfinite(from->y) && isfinite(from->z));
     assert(isfinite(to->x) && isfinite(to->y) && isfinite(to->z));

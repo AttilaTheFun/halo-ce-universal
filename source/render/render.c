@@ -78,6 +78,9 @@ symbols in this file:
 #include "bink_playback.h"
 #include "game.h"
 #include "game_engine.h"
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+#include "../../port/linux/game/performance_options.h"
+#endif
 #include "interface/first_person_weapons.h"
 #include "interface/interface.h"
 #include "editor_stubs.h"
@@ -89,6 +92,7 @@ symbols in this file:
 #include "structures/structures.h"
 /* port: static transparent part links for the newly loaded model tags. */
 #include "models/models.h"
+#include "structure_culling.h" /* port: port/linux/game/structure_culling.c */
 
 /* ---------- constants */
 
@@ -167,6 +171,8 @@ void render_initialize(
 	void)
 {
 	render_objects_initialize();
+	/* port: the structure culling tests display.structure_culling asks for */
+	structure_culling_initialize();
 }
 
 void render_initialize_for_new_map(
@@ -393,6 +399,12 @@ static void render_window(
 		structure_render_transparent_geometry();
 		structure_render_fog();
 		game_engine_post_rasterize_objects();
+#ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
+		/* port: the competitive spawn pads join this frame's transparent
+		   models. a classic map has no pad scenery, so the model is drawn
+		   at its player starts. */
+		performance_options_render_world();
+#endif
 		weather_particle_systems_render();
 		render_particles();
 		particle_systems_render();

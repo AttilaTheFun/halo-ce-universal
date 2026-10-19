@@ -84,6 +84,13 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   actor pool, `halo_port_capacity.h`, holds 1024). Riders a dropship has no
   seats for are kept, and placed beside its riders once they get out. Only
   the host runs the AI, so the clients see them as the host's other actors.
+
+  Each player chooses whether to play with friendly fire between players
+  (`network.coop_own_friendly_fire`, FRIENDLY FIRE in the pause menu): two
+  players hurt each other only if both do. A client's input tells the host
+  its choice. A player with no input for over 70 seconds (no button pressed
+  or let go, no stick or trigger held) is hurt by every player, whatever
+  either chose, until their next input.
 - **Host authoritative.** The host alone decides damage, deaths, spawns,
   pickups, scores and the game's objects; clients do not decide them but
   apply what the host sends.
@@ -122,13 +129,23 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   than the player goes of their own (and up, what its tick added but a
   jump's), so a client that says it goes faster (a copy said to hover and
   fall, gaining the host's gravity each tick) gains nothing by it. A
-  teleporter, which moves the host's own copy too, starts afresh. On a
-  moving elevator the host takes only where a client's player is across,
+  teleporter, which moves the host's own copy too, starts afresh. Riding an
+  elevator (moving, or at rest with the player on its floor) the host takes
+  only where a client's player is across,
   not how high: the client's elevator follows the host's (co-op's device
   sync), so its player's height reaches the host a round trip behind the
   host's elevator, under its floor going up, where the host's copy would
   fall through it. Each machine's elevator carries its own copy up and
-  down, and they meet where it stops.
+  down, and they meet where it stops. Floor contact keeps that protection
+  through a stop or reversal; the remembered attachment alone after leaving
+  a stopped platform does not. A client echoing a prediction while still on
+  the same elevator keeps its local floor height, rather than applying the
+  difference between the platforms' phases to its current height, when that
+  difference is within 4 world units (the platform's travel over a round
+  trip); a greater one, jumps, leaving the platform and authoritative
+  teleports correct normally. Rider carry uses the platform's current
+  collision displacement, including phase corrections, rather than its
+  previous tick's displacement (network version 30).
 - **Shooter's hits.** A client reports what its own players hit; the host
   checks the report (the player's, a weapon they carry, fired from within
   its reach, the target where the host had it when the shooter saw it, no
@@ -201,7 +218,21 @@ limits, and readies a second weapon picked up while firing; version 29 names
 a Custom Edition map by its own name (`custom_maps\hugeass`, which every
 screen shows) and says which version it is by the map version of the game
 record, its hash's first 32 bits (the header checksum before), which a
-client finds its file by (below, "Map sharing").
+client finds its file by (below, "Map sharing"); version 30 carries an
+elevator's riders by its movement of the same tick, which the Xbox game did
+a tick late, so that every machine moves them alike; version 31 puts the
+Xbox game's begin game, graceful exit and pregame keep-alive field lists
+under their own messages (its table had each on its neighbour's) and makes
+the keep-alive a long, as it was sent: not a byte on the wire moves but the
+keep-alive's last two, the sender's stack before and zero now, and the
+table's record changed with it; and with it, every machine drops a datagram
+of the netcode stamped more than 15 seconds from its sender's latest, the
+host takes a client's hits, Discord user and readiness only over its
+connection, and the host answers each machine's datagrams where they come
+from, so that a second copy of the game on one computer, on a port of its
+own, plays too; version 32 sends the host's mouse aim assist policy
+(distributed message 90, `network_aim_assist.c`), which a client must not
+ignore.
 
 This Mac build plays that options record (time limit, loadout, friendly fire,
 vehicle respawn, team balance, radar, vehicle sets, and no-map-weapons) and
@@ -359,6 +390,15 @@ host sends them none, and drop the kinds as unknown.
 A speed hack of less than a tenth is let be: the host's bounds on how far
 and how fast a client's player moves and fires hold it to the host's time
 anyway.
+
+The host's AIM ASSIST option in Player Options defaults to ALLOWED.
+BLOCK M+KB overrides optional mouse magnetism on every machine, including
+the host. Aiming with the controller or touch retains its existing behavior;
+the player's saved preference and the bullets' autoaim are unchanged.
+`network_aim_assist.c` sends the policy reliably on client ready and on
+change. Clients take it only from the host and default to blocked until it
+arrives. This adds distributed message 90; network version 32 requires
+matching builds so an older client cannot silently ignore the rule.
 
 ## Joining a game in progress
 
@@ -544,11 +584,17 @@ its name alone beside it, has its name given back as the map lists find it.
      and delete theirs to match. A client that has loaded asks for all the
      host's objects and is told when it has them; from then on it deletes
      any such object the host has not told it of, and nothing but the
-     host's word deletes the host's. That word deletes a CTF flag or an
-     oddball too, which the game itself never deletes. Another delete that
-     reaches one (a late join, or a view) keeps the flag: deleting it there
-     halted. The client takes the host's flag out of its carrier's hands,
-     and the goal its game type shows at it goes with it.
+     host's word deletes the host's. That word has deleted a CTF flag or
+     an oddball, which the game itself never deletes (two assertions,
+     in `objects.c` and `weapons.c`, stop a build that is not `--release`
+     there). Why the host deleted it is not known; the client follows
+     the host's word whatever the reason: it takes the flag or ball out
+     of its carrier's hands, and the goal its game type shows at it goes
+     with it. Another delete that reaches one (a late join, or a view)
+     keeps the flag: deleting it there halted. The two assertions are not
+     made for anything a client deletes in `distributed_client_delete`:
+     the host's objects on its word, one in the place of an object the
+     host creates, and its own the host has not told it of.
    - The objects placed when the map loads are placed alike everywhere:
      the host's word finds a client's already there. Past loading, a
      client's own objects (projectiles, effects: what only it sees) take
@@ -712,7 +758,12 @@ Unity's Netcode for Entities, lightyear, netfox and the Ares source):
   messages (checked as the host's below); the game's own messages (a player
   added or removed, the game begun or over, its settings), which the host
   sends over its connection, are ignored in a datagram
-  (`network_client_message_handler.c`).
+  (`network_client_message_handler.c`). The host takes a client's hits,
+  Discord user and readiness only over its connection too, and every
+  machine drops a datagram of the netcode stamped with a tick more than 15
+  seconds from the latest it had from that machine (one stamped far ahead
+  would have the machine's newer ones taken for stale); a message over the
+  connection is taken whatever its tick (`network_distributed.c`).
 - **Nothing held back.** The game's connections (the reliable messages:
   objects made and deleted, the game type's state, hits, pickups) send each
   write at once (`TCP_NODELAY`, in `xnet.c` for the game's sockets and in

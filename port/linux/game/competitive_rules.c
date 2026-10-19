@@ -36,8 +36,8 @@ a data message an older build ignores. */
 #include <stdio.h>
 #include <string.h>
 
-#define COMPETITIVE_RULES_VERSION 2
-#define COMPETITIVE_RULES_MESSAGE_SIZE 34
+#define COMPETITIVE_RULES_VERSION 3
+#define COMPETITIVE_RULES_MESSAGE_SIZE 35
 #define COMPETITIVE_SKIP_SLOTS HALO_PORT_MAXIMUM_OBJECTS_PER_MAP
 
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
@@ -57,6 +57,10 @@ static long competitive_shot_press[COMPETITIVE_SKIP_SLOTS];
 static long competitive_shot_seen[COMPETITIVE_SKIP_SLOTS];
 static int competitive_random_percent;
 static int competitive_cheats_written;
+/* set when this match is started, cleared when a classic mode is chosen.
+   the lobby's live variant is still the previous map, so the bit alone
+   is not on yet when the next map loads. */
+static int competitive_session;
 
 static int competitive_anniversary(void)
 {
@@ -70,6 +74,12 @@ void competitive_rules_defaults(struct competitive_rules *rules)
 	csmemset(rules, 0, sizeof(*rules));
 	rules->hill_move_s = 60;
 	rules->movement_sounds = 1;
+	/* the competitive maps drew their spawn points. a normal map has the
+	   same points in its player starts, and this shows them. */
+	rules->spawns_visible = 1;
+	/* and the darker volumes around where a teammate can respawn at random.
+	   a classic map does not contain them. */
+	rules->random_areas = 1;
 }
 
 struct competitive_rules *competitive_rules_editing(void)
@@ -85,11 +95,24 @@ void competitive_rules_reset_editing(void)
 void competitive_rules_commit(void)
 {
 	competitive_live = competitive_edit;
+	competitive_session = 1;
+}
+
+void competitive_rules_clear_session(void)
+{
+	competitive_session = 0;
 }
 
 boolean competitive_rules_active(void)
 {
-	return competitive_anniversary() ? TRUE : FALSE;
+	/* This build is main. The competitive flow is parked on
+	hcea-competitive, so a match does not take those rules. */
+	return FALSE;
+}
+
+boolean competitive_rules_random_areas(void)
+{
+	return competitive_rules_active() && competitive_live.random_areas ? TRUE : FALSE;
 }
 
 const struct competitive_rules *competitive_rules_live(void)
@@ -142,6 +165,15 @@ void competitive_rules_begin_map(void)
 		cheat.infinite_ammo = FALSE;
 		competitive_cheats_written = 0;
 	}
+	/* port: the match was started from this mode. stamp the bit the other
+	   checks read, including when the loaded copy never received it. */
+	if (competitive_session)
+	{
+		struct game_variant *variant = game_engine_get_variant();
+
+		if (variant)
+			SET_FLAG(variant->universal_variant.flags, _game_variant_anniversary_rules_bit, TRUE);
+	}
 	if (!competitive_rules_active())
 		return;
 	competitive_apply_presentation();
@@ -159,6 +191,9 @@ void competitive_rules_tick(void)
 		}
 		return;
 	}
+	/* port: a settings update replaces the practice flags with the variant's,
+	   which does not carry the spawn markers. put them back each tick. */
+	competitive_apply_presentation();
 	cheat.bottomless_clip = competitive_live.infinite_ammo == 1;
 	cheat.infinite_ammo = competitive_live.infinite_ammo == 2;
 	competitive_cheats_written = 1;

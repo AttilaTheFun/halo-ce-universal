@@ -16,6 +16,9 @@ void performance_options_dispose_from_old_map(void);
 /* Runs after map scripts, before objects_update, once per simulation tick. */
 void performance_options_update(void);
 void performance_options_render(void);
+/* The spawn pads, with the world's transparent geometry. The line fallback
+stays in performance_options_render when the pad model is not loaded. */
+void performance_options_render_world(void);
 
 struct performance_timer_statistics
 {

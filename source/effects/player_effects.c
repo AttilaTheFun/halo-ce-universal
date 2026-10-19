@@ -1363,32 +1363,4 @@ void player_effect_start(
 	return;
 }
 
-/* port: the aim kick of a blast, without the flash, the rumble or the hurt.
-the angle is the damage effect's own. */
-void player_effect_port_blast_kick(
-	long player_index,
-	struct damage_data const *damage,
-	real_vector3d const *direction,
-	real scale)
-{
-	short local_player_index = player_get(player_index)->local_player_index;
-	struct damage_effect_definition *definition;
-	struct player_effect_datum *effect;
-
-	if (local_player_index == NONE)
-		return;
-
-	lock_global_random_seed();
-	definition = damage_effect_definition_get(damage->definition_index);
-	effect = player_effect_get(local_player_index);
-	player_effect_update_camera_impulse(
-		local_player_index,
-		effect,
-		&definition->camera_impulse,
-		direction,
-		scale,
-		1.0f);
-	unlock_global_random_seed();
-}
-
 /* ---------- private code */

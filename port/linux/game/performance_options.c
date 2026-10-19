@@ -28,6 +28,15 @@
 #include "performance_timer_render.h"
 #include "port_config.h"
 
+/* The glowing pads are loaded from the user's competitive map. These stay
+declared here so a missing model keeps the line markers. */
+boolean performance_spawn_marker_ready(void);
+void performance_spawn_marker_render(struct player_starting_location const *starts, short count);
+void performance_spawn_marker_reset(void);
+boolean competitive_rules_random_areas(void);
+void performance_random_area_render(struct player_starting_location const *starts, short count);
+void performance_random_area_reset(void);
+
 struct performance_marker
 {
 	short name_index;
@@ -167,7 +176,11 @@ void performance_options_initialize_for_new_map(void)
 void performance_options_dispose_from_old_map(void)
 {
 	/* The game's map teardown owns object destruction. Forget identifiers
-	 * before that storage can be reused by another map. */
+	 * before that storage can be reused by another map. The pad's buffers
+	 * belong to this map. Its bitmap record stays until the texture cache
+	 * closes. */
+	performance_spawn_marker_reset();
+	performance_random_area_reset();
 	performance_marker_count = 0;
 	performance_fallback_count = 0;
 	performance_timer_audio_reset();
@@ -194,9 +207,13 @@ void performance_options_timer_statistics(struct performance_timer_statistics *s
 	if (!statistics->last_cue) statistics->last_cue = "none";
 }
 
+/* port: the beep and cortana clips are dry samples at the ear, so full
+   scale covers gunfire. the timer volume setting still scales this. */
+#define PERFORMANCE_TIMER_PLAY_GAIN 0.4f
+
 static void performance_timer_audio_play(char const *cue, boolean item, long ticks)
 {
-	if (halo_performance_audio_play(cue, 1.0f))
+	if (halo_performance_audio_play(cue, PERFORMANCE_TIMER_PLAY_GAIN))
 	{
 		performance_timer_statistics.last_cue = cue;
 		if (item)
@@ -271,7 +288,9 @@ void performance_options_update(void)
 		return;
 	/* port: competitive ammo rules, each tick, and only while that mode is on. */
 	competitive_rules_tick();
-	if ((performance_flags & _performance_option_timer_audio) &&
+	/* port: a competitive match uses the timer recordings on any map. the
+	   cue toggles still choose which lines play. a missing pack is silent. */
+	if (((performance_flags & _performance_option_timer_audio) || competitive_rules_active()) &&
 		!cinematic_in_progress() && !game_engine_showing_postgame())
 	{
 		performance_timer_audio_update(performance_options_timer_ticks());
@@ -369,6 +388,8 @@ static void performance_options_render_spawn_points(void)
 	/* Debug lines flush after widgets. Hide them while menus are open so
 	 * world-space markers cannot cover native menu labels. */
 	if (!(performance_flags & _performance_option_spawn_markers) || ui_widgets_active()) return;
+	/* The pad model is already in this frame's transparent geometry. */
+	if (performance_spawn_marker_ready()) return;
 	for (index = 0; index < performance_fallback_count; index++)
 	{
 		struct player_starting_location const *start = &performance_fallback[index];
@@ -403,4 +424,17 @@ void performance_options_render(void)
 	competitive_rules_render();
 	if (performance_flags & _performance_option_match_timer)
 		performance_timer_render(performance_options_timer_ticks());
+}
+
+void performance_options_render_world(void)
+{
+	if (!game_in_progress() || !game_engine_running() || cinematic_in_progress() ||
+		game_engine_showing_postgame() || ui_widgets_active())
+		return;
+	if ((performance_flags & _performance_option_spawn_markers) && performance_fallback_count >= 1)
+		performance_spawn_marker_render(performance_fallback, performance_fallback_count);
+	/* The darker zones are the competitive map's randoms mesh when it sits
+	on the starts, and a volume built from the starts when the map has none. */
+	if (competitive_rules_random_areas())
+		performance_random_area_render(performance_fallback, performance_fallback_count);
 }
