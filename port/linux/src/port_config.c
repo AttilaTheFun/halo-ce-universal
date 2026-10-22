@@ -355,7 +355,7 @@ static const struct config_setting config_settings[] =
 #include "input_bindings.def"
 #undef BINDING
 
-	{ "game.console_log", _config_string, "\"important\"", NULL, _environment_value, _platform_all,
+	{ "game.console_log", _config_string, "\"none\"", NULL, _environment_value, _platform_all,
 		"What the game's console shows on screen of what it logs: \"important\"\n"
 		"(bans, players dropped for cheating, what refuses a command, and the\n"
 		"asserts that stop the game), \"all\" (every line, the game's own\n"

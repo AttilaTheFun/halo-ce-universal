@@ -65,10 +65,10 @@ use the host's game rules; hosts can detect sustained speed hacks and ban
 players, and received player and machine names are cleaned before display.
 See the [shared netcode notes](../port/linux/NETCODE.md) for these rules.
 
-The console now shows important messages by default. Set `console_log` in
-the `[game]` section of `config.toml` to `"all"`, `"important"`, or `"none"`;
-command responses and stopping asserts remain visible. This setting is
-config-only in this fork.
+The console stays off the screen unless `console_log` in the `[game]`
+section of `config.toml` is `"important"` or `"all"`. The default, `"none"`,
+leaves command responses and the asserts that stop the game visible. This
+setting is config-only in this fork.
 
 The October 1 integration also fixes first-person effects following a dropped
 or deleted weapon, selects the actual weapon object for its sound, and limits
