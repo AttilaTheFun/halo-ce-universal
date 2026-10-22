@@ -1131,7 +1131,7 @@ def test_compressed_xbox_caches_are_recognized(report_tool, tmp_path):
 
 
 def test_halo_pc_caches_take_the_custom_edition_loader(report_tool, tmp_path):
-    """Version 7 is Halo PC. Competitive maps are these, and they share the
+    """Version 7 is Halo PC. Hardcore maps are these, and they share the
     header and tag address the Custom Edition loader converts."""
     path = tmp_path / "pc.map"
     path.write_bytes(xbox_header(build=b"01.00.00.0564", version=7))

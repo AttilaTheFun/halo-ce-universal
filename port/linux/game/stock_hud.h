@@ -10,7 +10,7 @@ The singleplayer HUD on a Custom Edition map (stock_hud.c).
 
 #include "cseries.h"
 
-/* (scenario_tags_load, after the menus' tags, on a custom or competitive
+/* (scenario_tags_load, after the menus' tags, on a custom or hardcore
 map only) */
 void stock_hud_tags_loaded(
 	void);

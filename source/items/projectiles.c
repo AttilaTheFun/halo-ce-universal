@@ -141,7 +141,6 @@ symbols in this file:
 #include "sound/sound_definitions.h"
 #include "units/bipeds.h"
 #include "units/units.h"
-#include "competitive_rules.h" /* port: competitive plasma rifle wall climb */
 
 /* ---------- constants */
 
@@ -1523,9 +1522,6 @@ static void projectile_collision(
 
 	projectile = projectile_get(projectile_index);
 	definition = projectile_definition_get(projectile->definition_index);
-	/* port: a competitive plasma bolt can push its shooter up a wall. */
-	competitive_rules_plasma_contact(projectile->definition_index,
-		projectile->object.owner_object_index, &collision->point);
 	material_type = collision->material_type;
 	effect_scale = 1.0f;
 	material_effect_scale = 0.0f;

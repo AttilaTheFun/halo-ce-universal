@@ -377,7 +377,7 @@ symbols in this file:
 #include "game/performance_variant.h"
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "../../port/linux/game/performance_options.h"
-#include "competitive_rules.h" /* port: competitive rules from the host */
+#include "hardcore_rules.h" /* port: hardcore rules from the host */
 #include "performance_audio.h"
 #endif
 #include "game/local_players.h"
@@ -930,7 +930,10 @@ void network_game_client_dispose(
 		/* Leaving a lobby can dispose the client without loading a map. */
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 		if (!global_network_game_server_get())
+		{
 			performance_options_apply_host_flags(0);
+			hardcore_rules_clear_session();
+		}
 #endif
 	}
 
@@ -1351,7 +1354,12 @@ boolean network_game_client_game_settings_updated(
 			performance_options_apply_host_flags(performance_variant_get_flags(
 				&network_game_server_get_game(global_network_game_server_get())->variant));
 		else
+		{
 			performance_options_apply_host_flags(performance_variant_get_flags(&client->game.variant));
+			/* port: the host's sheet is this match only while its variant says so. */
+			hardcore_rules_observe_match(TEST_FLAG(client->game.variant.universal_variant.flags,
+				_game_variant_anniversary_rules_bit) ? TRUE : FALSE);
+		}
 #endif
 		csmemcpy(
 			&client->game.local_data,
@@ -2671,8 +2679,8 @@ static boolean network_game_client_process_messages(
 			message_packet_size = sizeof(message_packet);
 			continue;
 		}
-		/* port: competitive rules. An older build ignores this in the lobby. */
-		if (reliable && competitive_rules_take_message(message_packet, message_packet_size))
+		/* port: hardcore rules. An older build ignores this in the lobby. */
+		if (reliable && hardcore_rules_take_message(message_packet, message_packet_size))
 		{
 			message_packet_size = sizeof(message_packet);
 			continue;

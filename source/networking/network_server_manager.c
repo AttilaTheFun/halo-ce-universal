@@ -453,6 +453,7 @@ symbols in this file:
 #include "cseries/errors.h"
 #include "game/game.h"
 #include "game/game_engine.h"
+#include "../../port/linux/game/hardcore_rules.h"
 #include "game/performance_variant.h"
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 #include "../../port/linux/game/performance_options.h"
@@ -3800,6 +3801,8 @@ void network_game_server_change_game_variant(
 #ifdef HALO_PORT_MAXIMUM_NETWORK_PLAYERS
 	performance_options_apply_host_flags(performance_variant_get_flags(variant));
 #endif
+	/* port: a classic gametype ends the mode in the lobby, before the map. */
+	hardcore_rules_host_variant(&server->game.variant);
 
 	if (!network_game_server_send_game_data_pregame(server))
 	{

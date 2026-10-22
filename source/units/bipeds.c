@@ -279,7 +279,6 @@ symbols in this file:
 #include "performance_sound.h"
 #endif
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
-#include "competitive_rules.h" /* port: a competitive wall jump */
 
 /* port: port/linux/game/network_objects.c's (a client deletes the host's
 objects on the host's word alone) */
@@ -2310,9 +2309,6 @@ static void biped_update_jumping(
 			rumble_player_impulse(player->local_player_index, &rumble, 1.f, 1.f);
 		}
 	}
-
-	/* port: one jump off a wall per time in the air, competitive matches only */
-	competitive_rules_wall_jump(biped_index);
 
 	return;
 }

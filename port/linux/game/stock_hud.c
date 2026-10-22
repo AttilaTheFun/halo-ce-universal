@@ -1,7 +1,7 @@
 /*
 STOCK_HUD.C
 
-A custom or competitive map draws its own HUD (its weapon and unit
+A custom or hardcore map draws its own HUD (its weapon and unit
 interface tags, and the bitmap sheets those point at). The singleplayer
 HUD is the Xbox one in the stock maps, which is also what the high-res
 redraw stands for. When display.campaign_hud is on, those maps are loaded
@@ -770,7 +770,7 @@ static void stock_retarget_hud_block(
 		if (biped)
 		{
 			/* one local player draws HUD 0, which on the stock maps is the
-			singleplayer HUD. a competitive map's own first HUD is the one
+			singleplayer HUD. a hardcore map's own first HUD is the one
 			that was showing */
 			matched = stock_find('unhi', index == 0 ? "ui\\hud\\cyborg" : "ui\\hud\\cyborg_mp", FALSE, FALSE);
 			if (matched == NONE)
@@ -935,7 +935,7 @@ static void stock_retarget(
 	return;
 }
 
-/* the competitive maps' nav sheet is not a stock bitmap, so naming the
+/* the hardcore maps' nav sheet is not a stock bitmap, so naming the
 stock bitmaps never reaches it and the map's own pixels are drawn */
 static void stock_nav_sheet_register(
 	void)

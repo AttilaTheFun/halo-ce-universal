@@ -29,6 +29,7 @@ When the texture cannot be drawn, the sprites are drawn from their bitmap.
 #include "game/players.h"
 #include "game/game.h"
 #include "interface/hud.h"
+#include "interface/hud_draw.h"
 #include "interface/hud_definitions.h"
 #include "rasterizer/rasterizer.h"
 #include "text/draw_string.h"
@@ -467,7 +468,8 @@ boolean hud_hires_button_draw(
 	bitmap = hud_buttons[slot].bitmap;
 	if (!bitmap)
 		return FALSE;
-	viewport = local_player_count() > 1 ? 0.75f : 1.0f;
+	/* A hardcore pane is a local split, so the button is that size. */
+	viewport = hud_split_screen() ? 0.75f : 1.0f;
 	scale = viewport;
 	x = cursor->x0 + 4.0f * viewport;
 	y = draw_unicode_string_capital_middle(cursor, L"") + 13.0f * viewport;

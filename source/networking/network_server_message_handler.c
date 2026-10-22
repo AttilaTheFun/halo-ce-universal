@@ -261,7 +261,7 @@ symbols in this file:
 #include "networking/network_game_protocol.h"
 #include "networking/network_messages.h"
 #include "networking/network_performance_protocol.h"
-#include "competitive_rules.h" /* port: competitive rules beside the variant */
+#include "hardcore_rules.h" /* port: hardcore rules beside the variant */
 #include "networking/network_server_manager_internal.h"
 #include "networking/network_server_message_handler.h"
 #include "text/unicode.h"
@@ -787,9 +787,9 @@ boolean network_game_server_send_message_to_client_machine(
 	return network_game_server_write(connection, buffer, size, NULL, 1);
 }
 
-/* port: the competitive sheet is not in the variant. Old builds ignore this
+/* port: the hardcore sheet is not in the variant. Old builds ignore this
 data message while they are still in the lobby. */
-static void competitive_rules_send_settings(
+static void hardcore_rules_send_settings(
 	struct network_game_server *server,
 	struct network_game_server_client_machine *only)
 {
@@ -802,7 +802,7 @@ static void competitive_rules_send_settings(
 	   lobby's copy is the one this match will start. */
 	if (!server || !variant || !TEST_FLAG(variant->universal_variant.flags, _game_variant_anniversary_rules_bit))
 		return;
-	if (!competitive_rules_write_message(message, (long)sizeof(message)))
+	if (!hardcore_rules_write_message(message, (long)sizeof(message)))
 		return;
 	if (only)
 	{
@@ -810,8 +810,8 @@ static void competitive_rules_send_settings(
 			network_game_server_send_message_to_client_machine(server, only, message);
 		return;
 	}
-	if (game_in_progress())
-		return;
+	/* port: the menu map's clock is already running in the lobby, and again
+	   when the start is sent. waiting for it to stop dropped the sheet. */
 	for (index = 0; index < MAXIMUM_NETWORK_MACHINE_COUNT; index++)
 	{
 		struct network_game_server_client_machine *machine =
@@ -847,8 +847,8 @@ boolean network_game_server_send_game_settings_to_client_machine(
 		if (!encoded_message || !network_game_server_send_message_to_client_machine(server, machine, encoded_message))
 			return FALSE;
 	}
-	/* port: the joining machine gets the competitive sheet with the variant. */
-	competitive_rules_send_settings(server, machine);
+	/* port: the joining machine gets the hardcore sheet with the variant. */
+	hardcore_rules_send_settings(server, machine);
 	return TRUE;
 }
 
@@ -1159,8 +1159,9 @@ boolean network_game_server_send_game_settings_to_all_machines(
 
 	network_game_settings_update_pending = !result;
 	network_game_settings_update_time = system_milliseconds();
-	/* port: lobby only. An in-progress game already gave this to each machine. */
-	competitive_rules_send_settings(server, NULL);
+	/* port: with the settings. a machine that joins a game in progress is
+	   sent the sheet on its own as well. */
+	hardcore_rules_send_settings(server, NULL);
 
 	return result;
 }

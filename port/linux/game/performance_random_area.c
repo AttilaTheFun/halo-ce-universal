@@ -1,10 +1,11 @@
-/* A competitive match draws the darker teammate respawn area. When the
-matching competitive map places a randoms mesh on the player starts, that
-mesh is used. Prisoner and the other maps that never place one get a sheet
-on the floor around the outer starts of each group. A classic game draws
-neither. */
+/* A hardcore match draws the darker teammate respawn area from the mesh
+shipped with the game when that map has one. Hang 'em High does. The
+matching hardcore map is used when this copy has no mesh for it. Maps that
+never place one, Prisoner among them, draw nothing here. A classic game
+draws neither. */
 
 #include "cseries.h"
+#include "hardcore_assets.h"
 #include "bitmaps/bitmap_group.h"
 #include "cache/cache_files.h"
 #include "main/main.h"
@@ -14,6 +15,7 @@ neither. */
 #include "rasterizer/rasterizer_model_types.h"
 #include "rasterizer/rasterizer_models.h"
 #include "render/render.h"
+#include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
 #include "shaders/shader_definitions.h"
 
@@ -31,20 +33,8 @@ void platform_log(char const *format, ...);
 #define AREA_PARTS_MAXIMUM 4
 #define AREA_PLACES_MAXIMUM 2
 #define AREA_STATE_NONE 0
-#define AREA_STATE_FAILED 1
 #define AREA_STATE_READY 2
 #define AREA_STATE_LOADED 3
-#define AREA_OUTLINE_POINTS 256
-#define AREA_OUTLINE_VERTICES 1024
-#define AREA_OUTLINE_TRIANGLES 1024
-/* Starts this close, and on the same floor, are one respawn area. */
-#define AREA_OUTLINE_LINK 4.0f
-#define AREA_OUTLINE_LINK_Z 0.75f
-/* The edge sits just outside the outer starts, as hangemhigh's mesh does. */
-#define AREA_OUTLINE_MARGIN 0.45f
-/* Just clear of the floor the spawn stands on, so the sheet does not
-fight the ground it darkens. */
-#define AREA_SURFACE_LIFT 0.05f
 
 typedef char area_pointer_is_tag_sized[sizeof(void *) == 4 ? 1 : -1];
 typedef char area_bitmap_is_tag_sized[sizeof(struct bitmap_data) == 0x30 ? 1 : -1];
@@ -287,17 +277,16 @@ static int area_bitmap_make(void)
 	long index;
 	unsigned long pixel_bytes = 4UL * 4UL * 4UL;
 
-	/* The authored bitmaps are compressed. This path only accepts the
-	uncompressed 32-bit texels the pads use. A flat grey is the treadmark
-	average those volumes multiply by. */
+	/* hangemhigh's randoms shader multiplies by the snow treadmarks
+	bitmap. That bitmap averages 123, so the drawn mesh uses that grey. */
 	area_pixels = (unsigned char *)malloc(pixel_bytes);
 	if (!area_pixels)
 		return 0;
 	for (index = 0; index < (long)pixel_bytes; index += 4)
 	{
-		area_pixels[index] = 0x6B;
-		area_pixels[index + 1] = 0x6B;
-		area_pixels[index + 2] = 0x6B;
+		area_pixels[index] = 123;
+		area_pixels[index + 1] = 123;
+		area_pixels[index + 2] = 123;
 		area_pixels[index + 3] = 0xFF;
 	}
 	area_pixel_bytes = (long)pixel_bytes;
@@ -318,7 +307,7 @@ static int area_bitmap_make(void)
 	area_bitmap_group.bitmaps.count = 1;
 	area_bitmap_group.bitmaps.address = &area_bitmap;
 	bitmap_tag = cache_files_register_runtime_ui_tag(BITMAP_GROUP_TAG,
-		"scenery\\randoms\\bitmaps\\competitive_random_area", &area_bitmap_group);
+		"scenery\\randoms\\bitmaps\\hardcore_random_area", &area_bitmap_group);
 	if (bitmap_tag == NONE)
 		return 0;
 	texture_cache_bitmap_new(bitmap_tag, &area_bitmap);
@@ -347,45 +336,21 @@ static void area_discard(void)
 	area_offset.x = area_offset.y = area_offset.z = 0.0f;
 }
 
-static int area_load_part(FILE *file, unsigned long file_size, unsigned long vertex_file,
-	unsigned long index_relative, unsigned char const *part)
+static int area_take_part(struct model_vertex_uncompressed *uncompressed, long vertex_count,
+	unsigned short *indices, long triangle_count)
 {
-	struct model_vertex_uncompressed *uncompressed = NULL;
 	struct model_vertex_compressed *compressed = NULL;
-	unsigned short *indices = NULL;
 	struct area_part *slot;
-	long vertex_count = 0;
-	long triangle_count = 0;
 	long index;
-	unsigned long vertex_at;
-	unsigned long index_at;
 	real radius_squared = 0.0f;
 	int loaded = 0;
 
-	if (area_part_count >= AREA_PARTS_MAXIMUM)
-		return 1;
-	if (!area_part_fits(part, &vertex_count, &triangle_count))
-		return 1;
-	if (vertex_file > file_size || index_relative > file_size - vertex_file ||
-		area_u32(part + 0x64) > file_size - vertex_file ||
-		area_u32(part + 0x4C) > file_size - (vertex_file + index_relative))
-		goto done;
-	vertex_at = vertex_file + area_u32(part + 0x64);
-	index_at = vertex_file + index_relative + area_u32(part + 0x4C);
-	if (!area_span(vertex_at, (unsigned long)vertex_count * 0x44UL, file_size) ||
-		!area_span(index_at, (unsigned long)(triangle_count + 2) * 2UL, file_size))
-		goto done;
-	uncompressed = (struct model_vertex_uncompressed *)malloc(
-		(unsigned long)vertex_count * sizeof(*uncompressed));
+	if (!uncompressed || !indices || vertex_count < 3 || triangle_count < 1)
+		return 0;
 	compressed = (struct model_vertex_compressed *)malloc(
 		(unsigned long)vertex_count * sizeof(*compressed));
-	indices = (unsigned short *)malloc((unsigned long)(triangle_count + 2) * sizeof(*indices));
-	if (!uncompressed || !compressed || !indices ||
-		fseek(file, (long)vertex_at, SEEK_SET) != 0 ||
-		fread(uncompressed, sizeof(*uncompressed), (size_t)vertex_count, file) != (size_t)vertex_count ||
-		fseek(file, (long)index_at, SEEK_SET) != 0 ||
-		fread(indices, sizeof(*indices), (size_t)(triangle_count + 2), file) != (size_t)(triangle_count + 2))
-		goto done;
+	if (!compressed)
+		return 0;
 	slot = &area_parts[area_part_count];
 	slot->centroid.x = slot->centroid.y = slot->centroid.z = 0.0f;
 	for (index = 0; index < vertex_count; index++)
@@ -461,8 +426,47 @@ static int area_load_part(FILE *file, unsigned long file_size, unsigned long ver
 	loaded = 1;
 
 done:
-	area_free(uncompressed);
 	area_free(compressed);
+	return loaded;
+}
+
+static int area_load_part(FILE *file, unsigned long file_size, unsigned long vertex_file,
+	unsigned long index_relative, unsigned char const *part)
+{
+	struct model_vertex_uncompressed *uncompressed = NULL;
+	unsigned short *indices = NULL;
+	long vertex_count = 0;
+	long triangle_count = 0;
+	unsigned long vertex_at;
+	unsigned long index_at;
+	int loaded = 0;
+
+	if (area_part_count >= AREA_PARTS_MAXIMUM)
+		return 1;
+	if (!area_part_fits(part, &vertex_count, &triangle_count))
+		return 1;
+	if (vertex_file > file_size || index_relative > file_size - vertex_file ||
+		area_u32(part + 0x64) > file_size - vertex_file ||
+		area_u32(part + 0x4C) > file_size - (vertex_file + index_relative))
+		goto done;
+	vertex_at = vertex_file + area_u32(part + 0x64);
+	index_at = vertex_file + index_relative + area_u32(part + 0x4C);
+	if (!area_span(vertex_at, (unsigned long)vertex_count * 0x44UL, file_size) ||
+		!area_span(index_at, (unsigned long)(triangle_count + 2) * 2UL, file_size))
+		goto done;
+	uncompressed = (struct model_vertex_uncompressed *)malloc(
+		(unsigned long)vertex_count * sizeof(*uncompressed));
+	indices = (unsigned short *)malloc((unsigned long)(triangle_count + 2) * sizeof(*indices));
+	if (!uncompressed || !indices ||
+		fseek(file, (long)vertex_at, SEEK_SET) != 0 ||
+		fread(uncompressed, sizeof(*uncompressed), (size_t)vertex_count, file) != (size_t)vertex_count ||
+		fseek(file, (long)index_at, SEEK_SET) != 0 ||
+		fread(indices, sizeof(*indices), (size_t)(triangle_count + 2), file) != (size_t)(triangle_count + 2))
+		goto done;
+	loaded = area_take_part(uncompressed, vertex_count, indices, triangle_count);
+
+done:
+	area_free(uncompressed);
 	area_free(indices);
 	return loaded;
 }
@@ -528,6 +532,90 @@ static int area_collect(unsigned char const *tag, unsigned long tag_size,
 	return area_place_count > 0 ? 1 : 0;
 }
 
+/* 1 when the mesh shipped for this map is loaded, 0 when this copy has
+none, -1 when that copy is there and cannot be used. */
+static int area_from_pack(char const *leaf)
+{
+	unsigned char const *payload;
+	unsigned long size;
+	unsigned long cursor;
+	unsigned long place_count;
+	unsigned long part_count;
+	unsigned long place_index;
+	unsigned long part_index;
+
+	if (!leaf || !hardcore_assets_find(HARDCORE_ASSET_AREA, leaf, &payload, &size))
+		return 0;
+	if (size < 4)
+		return -1;
+	place_count = area_u32(payload);
+	if (place_count < 1 || place_count > AREA_PLACES_MAXIMUM)
+		return -1;
+	cursor = 4;
+	if (size - cursor < place_count * 24UL + 16UL)
+		return -1;
+	for (place_index = 0; place_index < place_count; place_index++)
+	{
+		area_places[place_index].position.x = area_f32(payload + cursor);
+		area_places[place_index].position.y = area_f32(payload + cursor + 4);
+		area_places[place_index].position.z = area_f32(payload + cursor + 8);
+		area_places[place_index].yaw = area_f32(payload + cursor + 12);
+		area_places[place_index].pitch = area_f32(payload + cursor + 16);
+		area_places[place_index].roll = area_f32(payload + cursor + 20);
+		cursor += 24;
+	}
+	area_place_count = (int)place_count;
+	area_node_translation.x = area_f32(payload + cursor);
+	area_node_translation.y = area_f32(payload + cursor + 4);
+	area_node_translation.z = area_f32(payload + cursor + 8);
+	part_count = area_u32(payload + cursor + 12);
+	cursor += 16;
+	if (part_count < 1 || part_count > AREA_PARTS_MAXIMUM)
+		return -1;
+	for (part_index = 0; part_index < part_count; part_index++)
+	{
+		unsigned long vertex_count;
+		unsigned long index_count;
+		unsigned long mesh_bytes;
+		long triangle_count;
+		struct model_vertex_uncompressed *uncompressed;
+		unsigned short *indices;
+		int taken;
+
+		if (size - cursor < 8)
+			return -1;
+		vertex_count = area_u32(payload + cursor);
+		index_count = area_u32(payload + cursor + 4);
+		cursor += 8;
+		triangle_count = (long)index_count - 2;
+		if (vertex_count < 3 || vertex_count > AREA_VERTICES_MAXIMUM ||
+			triangle_count < 1 || triangle_count > AREA_TRIANGLES_MAXIMUM)
+			return -1;
+		mesh_bytes = vertex_count * 0x44UL + index_count * 2UL;
+		if (size - cursor < mesh_bytes)
+			return -1;
+		uncompressed = (struct model_vertex_uncompressed *)malloc(vertex_count * sizeof(*uncompressed));
+		indices = (unsigned short *)malloc(index_count * sizeof(*indices));
+		if (!uncompressed || !indices)
+		{
+			area_free(uncompressed);
+			area_free(indices);
+			return -1;
+		}
+		memcpy(uncompressed, payload + cursor, vertex_count * 0x44UL);
+		memcpy(indices, payload + cursor + vertex_count * 0x44UL, index_count * 2UL);
+		cursor += mesh_bytes;
+		taken = area_take_part(uncompressed, (long)vertex_count, indices, triangle_count);
+		area_free(uncompressed);
+		area_free(indices);
+		if (!taken)
+			return -1;
+	}
+	if (area_part_count < 1)
+		return -1;
+	return 1;
+}
+
 static void area_prepare(void)
 {
 	FILE *file = NULL;
@@ -554,10 +642,20 @@ static void area_prepare(void)
 	long told;
 	int collected;
 	int best_count;
+	int packed;
 	unsigned long best_address;
 
-	if (!area_leaf(leaf, sizeof(leaf)) ||
-		snprintf(path, sizeof(path), "d:\\competitive_maps\\%s.map", leaf) >= (int)sizeof(path))
+	if (!area_leaf(leaf, sizeof(leaf)))
+		goto fail;
+	packed = area_from_pack(leaf);
+	if (packed > 0)
+	{
+		area_state = AREA_STATE_LOADED;
+		return;
+	}
+	if (packed < 0)
+		goto missing;
+	if (snprintf(path, sizeof(path), "d:\\hardcore_maps\\%s.map", leaf) >= (int)sizeof(path))
 		goto fail;
 	file = fopen(path, "rb");
 	if (!file)
@@ -664,7 +762,7 @@ missing:
 	if (!area_logged)
 	{
 		area_logged = 1;
-		platform_log("competitive: random areas were not loaded from competitive_maps/%s.map", leaf);
+		platform_log("hardcore: random areas were not loaded from the game or hardcore_maps/%s.map", leaf);
 	}
 fail:
 	if (file)
@@ -734,372 +832,6 @@ static int area_place_on_starts(struct player_starting_location const *starts, s
 	return 1;
 }
 
-static void area_box_vertex(struct model_vertex_uncompressed *vertex, real x, real y, real z)
-{
-	memset(vertex, 0, sizeof(*vertex));
-	vertex->position.x = x;
-	vertex->position.y = y;
-	vertex->position.z = z;
-	vertex->normal.k = 1.0f;
-	vertex->node_weights[0] = 1.0f;
-}
-
-struct area_outline_point
-{
-	real x;
-	real y;
-	real z;
-};
-
-static real area_outline_cross(struct area_outline_point const *origin,
-	struct area_outline_point const *a, struct area_outline_point const *b)
-{
-	return (a->x - origin->x) * (b->y - origin->y) - (a->y - origin->y) * (b->x - origin->x);
-}
-
-static void area_outline_sort(struct area_outline_point *points, int count)
-{
-	int index;
-	int earlier;
-
-	for (index = 1; index < count; index++)
-	{
-		struct area_outline_point key = points[index];
-
-		earlier = index - 1;
-		while (earlier >= 0 && (points[earlier].x > key.x ||
-			(points[earlier].x == key.x && points[earlier].y > key.y)))
-		{
-			points[earlier + 1] = points[earlier];
-			earlier--;
-		}
-		points[earlier + 1] = key;
-	}
-}
-
-/* Andrew's chain. The result is counterclockwise, and only the outer
-points remain. */
-static int area_outline_hull(struct area_outline_point *points, int count,
-	struct area_outline_point *hull)
-{
-	int index;
-	int lower;
-	int upper;
-	int kept;
-
-	if (count < 1)
-		return 0;
-	area_outline_sort(points, count);
-	kept = 1;
-	for (index = 1; index < count; index++)
-	{
-		real dx = points[index].x - points[kept - 1].x;
-		real dy = points[index].y - points[kept - 1].y;
-
-		if (dx * dx + dy * dy > 0.0001f)
-			points[kept++] = points[index];
-	}
-	count = kept;
-	if (count <= 2)
-	{
-		for (index = 0; index < count; index++)
-			hull[index] = points[index];
-		return count;
-	}
-	lower = 0;
-	for (index = 0; index < count; index++)
-	{
-		while (lower >= 2 && area_outline_cross(&hull[lower - 2], &hull[lower - 1],
-			&points[index]) <= 0.0f)
-			lower--;
-		hull[lower++] = points[index];
-	}
-	upper = lower + 1;
-	for (index = count - 2; index >= 0; index--)
-	{
-		while (lower >= upper && area_outline_cross(&hull[lower - 2], &hull[lower - 1],
-			&points[index]) <= 0.0f)
-			lower--;
-		hull[lower++] = points[index];
-	}
-	return lower - 1;
-}
-
-/* Push each outer point out along the corner so the edge clears the
-starts by one margin. A sharp corner is kept from throwing a long spike. */
-static void area_outline_expand(struct area_outline_point const *hull, int count,
-	struct area_outline_point *expanded)
-{
-	int index;
-
-	for (index = 0; index < count; index++)
-	{
-		struct area_outline_point const *previous = &hull[(index + count - 1) % count];
-		struct area_outline_point const *current = &hull[index];
-		struct area_outline_point const *next = &hull[(index + 1) % count];
-		real ex = current->x - previous->x;
-		real ey = current->y - previous->y;
-		real fx = next->x - current->x;
-		real fy = next->y - current->y;
-		real elen = sqrtf(ex * ex + ey * ey);
-		real flen = sqrtf(fx * fx + fy * fy);
-		real nx;
-		real ny;
-		real mx;
-		real my;
-		real mlen;
-		real dot;
-		real scale;
-
-		expanded[index] = *current;
-		if (elen < 0.0001f || flen < 0.0001f)
-			continue;
-		nx = ey / elen;
-		ny = -ex / elen;
-		mx = nx + fy / flen;
-		my = ny + -fx / flen;
-		mlen = sqrtf(mx * mx + my * my);
-		if (mlen < 0.0001f)
-		{
-			mx = nx;
-			my = ny;
-		}
-		else
-		{
-			mx /= mlen;
-			my /= mlen;
-		}
-		dot = mx * nx + my * ny;
-		if (dot < 0.5f)
-			dot = 0.5f;
-		scale = AREA_OUTLINE_MARGIN / dot;
-		expanded[index].x += mx * scale;
-		expanded[index].y += my * scale;
-	}
-}
-
-static int area_outline_emit(struct model_vertex_uncompressed *uncompressed,
-	unsigned short *indices, long *vertex_count, long *triangle_count,
-	struct area_outline_point const *poly, int count)
-{
-	int index;
-	long base;
-
-	if (count < 3 || *vertex_count + count > AREA_OUTLINE_VERTICES ||
-		*triangle_count + (count - 2) > AREA_OUTLINE_TRIANGLES)
-		return 0;
-	base = *vertex_count;
-	for (index = 0; index < count; index++)
-		area_box_vertex(&uncompressed[base + index], poly[index].x, poly[index].y,
-			poly[index].z + AREA_SURFACE_LIFT);
-	for (index = 1; index + 1 < count; index++)
-	{
-		long tri = *triangle_count;
-
-		indices[tri * 3] = (unsigned short)base;
-		indices[tri * 3 + 1] = (unsigned short)(base + index);
-		indices[tri * 3 + 2] = (unsigned short)(base + index + 1);
-		(*triangle_count)++;
-	}
-	*vertex_count += count;
-	return 1;
-}
-
-static int area_outline_find(short *parent, int index)
-{
-	while (parent[index] != index)
-	{
-		parent[index] = parent[parent[index]];
-		index = parent[index];
-	}
-	return index;
-}
-
-static int area_generate(struct player_starting_location const *starts, short count)
-{
-	struct model_vertex_uncompressed *uncompressed = NULL;
-	struct model_vertex_compressed *compressed = NULL;
-	unsigned short *indices = NULL;
-	struct area_outline_point *points = NULL;
-	struct area_outline_point *group = NULL;
-	struct area_outline_point *hull = NULL;
-	struct area_outline_point *expanded = NULL;
-	short *parent = NULL;
-	struct area_part *slot;
-	short index;
-	short other;
-	int limit;
-	int root;
-	long vertex_count = 0;
-	long triangle_count = 0;
-	long corner;
-	real radius_squared = 0.0f;
-	int loaded = 0;
-
-	if (!starts || count < 1 || area_part_count != 0)
-		return 0;
-	limit = count > AREA_OUTLINE_POINTS ? AREA_OUTLINE_POINTS : (int)count;
-	uncompressed = (struct model_vertex_uncompressed *)malloc(
-		(unsigned long)AREA_OUTLINE_VERTICES * sizeof(*uncompressed));
-	compressed = (struct model_vertex_compressed *)malloc(
-		(unsigned long)AREA_OUTLINE_VERTICES * sizeof(*compressed));
-	indices = (unsigned short *)malloc(
-		(unsigned long)AREA_OUTLINE_TRIANGLES * 3UL * sizeof(*indices));
-	points = (struct area_outline_point *)malloc((unsigned long)limit * sizeof(*points));
-	group = (struct area_outline_point *)malloc((unsigned long)limit * sizeof(*group));
-	hull = (struct area_outline_point *)malloc((unsigned long)limit * 2UL * sizeof(*hull));
-	expanded = (struct area_outline_point *)malloc((unsigned long)limit * sizeof(*expanded));
-	parent = (short *)malloc((unsigned long)limit * sizeof(*parent));
-	if (!uncompressed || !compressed || !indices || !points || !group || !hull ||
-		!expanded || !parent)
-		goto done;
-	for (index = 0; index < limit; index++)
-	{
-		points[index].x = starts[index].position.x;
-		points[index].y = starts[index].position.y;
-		points[index].z = starts[index].position.z;
-		parent[index] = index;
-	}
-	for (index = 0; index < limit; index++)
-	{
-		for (other = 0; other < index; other++)
-		{
-			real dx = points[index].x - points[other].x;
-			real dy = points[index].y - points[other].y;
-			real dz = points[index].z - points[other].z;
-
-			if (dx * dx + dy * dy <= AREA_OUTLINE_LINK * AREA_OUTLINE_LINK &&
-				dz <= AREA_OUTLINE_LINK_Z && dz >= -AREA_OUTLINE_LINK_Z)
-				parent[area_outline_find(parent, index)] = area_outline_find(parent, other);
-		}
-	}
-	for (root = 0; root < limit; root++)
-	{
-		int members = 0;
-		int hull_count;
-		struct area_outline_point quad[4];
-
-		if (area_outline_find(parent, root) != root)
-			continue;
-		for (index = 0; index < limit; index++)
-		{
-			if (area_outline_find(parent, index) != root)
-				continue;
-			group[members++] = points[index];
-		}
-		hull_count = area_outline_hull(group, members, hull);
-		if (hull_count >= 3)
-		{
-			area_outline_expand(hull, hull_count, expanded);
-			area_outline_emit(uncompressed, indices, &vertex_count, &triangle_count,
-				expanded, hull_count);
-		}
-		else if (hull_count == 2)
-		{
-			real dx = hull[1].x - hull[0].x;
-			real dy = hull[1].y - hull[0].y;
-			real length = sqrtf(dx * dx + dy * dy);
-			real nx;
-			real ny;
-			real ex;
-			real ey;
-
-			if (length < 0.0001f)
-				hull_count = 1;
-			else
-			{
-				nx = dy / length * AREA_OUTLINE_MARGIN;
-				ny = -dx / length * AREA_OUTLINE_MARGIN;
-				ex = dx / length * AREA_OUTLINE_MARGIN;
-				ey = dy / length * AREA_OUTLINE_MARGIN;
-				quad[0].x = hull[0].x - ex - nx;
-				quad[0].y = hull[0].y - ey - ny;
-				quad[0].z = hull[0].z;
-				quad[1].x = hull[1].x + ex - nx;
-				quad[1].y = hull[1].y + ey - ny;
-				quad[1].z = hull[1].z;
-				quad[2].x = hull[1].x + ex + nx;
-				quad[2].y = hull[1].y + ey + ny;
-				quad[2].z = hull[1].z;
-				quad[3].x = hull[0].x - ex + nx;
-				quad[3].y = hull[0].y - ey + ny;
-				quad[3].z = hull[0].z;
-				area_outline_emit(uncompressed, indices, &vertex_count, &triangle_count, quad, 4);
-			}
-		}
-		if (hull_count == 1)
-		{
-			real margin = AREA_OUTLINE_MARGIN;
-
-			quad[0].x = hull[0].x - margin;
-			quad[0].y = hull[0].y - margin;
-			quad[0].z = hull[0].z;
-			quad[1].x = hull[0].x + margin;
-			quad[1].y = hull[0].y - margin;
-			quad[1].z = hull[0].z;
-			quad[2].x = hull[0].x + margin;
-			quad[2].y = hull[0].y + margin;
-			quad[2].z = hull[0].z;
-			quad[3].x = hull[0].x - margin;
-			quad[3].y = hull[0].y + margin;
-			quad[3].z = hull[0].z;
-			area_outline_emit(uncompressed, indices, &vertex_count, &triangle_count, quad, 4);
-		}
-	}
-	if (vertex_count < 3 || triangle_count < 1)
-		goto done;
-	slot = &area_parts[0];
-	slot->centroid.x = slot->centroid.y = slot->centroid.z = 0.0f;
-	for (corner = 0; corner < vertex_count; corner++)
-	{
-		slot->centroid.x += uncompressed[corner].position.x;
-		slot->centroid.y += uncompressed[corner].position.y;
-		slot->centroid.z += uncompressed[corner].position.z;
-	}
-	slot->centroid.x /= (real)vertex_count;
-	slot->centroid.y /= (real)vertex_count;
-	slot->centroid.z /= (real)vertex_count;
-	for (corner = 0; corner < vertex_count; corner++)
-	{
-		real dx = uncompressed[corner].position.x - slot->centroid.x;
-		real dy = uncompressed[corner].position.y - slot->centroid.y;
-		real dz = uncompressed[corner].position.z - slot->centroid.z;
-		real span = dx * dx + dy * dy + dz * dz;
-
-		if (span > radius_squared)
-			radius_squared = span;
-	}
-	slot->radius = sqrtf(radius_squared);
-	if (slot->radius < 1.0f)
-		slot->radius = 1.0f;
-	rasterizer_geometry_compress_vertices(
-		_rasterizer_vertex_type_model_uncompressed,
-		vertex_count,
-		compressed,
-		vertex_count * (long)sizeof(*compressed),
-		uncompressed,
-		vertex_count * (long)sizeof(*uncompressed));
-	if (!rasterizer_vertex_buffer_new(&slot->vertices, _rasterizer_vertex_type_model_compressed,
-			vertex_count, compressed, vertex_count * (long)sizeof(*compressed)) ||
-		!rasterizer_triangle_buffer_new(&slot->triangles, _triangle_buffer_type_triangles,
-			triangle_count, indices))
-		goto done;
-	slot->triangle_count = triangle_count;
-	area_part_count = 1;
-	area_offset.x = area_offset.y = area_offset.z = 0.0f;
-	loaded = 1;
-
-done:
-	area_free(uncompressed);
-	area_free(compressed);
-	area_free(indices);
-	area_free(points);
-	area_free(group);
-	area_free(hull);
-	area_free(expanded);
-	area_free(parent);
-	return loaded;
-}
 
 static void area_draw(struct area_part const *part, long identifier)
 {
@@ -1180,20 +912,6 @@ void performance_random_area_render(struct player_starting_location const *start
 		}
 		else
 			area_state = AREA_STATE_READY;
-	}
-	if (area_state == AREA_STATE_NONE)
-	{
-		/* No placed volume covers these starts. Each group of starts gets
-		the outline of its outer points. */
-		if (!starts || count < 1)
-			return;
-		if (!area_generate(starts, count) || !area_bitmap_make())
-		{
-			area_discard();
-			area_state = AREA_STATE_FAILED;
-			return;
-		}
-		area_state = AREA_STATE_READY;
 	}
 	if (area_state != AREA_STATE_READY)
 		return;

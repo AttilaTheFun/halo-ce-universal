@@ -165,15 +165,15 @@ unsigned performance_timer_items_due(long previous,long current) {
 }
 static float cosine(float angle) { return cosf(angle); }
 static float sine(float angle) { return sinf(angle); }
-boolean competitive_rules_active(void) { return FALSE; }
-void competitive_rules_tick(void) {}
-void competitive_rules_render(void) {}
+boolean hardcore_rules_active(void) { return FALSE; }
+void hardcore_rules_tick(void) {}
+void hardcore_rules_render(void) {}
 boolean performance_spawn_marker_ready(void) { return FALSE; }
 void performance_spawn_marker_render(const struct player_starting_location *starts, short count) {
     (void)starts; (void)count;
 }
 void performance_spawn_marker_reset(void) {}
-boolean competitive_rules_random_areas(void) { return FALSE; }
+boolean hardcore_rules_random_areas(void) { return FALSE; }
 void performance_random_area_render(const struct player_starting_location *starts, short count) {
     (void)starts; (void)count;
 }

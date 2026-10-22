@@ -73,7 +73,7 @@
 		<child widget="main_menu/multiplayer_type_select/server_settings/listing_label"/>
 		<child widget="main_menu/multiplayer_type_select/server_settings/listing_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/server_settings/listing_label" type="text" controller="1" width="300" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/multiplayer_type_select/server_settings/listing_label" type="text" controller="1" width="300" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/server_settings/listing_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="PUBLIC|PRIVATE" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
@@ -87,7 +87,7 @@
 		<child widget="main_menu/multiplayer_type_select/server_settings/password_label"/>
 		<child widget="main_menu/multiplayer_type_select/server_settings/password_value" x="230" y="1"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/server_settings/password_label" type="text" controller="1" width="230" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="13" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/multiplayer_type_select/server_settings/password_label" type="text" controller="1" width="230" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="12" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/server_settings/password_value" type="text" controller="1" width="280" height="22" font="ui\small_ui" color="#FF2896FF" align="center" text_y="5" text_flags="no_focus_test">
 	</widget>
@@ -97,7 +97,7 @@
 		<on event="left_mouse" run="mouse emit accept event"/>
 		<child widget="main_menu/multiplayer_type_select/server_settings/map_share_options_label"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/server_settings/map_share_options_label" type="text" controller="1" width="300" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="14" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/multiplayer_type_select/server_settings/map_share_options_label" type="text" controller="1" width="300" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="13" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/server_settings/op_coop_options" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<on event="a" open="main_menu/multiplayer_type_select/server_settings/coop_options/coop_options_screen"/>
@@ -105,7 +105,7 @@
 		<on event="left_mouse" run="mouse emit accept event"/>
 		<child widget="main_menu/multiplayer_type_select/server_settings/coop_options_label"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/server_settings/coop_options_label" type="text" controller="1" width="300" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="11" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/multiplayer_type_select/server_settings/coop_options_label" type="text" controller="1" width="300" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/server_settings/op_voice_options" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<on event="a" open="main_menu/multiplayer_type_select/server_settings/voice_options/voice_options_screen"/>
@@ -113,7 +113,7 @@
 		<on event="left_mouse" run="mouse emit accept event"/>
 		<child widget="main_menu/multiplayer_type_select/server_settings/voice_options_label"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/server_settings/voice_options_label" type="text" controller="1" width="300" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="12" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/multiplayer_type_select/server_settings/voice_options_label" type="text" controller="1" width="300" height="22" string_list="main_menu/multiplayer_type_select/server_settings/labels" string_index="11" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/server_settings/op_game_type" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<on event="a" run="port setup edit" open="main_menu/settings_select/multiplayer_setup/playlist_edit/game_type_select/gametype_select_screen"/>
@@ -199,7 +199,6 @@
 		<string text="VEHICLE OPTIONS:"/>
 		<string text="INDICATOR OPTIONS:"/>
 		<string text="TEAMPLAY OPTIONS:"/>
-		<string text="COMPETITIVE:"/>
 		<string text="LISTING:"/>
 		<string text="CO-OP OPTIONS:"/>
 		<string text="VOICE AND VOTING:"/>
@@ -217,7 +216,6 @@
 		<string text="Each team's vehicles and their respawn time, for\nthis game."/>
 		<string text="The motion tracker and nav points, for this game."/>
 		<string text="Friendly fire and team balance, for this game."/>
-		<string text="Anniversary rules, or this build's own, for\nthis game."/>
 		<string text="Anyone can see and join your game: it is listed\nin everyone's Server Browser."/>
 		<string text="Only players with your invite link can join."/>
 		<string text="Friendly fire, the enemies and player collisions,\nfor this game."/>
