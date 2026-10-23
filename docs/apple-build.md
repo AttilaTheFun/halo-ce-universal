@@ -38,12 +38,14 @@ subdirectory, with retained images under `Game Data/<UUID>/disc.iso`.
 iOS app deletion removes its container; simply deleting a macOS app can leave
 its container behind. Offloading an iOS app also preserves its data.
 
-Save synchronization code uses CloudKit's private database, with ISO-hash-based
-compatibility and explicit conflict choices. It is **not enabled or verified
-against a live account in the current builds**. A shared Apple developer team,
-CloudKit container and matching provisioned entitlements are required on every
-platform. No Enterprise/In-House signing identity has been found on this Mac.
-Do not publish these local products as cloud-enabled releases.
+Save synchronization is opt-in and uses GameSave file-based syncing on Apple
+OS 26+ in configured builds; legacy CloudKit code remains for older configuration.
+Local saves remain the default. **Live account syncing is not verified in these
+builds.** A shared Apple developer team, iCloud Documents container and matching
+provisioned entitlements are required. The local commands above do not configure
+a cloud container. Re-signed builds remain local-only unless the signer explicitly
+opts in with a profile authorizing the container. No Enterprise/In-House signing
+identity has been found on this Mac.
 
 The save snapshot includes persistent profiles/checkpoints and campaign/profile
 selection, excluding the image, extracted maps and transient caches. Importing

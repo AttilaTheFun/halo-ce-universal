@@ -1,3 +1,11 @@
+> **Apple development branch (`apple/sandbox-sync`):** This branch adds native
+> iOS/iPadOS support and sandboxed **Halo.app** builds to the Apple fork below.
+> Use [our Apple build instructions](docs/apple-build.md) for bundle IDs, private
+> ISO imports and opt-in GameSave. The upstream release links and unsandboxed
+> storage paths below describe upstream builds, not this branch's local builds.
+> See [the October 22 integration record](docs/upstream-review-2026-10-22.md)
+> for the current baseline and validation limits.
+
 # OpenCE: Halo: Combat Evolved for Linux, Windows, Android, and macOS
 
 <p align="center">
