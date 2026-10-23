@@ -18,7 +18,8 @@ preserving the fork's native menus, PB Options and existing gameplay rules.
 Unsupported upstream PC gametype settings are refused before precache/play.
 See the [v10 review](upstream-review-2026-10-02.md),
 [the October 3 review](upstream-review-2026-10-03.md), and
-[the October 18 review](upstream-review-2026-10-18.md).
+[the October 18 review](upstream-review-2026-10-18.md), and
+[the October 22 Apple rebase record](upstream-review-2026-10-22.md).
 This does not integrate intervening upstream changes. During upstream-update work, review all
 changes since the last recorded review so useful core improvements are not missed.
 Fetching upstream does not authorize merging it. Do not merge upstream `main`
