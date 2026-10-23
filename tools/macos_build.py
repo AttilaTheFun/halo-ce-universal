@@ -40,8 +40,8 @@ def use_renderer(renderer):
     BUILD = ROOT / ("build/macos-metal" if renderer == "metal" else "build/macos")
 GL = BUILD / "toolchain/gl"
 APP_ICON = "AppIcon.icns"
-APP_VERSION = "0.3.0"
-APP_BUILD = "12"
+APP_VERSION = "0.4.0"
+APP_BUILD = "1"
 APP_NAME = "Halo"
 LEGACY_APP_NAMES = ("Halo CE Universal.app", "Halo OG.app", "OpenCE.app")
 
