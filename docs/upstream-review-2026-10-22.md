@@ -39,3 +39,23 @@ commits have been independently reviewed to `ce95f7de`.
 See the final validation section below for completed builds and tests.
 Full gameplay, real browser multiplayer and live iCloud syncing are not
 established by compilation or the isolated harness tests.
+
+Completed checks:
+
+- Metal macOS build 40 compiled and installed at `/Applications/Halo.app`;
+  installed `codesign --verify --deep --strict` passed. BuildInfo records
+  `4cc222e9` plus the stock-HUD default change subsequently committed at
+  `ac5aa913`. Ad-hoc local build, not a notarized release. The bundled Homebrew
+  SDL library warns that it targets macOS 27; older macOS compatibility has
+  not been established.
+- iOS simulator build 40 compiled, signed, installed and launched on an oss
+  lease. Screenshot confirms landscape Halo import screen, icon and blue
+  Choose Halo ISO button. No ISO imported or gameplay tested in this lease.
+- 29 co-op gate and follower tests passed with static ILP32 GCC/QEMU, including
+  negative controls. Broader run hit a GCC maybe-uninitialized diagnostic in
+  structure-culling code. Clang rerun progressed but the VM SSH connection
+  stopped responding before completion; do not count broader suites as passed.
+- GameSave, cloud runtime and cloud save contract tests passed with ASan/UBSan;
+  cloud configuration unittest suite passed all 12 tests. These do not test a
+  live iCloud account.
+- Both oss leases released. Cache Cleanup reports no Bazel caches or worktrees.
