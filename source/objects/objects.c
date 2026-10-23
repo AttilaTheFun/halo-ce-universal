@@ -5,6 +5,7 @@ OBJECTS.C
 /* ---------- headers */
 
 #include "cseries.h"
+#include "infection.h" /* port: port/linux/game/infection.c */
 #include "objects.h"
 #include "coop_pickups.h" /* port: the host's extra campaign pickups */
 #include "coop_vehicles.h" /* port: the host's extra campaign vehicles */
@@ -1961,7 +1962,8 @@ static void object_delete_initial_recursive(
 	/* (port: a host's delete of its flag or ball does go through. Another
 	delete that reaches one, a late join or a view, still keeps it: deleting
 	it there halted, objects.c 829) */
-	if (object_is_game_flag(object_index) && !network_objects_client_deleting())
+	if (object_is_game_flag(object_index) && !network_objects_client_deleting() &&
+		!infection_can_delete_skull(object_index))
 	{
 		long next_index = object_spare_game_flag(object_index);
 
@@ -5312,7 +5314,8 @@ static void object_delete_recursive(
 
 	/* (port: a host's delete of its flag or ball does go through. Another
 	delete that reaches one, a late join or a view, still keeps it) */
-	if (object_is_game_flag(object_index) && !network_objects_client_deleting())
+	if (object_is_game_flag(object_index) && !network_objects_client_deleting() &&
+		!infection_can_delete_skull(object_index))
 	{
 		long next_index = object_spare_game_flag(object_index);
 

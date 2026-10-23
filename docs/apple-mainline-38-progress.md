@@ -42,3 +42,19 @@ Still pending: all subsequent protocol dependencies through 38, resolution of
 CoreCE-specific divergences, format manifest, actual browser discovery and join,
 Mac/iOS build and gameplay validation. The CoreCE PR and published Alpha builds
 have not been changed to claim mainline interoperability.
+
+## Continued migration (25 October)
+
+5744d2d1, ef0e3be4, 962c3eca and 4ab042e1 adopted: scenery shield
+recharge/damage, host explosion authority, position reconciliation for local
+tripmine indices, and the stale damage fixture dependency. The adapted ally,
+static-target, stale-owner and menu harness suites pass all 51 cases under
+32-bit clang + qemu-i386 in a leased Linux VM (including negative controls).
+
+cfb212fe partially adopted after reviewing mode implementations, authoritative
+state validation, damage hooks, options serialization and their tests. Support
+server-selected modes without replacing CoreCE's host/menu tools or adding new
+default playlists. Existing variants retain mode NONE and Hardcore OFF; old
+playlist options remain readable. Preserve CoreCE's flag-deletion protection,
+except Infection's disposable skull. This is still an intermediate migration;
+new mode tests and full build are pending, and no new build is published.

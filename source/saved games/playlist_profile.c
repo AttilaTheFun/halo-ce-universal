@@ -85,6 +85,7 @@ symbols in this file:
 #include "tag_files/files.h"
 #include "game/game_engine_playlist.h"
 #include "hardcore_rules.h"
+#include "game_modes.h" /* port: port/linux/game/game_modes.c */
 #include "text/text_group.h"
 #include "tag_files/tag_groups.h"
 /* the saved game file checksum is an XDK content signature. */
@@ -101,7 +102,9 @@ enum
 	which do not pass. */
 	PLAYLIST_PROFILE_OPTIONS_OFFSET = 0x100,
 	PLAYLIST_PROFILE_OPTIONS_MAGIC = 0x4F565047, /* 'GPVO' little-endian */
-	PLAYLIST_PROFILE_OPTIONS_VERSION = 1,
+	/* port: version 2 adds OpenCE's gametypes' options (game_engine.h's
+	struct game_variant_options from mode on); version 1's are read too */
+	PLAYLIST_PROFILE_OPTIONS_VERSION = 2,
 	MAXIMUM_GAME_VARIANT_NAME_LENGTH = 12,
 	NUMBER_OF_DEFAULT_PLAYLIST_PROFILES = 26,
 };
@@ -124,6 +127,10 @@ struct playlist_profile_data
 	boolean first_time;
 };
 #pragma pack(pop)
+
+/* port: OpenCE's gametypes follow the Xbox's (game_modes.h) */
+typedef char verify_game_modes_first_default_playlist_profile[
+	GAME_MODES_FIRST_DEFAULT_PLAYLIST_PROFILE == NUMBER_OF_DEFAULT_PLAYLIST_PROFILES ? 1 : -1];
 
 typedef char verify_playlist_profile_building_functions_size[
 	sizeof(((struct playlist_profile_data *)0)->
@@ -911,15 +918,20 @@ static boolean playlist_profile_options_from_block(
 	XCALCSIG_SIGNATURE checksum;
 
 	csmemcpy(&header, data, sizeof(header));
-	if (header.magic != PLAYLIST_PROFILE_OPTIONS_MAGIC || header.version != PLAYLIST_PROFILE_OPTIONS_VERSION ||
-		header.size != sizeof(*options))
+	if (header.magic != PLAYLIST_PROFILE_OPTIONS_MAGIC ||
+		(!(header.version == PLAYLIST_PROFILE_OPTIONS_VERSION && header.size == sizeof(*options)) &&
+		!(header.version == 1 && header.size == GAME_VARIANT_OPTIONS_V1_SIZE)))
 	{
 		return FALSE;
 	}
+	size = sizeof(header) + header.size;
 	saved_game_file_generate_checksum((byte *)data, size, &checksum);
 	if (csmemcmp(&checksum, data + size, sizeof(checksum)))
 		return FALSE;
-	csmemcpy(options, data + sizeof(header), sizeof(*options));
+	/* (version 1's: none of OpenCE's gametypes, their options the defaults) */
+	game_modes_options_default(options);
+	csmemcpy(options, data + sizeof(header), header.size);
+	game_modes_options_sanitize(options);
 	options->friendly_fire = (short)PIN(options->friendly_fire, 0, NUMBER_OF_FRIENDLY_FIRE_MODES - 1);
 	options->radar_players = (byte)PIN(options->radar_players, 0, NUMBER_OF_RADAR_PLAYERS - 1);
 	options->loadout = (byte)PIN(options->loadout, 0, NUMBER_OF_LOADOUTS - 1);

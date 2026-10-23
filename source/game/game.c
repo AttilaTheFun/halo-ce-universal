@@ -126,6 +126,7 @@ struct game_options;
 #include "opening_film.h" /* port: the campaign loading film */
 #endif
 #include "hardcore_timer.h" /* port: port/linux/game/hardcore_timer.c */
+#include "game_modes.h" /* port: port/linux/game/game_modes.c */
 #include "ai/ai.h"
 #include "bink/bink_playback.h"
 #include "bungie_net/network/transport.h"
@@ -503,7 +504,11 @@ void game_set_game_variant_options(
 	struct game_variant_options const *options)
 {
 	if (options)
+	{
 		game_variant_options_global = *options;
+		/* port: OpenCE's options in range (another machine's: game_modes.c) */
+		game_modes_options_sanitize(&game_variant_options_global);
+	}
 	else
 		game_variant_options_default(&game_variant_global, &game_variant_options_global);
 
