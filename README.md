@@ -23,7 +23,7 @@ The OpenCE project also publishes a browser build at [halocombatevolved.com](htt
 
 ## A copy of Halo: Combat Evolved is required
 
-OpenCE does not include the game data. You must provide your own Xbox disc image (`.xiso` or `.iso`) of Halo: Combat Evolved, or a complete extracted `maps` folder. USA NTSC data is recommended, and the current community-map collection requires it. PC, Custom Edition, Anniversary, and MCC data are not substitutes for the Xbox maps. The maps of a European (PAL) disc were made for a slower console. The game changes them to play as the North American (NTSC) maps do, so players of the two versions can play together.
+CoreCE does not include the game data, you need to use your own copy of the game.
 
 1. Start the game (`OpenCE.app` on Mac, `halo.exe` on Windows, `halo` on Linux).
 2. At the first start, choose the disc image in the file picker. On Linux and Windows, a disc image next to the executable is used without the file picker. Where no file picker can be shown (on Linux, without the desktop portal or `zenity`), the game says to put the disc image next to the executable, and stops.
