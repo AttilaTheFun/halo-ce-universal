@@ -35,6 +35,7 @@ def build_app(platform, args):
         f'-DHALO_DEVELOPMENT_TEAM={args.team or ""}',
         f'-DHALO_CLOUD_CONTAINER={args.cloud_container or ""}',
         f'-DHALO_BUILD_NUMBER={args.build_number}',
+        f'-DHALO_APP_VERSION={args.version}',
         f'-DHALO_ENTITLEMENTS={args.entitlements.resolve() if args.entitlements else ROOT / "port/ios/Halo.entitlements"}')
     settings = ['-jobs', str(args.jobs)]
     if not args.sign or platform == 'simulator':
@@ -64,7 +65,8 @@ def main():
                    help='Unique reverse-DNS app identifier registered to your development team')
     p.add_argument('--cloud-container')
     p.add_argument('--entitlements', type=Path)
-    p.add_argument('--build-number', default='12')
+    p.add_argument('--version', default='0.4.0', help='Visible MAJOR.MINOR.BUILD version assigned by the release server')
+    p.add_argument('--build-number', default='1')
     p.add_argument('--sign', action='store_true', help='Use Xcode automatic device signing')
     p.add_argument('--jobs', type=int, default=6)
     args = p.parse_args()
