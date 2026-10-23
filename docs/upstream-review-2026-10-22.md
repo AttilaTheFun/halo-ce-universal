@@ -59,3 +59,7 @@ Completed checks:
   cloud configuration unittest suite passed all 12 tests. These do not test a
   live iCloud account.
 - Both oss leases released. Cache Cleanup reports no Bazel caches or worktrees.
+- Full iOS device build 40 also succeeded (fresh guest compilation, not only
+  a reused host build). Device and simulator Info.plists confirm Halo,
+  com.LoganShire.Halo, and landscape-only iPhone/iPad orientations. Device app
+  is unsigned; no personal-device install or Reviews publication occurred.
