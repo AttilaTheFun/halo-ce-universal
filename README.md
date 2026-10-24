@@ -28,9 +28,7 @@ On Linux and Windows, the game puts `maps` next to the executable. On Mac, see [
 
 ## Download
 
-Mac
-Linux
-Windows
+Mac | Linux | Windows
 
 https://github.com/mastercheese-dev/CoreCE/releases
 
