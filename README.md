@@ -1,4 +1,4 @@
-# CoreCE: Halo: Combat Evolved for Linux, Windows, Android, and macOS
+# CoreCE: Halo: Combat Evolved for Linux, Windows, and macOS
 
 <p align="center">
   <a href="https://discord.gg/4q7tpz7Gs"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
@@ -6,7 +6,7 @@
 
 **CoreCE** (Open Community Edition) is an open source port of the Halo: Combat Evolved decompilation, from Xbox development build 2342 and [bnunu/halo-1](https://github.com/bnunu/halo-1). It adds 128-player multiplayer, online campaign co-op, mod packs, field-of-view settings, a server browser, peer-to-peer hosting, automatic map downloads, and voice chat, and it can play Custom Edition maps.
 
-Windows, Linux, Android, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows, Linux, and Android draw with OpenGL (Android uses OpenGL ES). The Mac build draws with Metal. Sound, input, and gamepads go through SDL3. With Smooth Motion on, the game draws a frame for every refresh of the display, while the simulation stays at 30 ticks a second, as on the Xbox.
+Windows, Linux, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows and Linux draw with OpenGL. The Mac build draws with Metal. Sound, input, and gamepads go through SDL3. With Smooth Motion on, the game draws a frame for every refresh of the display, while the simulation stays at 30 ticks a second, as on the Xbox.
 
 ![Original Halo main menu running on Apple Silicon](docs/images/main-menu.png)
 
@@ -16,12 +16,12 @@ CoreCE does not include the game data. Use your own copy of the game.
 
 1. Start the game (`CoreCE.app` on Mac, `halo.exe` on Windows, `halo` on Linux).
 2. At the first start, choose your copy in the file picker. On Linux and Windows, a copy next to the executable is used without the file picker. Where no file picker can be shown (on Linux, without the desktop portal or `zenity`), the game says to put your copy next to the executable, and stops.
-3. On Mac, an extracted folder offers **Copy and Manage**, **Use This Folder**, or **Cancel**. Managed copies and imports go under `~/Library/Application Support/CoreCE/Game Data/`. Saves, profiles, and `config.toml` stay in that Application Support directory. Prior files are copied from `~/Library/Application Support/OpenCE/`, or from `Halo OG` when that is the only older folder, or from `Halo CE Universal` when that is the only one left. The old folder is left in place.
+3. On Mac, an extracted folder offers **Copy and Manage**, **Use This Folder**, or **Cancel**. Managed copies and imports go under `~/Library/Application Support/CoreCE/Game Data/`. Saves, profiles, and `config.toml` stay in that Application Support directory. Prior files are copied from `~/Library/Application Support/Halo OG/`, or from `Halo CE Universal` when that is the only older folder. The old folder is left in place.
 4. The game sets up `maps` from your copy, then starts.
 
 `maps` holds the Xbox maps only. If it holds Halo PC's maps instead, the game says so and stops. Custom Edition maps go in `custom_maps` beside `maps`.
 
-On Linux and Windows, the game puts `maps` next to the executable. On Android, copy your game to the phone first. The app puts `maps/` in its data folder. See [port/android/README.md](port/android/README.md). On Mac, see [Mac data import](docs/macos-menu-and-releases.md#independently-supplied-data).
+On Linux and Windows, the game puts `maps` next to the executable. On Mac, see [Mac data import](docs/macos-menu-and-releases.md#independently-supplied-data).
 
 ## Download
 
@@ -31,14 +31,14 @@ Windows
 
 https://github.com/mastercheese-dev/CoreCE/releases
 
-The Mac package is Apple Silicon and macOS 26 or later. Open the DMG and drag **CoreCE.app** into Applications. No Homebrew or developer tools are needed to run it. The app is ad hoc signed and is not notarized, so macOS may ask you to open it from Privacy & Security the first time. This Mac release uses network protocol **32**, so a classic game can include another protocol 32 player. Hardcore needs this build. The Mac app looks for a newer release from this fork and asks before installing it. Linux, Windows, and Android update from the [CoreCE project releases](https://github.com/mastercheese-dev/CoreCE/releases). A debug build stops at the first failed check and writes it to the log.
+The Mac package is Apple Silicon and macOS 26 or later. Open the DMG and drag **CoreCE.app** into Applications. No Homebrew or developer tools are needed to run it. The app is ad hoc signed and is not notarized, so macOS may ask you to open it from Privacy & Security the first time. This Mac release uses network protocol **32**, so a classic game can include another protocol 32 player. Hardcore needs this build. The Mac app looks for a newer release from this fork and asks before installing it. Linux and Windows update from the [CoreCE project releases](https://github.com/mastercheese-dev/CoreCE/releases). A debug build stops at the first failed check and writes it to the log.
 
 Arch Linux users can install the [AUR package](https://aur.archlinux.org/packages/CoreCE-bin). The [Linux README](port/linux/README.md) covers controls, settings, and multiplayer. Most of that is the same on every platform. On Mac, settings live in `~/Library/Application Support/CoreCE/config.toml`.
 
 ## Multiplayer
 
 - **Up to 128 players** on up to 128 machines, and up to 4 players on one device in split screen.
-- **Windows, Linux, Android, and Mac play together.** On a local network they can play LAN.
+- **Windows, Linux, and Mac play together.** On a local network they can play LAN.
 - **Peer-to-peer internet hosting.** Join through the server browser or an invite link. A host lists a game as public, or keeps it private for players with the invite. With Discord, the host can send the invite through Discord.
 - **Online co-op campaign,** with friendly fire, player collisions, and more enemies as the player count grows.
 - **Voice chat:** push to talk (V) or an open microphone, changed in the audio settings.
@@ -61,7 +61,7 @@ Mods are folders of Halo PC tag files, as the Halo Editing Kit and Invader write
 
 ## Community maps and competitive options
 
-Mac Settings can download 40 approved community maps in the background after you opt in. The collection is about 863 MiB, built for Xbox v5 NTSC data. Verified downloads stay usable offline. Windows, Linux, and Android currently install matching maps by hand. See [community-map setup](docs/playtesting.md#community-maps).
+Mac Settings can download 40 approved community maps in the background after you opt in. The collection is about 863 MiB, built for Xbox v5 NTSC data. Verified downloads stay usable offline. Windows and Linux currently install matching maps by hand. See [community-map setup](docs/playtesting.md#community-maps).
 
 **PB Options** offers a match timer, spawn markers, timer announcements, and optional silent movement and weapon-ready sounds. Those modifications default off. The host chooses them. Use **Stock** for original-rule play. Timer announcements need a separate audio pack, which these builds do not include. See [PB Options](docs/performance-options.md).
 
@@ -114,7 +114,6 @@ You do not need the Xbox SDK. The port supplies the declarations the game uses. 
 | --- | --- |
 | `ninja linux` | `build/linux/halo` |
 | `ninja windows` (on Windows, or on Linux after `configure.py --windows-cross`) | `build/windows/halo.exe` and `SDL3.dll` |
-| `ninja android_apk` | `port/android/app/build/outputs/apk/debug/app-debug.apk` |
 | Mac | [Apple setup](docs/apple-build.md). The Mac build uses LLVM 22 and `tools/macos_build.py`. |
 
 `python configure.py --release` builds a release, which does not stop on assertions. `--portable` makes a Linux or Windows build that starts on other x86-64 machines. Without it, those builds use the instructions of the machine that compiled them.
