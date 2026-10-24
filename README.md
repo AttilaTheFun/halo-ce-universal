@@ -1,23 +1,14 @@
 # CoreCE: Halo: Combat Evolved for Linux, Windows, Android, and macOS
 
 <p align="center">
-  <img src="port/assets/icon/corece-icon.png" alt="CoreCE" width="128">
-</p>
-
-<p align="center">
-  <a href="https://github.com/mastercheese-dev/CoreCE/releases/latest"><img src="https://img.shields.io/github/v/release/mastercheese-dev/CoreCE?label=Mac%20download&style=for-the-badge" alt="Mac download"></a>
-  <a href="https://github.com/OpenCommunityEdition/CoreCE/releases/latest"><img src="https://img.shields.io/github/v/release/OpenCommunityEdition/CoreCE?label=Other%20platforms&style=for-the-badge" alt="Other platforms"></a>
-  <a href="https://discord.gg/9gqcHyr5km"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://discord.gg/4q7tpz7Gs"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
 **CoreCE** (Open Community Edition) is an open source port of the Halo: Combat Evolved decompilation, from Xbox development build 2342 and [bnunu/halo-1](https://github.com/bnunu/halo-1). It adds 128-player multiplayer, online campaign co-op, mod packs, field-of-view settings, a server browser, peer-to-peer hosting, automatic map downloads, and voice chat, and it can play Custom Edition maps.
 
-Windows, Linux, Android, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows, Linux, and Android draw with OpenGL (Android uses OpenGL ES). The Mac build draws with Metal. Sound, input, and gamepads go through SDL3. With Smooth Motion on, the game draws a frame for every refresh of the display, while the simulation stays at 30 ticks a second, as on the Xbox. The CoreCE project also publishes a browser build at [halocombatevolved.com](https://halocombatevolved.com/). This checkout does not include that web tree.
+Windows, Linux, Android, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows, Linux, and Android draw with OpenGL (Android uses OpenGL ES). The Mac build draws with Metal. Sound, input, and gamepads go through SDL3. With Smooth Motion on, the game draws a frame for every refresh of the display, while the simulation stays at 30 ticks a second, as on the Xbox.
 
 ![Original Halo main menu running on Apple Silicon](docs/images/main-menu.png)
-
-<img width="1284" height="1007" alt="The game running on Windows" src="https://github.com/user-attachments/assets/0a4412e1-f6d3-48ed-8e17-0a374c2122f1" />
-<p align="center"><em>CoreCE running on Windows (release build)</em></p>
 
 ## Your own copy
 
@@ -34,14 +25,13 @@ On Linux and Windows, the game puts `maps` next to the executable. On Android, c
 
 ## Download
 
-| Platform | Release | Debug | Guide |
-| --- | --- | --- | --- |
-| Mac | [CoreCE-macos-arm64-net32-mac37.dmg](https://github.com/mastercheese-dev/CoreCE/releases/download/test-v0.3.0-net32-mac37/CoreCE-macos-arm64-net32-mac37.dmg) |  | [Mac](port/macos/README.md) |
-| Linux | [halo-linux-release.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-linux-release.zip) | [halo-linux-debug.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-linux-debug.zip) | [Linux](port/linux/README.md) |
-| Windows | [halo-windows-release.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-windows-release.zip) | [halo-windows-debug.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-windows-debug.zip) | [Windows](port/windows/README.md) |
-| Android | [halo-android-release.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-android-release.zip) | [halo-android-debug.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-android-debug.zip) | [Android](port/android/README.md) |
+Mac
+Linux
+Windows
 
-The Mac package is Apple Silicon and macOS 26 or later. Open the DMG and drag **CoreCE.app** into Applications. No Homebrew or developer tools are needed to run it. The app is ad hoc signed and is not notarized, so macOS may ask you to open it from Privacy & Security the first time. This Mac release uses network protocol **32**, so a classic game can include another protocol 32 player. Hardcore needs this build. The Mac app looks for a newer release from this fork and asks before installing it. Linux, Windows, and Android update from the [CoreCE project releases](https://github.com/OpenCommunityEdition/CoreCE/releases). A debug build stops at the first failed check and writes it to the log.
+https://github.com/mastercheese-dev/CoreCE/releases
+
+The Mac package is Apple Silicon and macOS 26 or later. Open the DMG and drag **CoreCE.app** into Applications. No Homebrew or developer tools are needed to run it. The app is ad hoc signed and is not notarized, so macOS may ask you to open it from Privacy & Security the first time. This Mac release uses network protocol **32**, so a classic game can include another protocol 32 player. Hardcore needs this build. The Mac app looks for a newer release from this fork and asks before installing it. Linux, Windows, and Android update from the [CoreCE project releases](https://github.com/mastercheese-dev/CoreCE/releases). A debug build stops at the first failed check and writes it to the log.
 
 Arch Linux users can install the [AUR package](https://aur.archlinux.org/packages/CoreCE-bin). The [Linux README](port/linux/README.md) covers controls, settings, and multiplayer. Most of that is the same on every platform. On Mac, settings live in `~/Library/Application Support/CoreCE/config.toml`.
 
