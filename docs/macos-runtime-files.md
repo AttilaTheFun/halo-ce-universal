@@ -8,32 +8,32 @@ Xbox paths are turned into those folders. `d:\` is the game data folder. Any oth
 
 ## The installed app
 
-The disk image installs `/Applications/OpenCE.app`. The game does not write inside this bundle during play. An update replaces the whole bundle.
+The disk image installs `/Applications/CoreCE.app`. The game does not write inside this bundle during play. An update replaces the whole bundle.
 
 ```text
-OpenCE.app/Contents/Info.plist
-OpenCE.app/Contents/MacOS/halo
-OpenCE.app/Contents/_CodeSignature/CodeResources
-OpenCE.app/Contents/Frameworks/libSDL3.0.dylib
-OpenCE.app/Contents/Frameworks/Sparkle.framework/
-OpenCE.app/Contents/Resources/AppIcon.icns
-OpenCE.app/Contents/Resources/BuildInfo.txt
-OpenCE.app/Contents/Resources/Helmet.pdf
-OpenCE.app/Contents/Resources/brokers.txt
-OpenCE.app/Contents/Resources/halo_guest.elf
-OpenCE.app/Contents/Resources/map-downloads.json
-OpenCE.app/Contents/Resources/Licenses/ANGLE.txt
-OpenCE.app/Contents/Resources/Licenses/KCP.txt
-OpenCE.app/Contents/Resources/Licenses/Project.txt
-OpenCE.app/Contents/Resources/Licenses/SDL3.txt
-OpenCE.app/Contents/Resources/Licenses/Sparkle.txt
-OpenCE.app/Contents/Resources/Licenses/mbedtls.txt
-OpenCE.app/Contents/Resources/Licenses/miniupnpc.txt
-OpenCE.app/Contents/Resources/Licenses/musl.txt
-OpenCE.app/Contents/Resources/Licenses/tomlc17.txt
+CoreCE.app/Contents/Info.plist
+CoreCE.app/Contents/MacOS/halo
+CoreCE.app/Contents/_CodeSignature/CodeResources
+CoreCE.app/Contents/Frameworks/libSDL3.0.dylib
+CoreCE.app/Contents/Frameworks/Sparkle.framework/
+CoreCE.app/Contents/Resources/AppIcon.icns
+CoreCE.app/Contents/Resources/BuildInfo.txt
+CoreCE.app/Contents/Resources/Helmet.pdf
+CoreCE.app/Contents/Resources/brokers.txt
+CoreCE.app/Contents/Resources/halo_guest.elf
+CoreCE.app/Contents/Resources/map-downloads.json
+CoreCE.app/Contents/Resources/Licenses/ANGLE.txt
+CoreCE.app/Contents/Resources/Licenses/KCP.txt
+CoreCE.app/Contents/Resources/Licenses/Project.txt
+CoreCE.app/Contents/Resources/Licenses/SDL3.txt
+CoreCE.app/Contents/Resources/Licenses/Sparkle.txt
+CoreCE.app/Contents/Resources/Licenses/mbedtls.txt
+CoreCE.app/Contents/Resources/Licenses/miniupnpc.txt
+CoreCE.app/Contents/Resources/Licenses/musl.txt
+CoreCE.app/Contents/Resources/Licenses/tomlc17.txt
 ```
 
-`Info.plist` names the app OpenCE. The bundle identifier is `local.halo.ce-universal`. The short version is the release version. `CFBundleVersion` is the bundle build. `OpenCEMacUpdateBuild` is the Mac release number the updater compares. Get Info shows the short version and the bundle build, and does not show the Mac release number.
+`Info.plist` names the app CoreCE. The bundle identifier is `local.halo.ce-universal`. The short version is the release version. `CFBundleVersion` is the bundle build. `CoreCEMacUpdateBuild` is the Mac release number the updater compares. Get Info shows the short version and the bundle build, and does not show the Mac release number.
 
 `MacOS/halo` is the host. `halo_guest.elf` is the game image it loads. `BuildInfo.txt` records the version, source revision, guest hash, and Mac release number. `brokers.txt` is the list of internet-play brokers, copied into Application Support on every launch. `map-downloads.json` is the community-map catalog configuration. `Helmet.pdf` is the menu icon artwork. `Licenses/` holds the license texts bundled with the app.
 
@@ -44,18 +44,18 @@ While an update is installing, these exist only for that swap and are removed wh
 | Path | Role |
 | --- | --- |
 | `$TMPDIR/<id>.dmg` | The downloaded disk image |
-| `$TMPDIR/<id>/OpenCE.app` | The app copied out of that image |
+| `$TMPDIR/<id>/CoreCE.app` | The app copied out of that image |
 | `$TMPDIR/<id>.sh` | The installer script, deleted after it runs |
-| `/Applications/.OpenCE-update/` | Holding folder next to the installed app |
-| `/Applications/OpenCE.app.previous` | The previous app, restored if the new one cannot take its place |
+| `/Applications/.CoreCE-update/` | Holding folder next to the installed app |
+| `/Applications/CoreCE.app.previous` | The previous app, restored if the new one cannot take its place |
 
 ## Application Support
 
 ```text
-~/Library/Application Support/OpenCE/
+~/Library/Application Support/CoreCE/
 ```
 
-The folder is created on first launch. If `~/Library/Application Support/Halo OG/` exists, that tree is copied here. Otherwise `Halo CE Universal` is copied when it is the only older folder. The original folder is left in place. Files already in OpenCE are kept. `HALO_SAVE_ROOT` skips this copy.
+The folder is created on first launch. If `~/Library/Application Support/OpenCE/` exists, that tree is copied here. Otherwise `Halo OG` is copied, or `Halo CE Universal` when that is the only older folder. The original folder is left in place. Files already in CoreCE are kept. `HALO_SAVE_ROOT` skips this copy.
 
 `macos-settings.json` is copied with a special case: `data_path` and `iso_path` are rewritten only when they point inside the older folder. `legacy-migration.json` and any `legacy-migration-failed-*` file in the older folder are not copied.
 

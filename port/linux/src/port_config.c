@@ -243,6 +243,9 @@ static const struct config_setting config_settings[] =
 	{ "audio.timer_items", _config_boolean, "false", NULL, _environment_value, _platform_all,
 		"Announce scheduled rockets and powerups on supported maps when the\n"
 		"host enables PB Timer Sounds. Off preserves the existing timer audio." },
+	{ "audio.hardcore_timer_voice", _config_boolean, "true", NULL, _environment_value, _platform_all,
+		"In a hardcore match, let this machine hear the map's timer voice\n"
+		"(talking_timer). Off keeps that voice quiet here. Powerup calls stay on." },
 	{ "audio.menu_music", _config_boolean, "true", NULL, _environment_value, _platform_all,
 		"Play the main menu title music. False keeps menu effects and gameplay\n"
 		"audio enabled. In-game audio settings apply immediately when accepted." },

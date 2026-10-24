@@ -14,7 +14,7 @@ class InstallerBoundary(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.app = self.root / "OpenCE.app"
+        self.app = self.root / "CoreCE.app"
         self.app.mkdir()
         (self.app / "engine").write_bytes(b"verified source")
         self.output = self.root / "Halo-OG.dmg"

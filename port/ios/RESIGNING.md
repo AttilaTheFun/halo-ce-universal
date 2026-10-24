@@ -42,12 +42,12 @@ you use your own account.
 
 ## Sign and install
 
-Extract `OpenCE-iOS-resigning-kit.zip` and run the command below from its
+Extract `CoreCE-iOS-resigning-kit.zip` and run the command below from its
 folder. Alternatively, check out `apple/ios-installer` from
 `AttilaTheFun/halo-ce-universal` and run it from the repository root:
 
 ```sh
-./tools/ios_resign.sh ~/Downloads/OpenCE-iOS-PR1-unsigned.ipa \
+./tools/ios_resign.sh ~/Downloads/CoreCE-iOS-PR1-unsigned.ipa \
   --identity 'Apple Development: Your Name (IDENTITY_ID)' \
   --profile ~/Downloads/embedded.mobileprovision \
   --bundle-id com.yourname.haloce \

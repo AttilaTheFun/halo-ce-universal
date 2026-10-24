@@ -873,7 +873,7 @@ TITLES = {
 
 def title_backdrop(width: float) -> str:
     """a header's dark backdrop, as the PC headers' redraws have it, for text
-    width units wide (the text is set over it in OpenCE: ce_menus.py)"""
+    width units wide (the text is set over it in CoreCE: ce_menus.py)"""
     return "\n".join([
         '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="64" viewBox="0 0 512 64">',
         "  <defs>",
@@ -1333,8 +1333,9 @@ SETUP_OPTION_SCREENS = [
 
 
 def _lobby_local_row(base: str, key: str, label: str, setting: str, strings: str, values: str) -> list:
-    """one lobby row of this machine's config. a hardcore lobby shows it
-    for the host and for each client, and the value stays on that machine."""
+    """one row of this machine's config. the hardcore lobby's settings
+    screen shows it for the host and for each client, and the value stays
+    on that machine."""
     wide = _choice_wide(strings)
     # the options page puts a short value at 320 and a long one at 286, in a
     # 512-wide row. the lobby row is 390, so both move left by that difference
@@ -1370,8 +1371,9 @@ def _lobby() -> list:
     """the lobby the host's and the joining players wait in (the Xbox's
     pregame's functions, which need no widget of theirs): up to the port's
     128 players, scrolling; the game's map and gametype; the countdown.
-    A hardcore game also has this machine's teammate views and which pane
-    is yours. Those stay on this machine."""
+    A hardcore game also has Settings, for this machine's teammate views,
+    which pane is yours, and the map's timer voice. Those stay on this
+    machine."""
     base = f"{MT}/lobby"
     # (split screen: another controller's START joins it, its B leaves alone:
     # menu_functions.c's lobby_join. After a game it is the only screen,
@@ -1404,10 +1406,9 @@ def _lobby() -> list:
                                             ("description", f"{base}/lobby_desc")],
                      ['<data input="net splitscreen prejoin players"/>', '<data input="port lobby update"/>',
                       *rows,
-                      # (hardcore only: menu_functions.c shows these and gives
-                      # them the last two player rows. a classic lobby hides them)
-                      f'<child widget="{base}/lobby_views" x="20" y="343"/>',
-                      f'<child widget="{base}/lobby_view_slot" x="20" y="373"/>',
+                      # (hardcore only: menu_functions.c shows this and gives
+                      # it the last player row. a classic lobby hides it)
+                      f'<child widget="{base}/lobby_settings" x="20" y="373"/>',
                       f'<child widget="{base}/lobby_button_bar" y="414"/>'])
     for index in range(11):
         lines += _widget(f"{base}/list_item_{index}",
@@ -1417,11 +1418,62 @@ def _lobby() -> list:
                          ['<on event="left right" run="swap player team"/>',
                           '<child widget="main_menu/new_select/list_item_text" x="25"/>',
                           '<child widget="main_menu/new_select/list_item_arrows"/>'])
+    lines += _widget(f"{base}/lobby_settings", [("width", 390), ("height", 28),
+                                               ("flags", "pass_unhandled_to_focused_child"),
+                                               ("bitmap", "bitmaps/sel_list_item_bkd"), ("color", "#FF2896FF")],
+                     [f'<on event="a" open="{base}/lobby_settings_screen" branch="true"/>',
+                      f'<on event="start" open="{base}/lobby_settings_screen" branch="true"/>',
+                      '<on event="left_mouse" run="mouse emit accept event"/>',
+                      f'<child widget="{base}/lobby_settings_label"/>'])
+    lines += _widget(f"{base}/lobby_settings_label", [("type", "text"), ("controller", 1),
+                                                      ("width", 360), ("height", 22), ("text", "SETTINGS"),
+                                                      ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
+                                                      ("text_x", 13), ("text_y", 4),
+                                                      ("text_flags", "no_focus_test")], [])
+    # this machine's hardcore choices. the list saves them while it is open,
+    # so a countdown that starts first still keeps the change
+    lines += _widget(f"{base}/lobby_settings_screen", [("width", 640), ("height", 480),
+                                                       ("flags", "pass_unhandled_to_focused_child"),
+                                                       ("bitmap", "bitmaps/gradient")],
+                     ['<on event="b" back="true"/>',
+                      '<on event="back" back="true"/>',
+                      '<child widget="main_menu/new_select/sel_list_desc_bkd"/>',
+                      f'<child widget="{base}/lobby_settings_list"/>',
+                      f'<child widget="{base}/lobby_settings_title"/>',
+                      f'<child widget="{base}/lobby_settings_help" x="20" y="446"/>'])
+    lines += _widget(f"{base}/lobby_settings_title", [("type", "text"), ("controller", 1),
+                                                      ("left", 48), ("top", 22), ("width", 300), ("height", 32),
+                                                      ("text", "SETTINGS"), ("font", "ui\\large_ui"),
+                                                      ("color", "#FF2896FF"), ("text_flags", "no_focus_test")], [])
+    lines += _widget(f"{base}/lobby_settings_list", [("type", "column_list"), ("width", 640), ("height", 480),
+                                                     ("flags", "pass_unhandled_to_focused_child up_down_tabs_children")],
+                     ['<data input="port lobby settings"/>',
+                      '<on event="b" back="true"/>',
+                      '<on event="back" back="true"/>',
+                      f'<child widget="{base}/lobby_views" x="20" y="73"/>',
+                      f'<child widget="{base}/lobby_view_slot" x="20" y="103"/>',
+                      f'<child widget="{base}/lobby_timer_voice" x="20" y="133"/>',
+                      f'<child widget="{base}/lobby_settings_buttons" y="414"/>'])
     lines += _lobby_local_row(base, "lobby_views", "SPLIT SCREEN", "display.teammate_views",
                               "OFF|ON", "false|true")
     lines += _lobby_local_row(base, "lobby_view_slot", "YOUR VIEW", "display.teammate_view_slot",
                               "TOP|BOTTOM|TOP LEFT|TOP RIGHT|BOTTOM LEFT|BOTTOM RIGHT",
                               "top|bottom|top_left|top_right|bottom_left|bottom_right")
+    lines += _lobby_local_row(base, "lobby_timer_voice", "TIMER VOICE", "audio.hardcore_timer_voice",
+                              "OFF|ON", "false|true")
+    lines += _widget(f"{base}/lobby_settings_buttons", [("type", "column_list"), ("width", 640), ("height", 28),
+                                                       ("flags", "pass_unhandled_to_focused_child left_right_tabs_items")],
+                     [f'<child widget="{base}/lobby_settings_back" x="256" y="1"/>'])
+    lines += _widget(f"{base}/lobby_settings_back", [("type", "text"), ("width", 128), ("height", 24),
+                                                     ("bitmap", "bitmaps/text_button_background"),
+                                                     ("text", "BACK"), ("font", "ui\\small_ui"),
+                                                     ("color", "#FFFFFFFF"), ("align", "center"), ("text_y", 2)],
+                     ['<on event="a" back="true"/>', '<on event="start" back="true"/>',
+                      '<on event="left_mouse" run="mouse emit accept event"/>'])
+    lines += _widget(f"{base}/lobby_settings_help", [("type", "text"), ("width", 350), ("height", 24),
+                                                     ("text", "This machine only."),
+                                                     ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("text_y", 5),
+                                                     ("text_flags", "no_focus_test")], [])
     lines += _widget(f"{base}/lobby_desc", [("width", 640), ("height", 480)],
                      ['<child widget="main_menu/current_profile_name"/>',
                       f'<child widget="{base}/lobby_right_item" x="22" y="2"/>'])

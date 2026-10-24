@@ -34,7 +34,7 @@ earlier exclusions also remain in force; neither is integrated:
 
 | Upstream change | Category and effect | Decision and reason | Validation / integration status |
 | --- | --- | --- | --- |
-| [`0182da817285b67eee8264663ca79f7c32d66b5e`](https://github.com/cybersecurity/halo-ce-universal/commit/0182da817285b67eee8264663ca79f7c32d66b5e) | Presentation / branding: high-resolution text and OpenCE titles. | Exclude: keep the game data's bitmap fonts and original menu titles. | Diff reviewed; not integrated; no adoption tests required. |
+| [`0182da817285b67eee8264663ca79f7c32d66b5e`](https://github.com/cybersecurity/halo-ce-universal/commit/0182da817285b67eee8264663ca79f7c32d66b5e) | Presentation / branding: high-resolution text and CoreCE titles. | Exclude: keep the game data's bitmap fonts and original menu titles. | Diff reviewed; not integrated; no adoption tests required. |
 | [`f2ba71d9af4c6fc65d7419cc22e8f4899b16da88`](https://github.com/cybersecurity/halo-ce-universal/commit/f2ba71d9af4c6fc65d7419cc22e8f4899b16da88) | Presentation / player information: names above players' heads. | Exclude: preserve original target-name/teammate-indicator behavior. | Diff reviewed; not integrated; no adoption tests required. |
 
 Every upstream commit requires inspection of its actual diff and behavioral
@@ -46,7 +46,7 @@ following policy when deciding what to integrate:
 | Matching decompilation / byte accuracy | Prioritize verified corrections toward the stated Xbox reconstruction target; validate their effect on the native port separately. |
 | Core performance, stability, platform compatibility and renderer correctness | Prioritize improvements that preserve original gameplay and presentation. Verify that an optimization does not silently change simulation timing or player behavior. |
 | Netcode and potential matchmaking | Consider individually for more reliable, fair online play. Review compatibility, latency, authority, timing and fairness effects; eligibility is not automatic acceptance. |
-| Renaming or rebranding, including OpenCE names/titles | Exclude from this fork unless the user explicitly requests a separate change. |
+| Renaming or rebranding, including CoreCE names/titles | Exclude from this fork unless the user explicitly requests a separate change. |
 | Replacement fonts, artwork or HUD; new overhead player labels | Exclude by default. Preserve original presentation and original target-name/teammate-indicator behavior. |
 | Timers, silent weapon switches, balance changes or other rule modifications | Exclude from the baseline unless the user explicitly requests and separately reviews them. |
 

@@ -58,7 +58,7 @@ static HaloMenu *menu;
 
 static void showError(NSError *error) {
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = @"OpenCE could not use that setting";
+    alert.messageText = @"CoreCE could not use that setting";
     alert.informativeText = error.localizedDescription ?: @"Please try again.";
     if (menu.gameRunning) {
         [menu showSettings:nil];
@@ -127,10 +127,10 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     self.importing = YES;
     NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 520, 150)
         styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
-    window.title = @"Preparing OpenCE Data";
+    window.title = @"Preparing CoreCE Data";
     window.releasedWhenClosed = NO;
-    label(window.contentView, @"Copying your saved data into OpenCE’s Application Support folder.", NSMakeRect(24, 103, 472, 25), NO);
-    NSTextField *status = label(window.contentView, @"Your original files and existing OpenCE files stay in place.", NSMakeRect(24, 73, 472, 22), YES);
+    label(window.contentView, @"Copying your saved data into CoreCE’s Application Support folder.", NSMakeRect(24, 103, 472, 25), NO);
+    NSTextField *status = label(window.contentView, @"Your original files and existing CoreCE files stay in place.", NSMakeRect(24, 73, 472, 22), YES);
     NSProgressIndicator *bar = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(24, 35, 472, 18)];
     bar.style = NSProgressIndicatorStyleBar;
     bar.indeterminate = YES;
@@ -152,8 +152,8 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     self.importing = NO;
     if (!success) {
         NSAlert *alert = [[NSAlert alloc] init];
-        alert.messageText = @"OpenCE could not finish copying your saved data";
-        alert.informativeText = [NSString stringWithFormat:@"%@\n\nThe older Application Support folder and existing OpenCE files were preserved. The game will close so you can fix the issue and retry; it will not start with empty settings.", migrationError.localizedDescription ?: @"The copy could not finish."];
+        alert.messageText = @"CoreCE could not finish copying your saved data";
+        alert.informativeText = [NSString stringWithFormat:@"%@\n\nThe older Application Support folder and existing CoreCE files were preserved. The game will close so you can fix the issue and retry; it will not start with empty settings.", migrationError.localizedDescription ?: @"The copy could not finish."];
         [alert addButtonWithTitle:@"Quit and Retry Later"];
         [alert runModal];
     }
@@ -183,12 +183,12 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     NSImage *image = [[NSImage alloc] initWithContentsOfURL:icon];
     image.size = NSMakeSize(18, 18);
     image.template = YES;
-    self.status.button.image = image ?: [NSImage imageWithSystemSymbolName:@"gamecontroller" accessibilityDescription:@"OpenCE"];
-    self.status.button.toolTip = @"OpenCE";
-    self.status.button.accessibilityLabel = @"OpenCE";
-    NSMenu *statusMenu = [[NSMenu alloc] initWithTitle:@"OpenCE"];
+    self.status.button.image = image ?: [NSImage imageWithSystemSymbolName:@"gamecontroller" accessibilityDescription:@"CoreCE"];
+    self.status.button.toolTip = @"CoreCE";
+    self.status.button.accessibilityLabel = @"CoreCE";
+    NSMenu *statusMenu = [[NSMenu alloc] initWithTitle:@"CoreCE"];
     statusMenu.delegate = self;
-    NSMenuItem *title = [[NSMenuItem alloc] initWithTitle:@"OpenCE" action:nil keyEquivalent:@""];
+    NSMenuItem *title = [[NSMenuItem alloc] initWithTitle:@"CoreCE" action:nil keyEquivalent:@""];
     title.enabled = NO;
     [statusMenu addItem:title];
     [statusMenu addItem:NSMenuItem.separatorItem];
@@ -202,18 +202,18 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     item(statusMenu, @"Edit Controls and Advanced Settings…", @selector(openConfig:), @"");
     [statusMenu addItem:NSMenuItem.separatorItem];
     item(statusMenu, @"Check for Updates…", @selector(checkUpdates:), @"");
-    NSMenuItem *statusQuit = item(statusMenu, @"Quit OpenCE", @selector(terminate:), @"q");
+    NSMenuItem *statusQuit = item(statusMenu, @"Quit CoreCE", @selector(terminate:), @"q");
     statusQuit.target = NSApp;
     self.status.menu = statusMenu;
 
     NSMenu *main = [[NSMenu alloc] initWithTitle:@"Main"];
-    NSMenuItem *app = [[NSMenuItem alloc] initWithTitle:@"OpenCE" action:nil keyEquivalent:@""];
-    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"OpenCE"];
-    item(appMenu, @"About OpenCE", @selector(about:), @"");
+    NSMenuItem *app = [[NSMenuItem alloc] initWithTitle:@"CoreCE" action:nil keyEquivalent:@""];
+    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"CoreCE"];
+    item(appMenu, @"About CoreCE", @selector(about:), @"");
     item(appMenu, @"Settings…", @selector(showSettings:), @",");
     item(appMenu, @"Check for Updates…", @selector(checkUpdates:), @"");
     [appMenu addItem:NSMenuItem.separatorItem];
-    NSMenuItem *appQuit = item(appMenu, @"Quit OpenCE", @selector(terminate:), @"q");
+    NSMenuItem *appQuit = item(appMenu, @"Quit CoreCE", @selector(terminate:), @"q");
     appQuit.target = NSApp;
     app.submenu = appMenu;
     [main addItem:app];
@@ -234,7 +234,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
             entry.title = host_sdl_is_fullscreen() ? @"Exit Full Screen" : @"Enter Full Screen";
         if (entry.action == @selector(checkUpdates:))
             entry.title = self.pendingInstall ? @"Update Ready — Quit to Install" : self.availableVersion
-                ? [NSString stringWithFormat:@"Update to OpenCE %@…", self.availableVersion] : @"Check for Updates…";
+                ? [NSString stringWithFormat:@"Update to CoreCE %@…", self.availableVersion] : @"Check for Updates…";
     }
 }
 - (BOOL)validateMenuItem:(NSMenuItem *)entry {
@@ -301,7 +301,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 - (void)about:(id)sender {
     (void)sender;
     host_sdl_release_mouse();
-    [NSApp orderFrontStandardAboutPanelWithOptions:@{NSAboutPanelOptionApplicationName:@"OpenCE"}];
+    [NSApp orderFrontStandardAboutPanelWithOptions:@{NSAboutPanelOptionApplicationName:@"CoreCE"}];
 }
 - (void)quit:(id)sender {
     (void)sender;
@@ -314,7 +314,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 - (void)buildSettings {
     self.settingsWindow = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 520, 542)
         styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
-    self.settingsWindow.title = @"OpenCE Settings";
+    self.settingsWindow.title = @"CoreCE Settings";
     self.settingsWindow.releasedWhenClosed = NO;
     self.settingsWindow.preventsApplicationTerminationWhenModal = NO;
     self.settingsWindow.level = NSFloatingWindowLevel;
@@ -329,7 +329,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     self.sourceLabel = label(content, @"", NSMakeRect(24, 182, 472, 20), YES);
     button(content, @"Choose Disc Image…", @selector(selectImage:), NSMakeRect(20, 143, 183, 32));
     button(content, @"Choose Maps Folder…", @selector(selectFolder:), NSMakeRect(211, 143, 193, 32));
-    label(content, @"Changes to game data take effect when OpenCE next opens.", NSMakeRect(24, 116, 472, 19), YES).font = [NSFont systemFontOfSize:11];
+    label(content, @"Changes to game data take effect when CoreCE next opens.", NSMakeRect(24, 116, 472, 19), YES).font = [NSFont systemFontOfSize:11];
     self.automaticUpdatesButton = [NSButton checkboxWithTitle:@"Automatically check for updates"
                                                                   target:self action:@selector(automaticUpdates:)];
     self.automaticUpdatesButton.frame = NSMakeRect(24, 78, 472, 24);
@@ -426,7 +426,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     }
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = @"Allow community map downloads?";
-    alert.informativeText = @"OpenCE will download approved maps from this build's configured HTTPS catalog into Application Support. Missing maps and the catalog's selected launch maps can download while you play. Your original maps and disc images stay in place.";
+    alert.informativeText = @"CoreCE will download approved maps from this build's configured HTTPS catalog into Application Support. Missing maps and the catalog's selected launch maps can download while you play. Your original maps and disc images stay in place.";
     [alert addButtonWithTitle:@"Allow Downloads"];
     [alert addButtonWithTitle:@"Cancel"];
     [alert beginSheetModalForWindow:self.settingsWindow completionHandler:^(NSModalResponse response) {
@@ -450,7 +450,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     NSOpenPanel *panel = NSOpenPanel.openPanel;
     panel.canChooseDirectories = NO; panel.canChooseFiles = YES; panel.allowsMultipleSelection = NO;
     panel.allowedFileTypes = @[@"hogpkg"]; panel.allowsOtherFileTypes = NO; panel.resolvesAliases = NO;
-    panel.message = @"Choose a OpenCE community package. OpenCE will build its playable map from this package and your original Xbox disc data, then keep it in your map library.";
+    panel.message = @"Choose a CoreCE community package. CoreCE will build its playable map from this package and your original Xbox disc data, then keep it in your map library.";
     [panel beginSheetModalForWindow:self.settingsWindow completionHandler:^(NSModalResponse response) {
         if (response != NSModalResponseOK || self.importing) return;
         self.importing = YES; self.packageStatus = @"Checking community package…"; [self refreshSettings];
@@ -500,7 +500,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     } else {
         NSAlert *alert = [[NSAlert alloc] init];
         alert.messageText = @"Advanced settings appear after the first game launch";
-        alert.informativeText = @"Start OpenCE once to create its controls and advanced settings file.";
+        alert.informativeText = @"Start CoreCE once to create its controls and advanced settings file.";
         if (self.gameRunning) {
             [self showSettings:nil];
             [alert beginSheetModalForWindow:self.settingsWindow completionHandler:nil];
@@ -531,9 +531,9 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     NSError *copyError = nil;
     unsigned long long bytes = HaloGameDataCopySize(valid, &copyError);
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = @"Let OpenCE manage a copy of these maps?";
+    alert.messageText = @"Let CoreCE manage a copy of these maps?";
     alert.informativeText = copyError ? @"This folder uses linked map data. Use it in place to preserve your developer setup."
-        : [NSString stringWithFormat:@"OpenCE can copy about %.1f GB into its Application Support folder and organize community maps there. Your original files stay in place.", bytes / 1073741824.0];
+        : [NSString stringWithFormat:@"CoreCE can copy about %.1f GB into its Application Support folder and organize community maps there. Your original files stay in place.", bytes / 1073741824.0];
     [alert addButtonWithTitle:@"Copy and Manage"];
     [alert addButtonWithTitle:@"Use This Folder"];
     [alert addButtonWithTitle:@"Cancel"];
@@ -554,7 +554,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 - (void)copyFolder:(NSURL *)folder completion:(void (^)(BOOL))completion {
     NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 470, 130)
         styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
-    window.title = @"Copying OpenCE Maps";
+    window.title = @"Copying CoreCE Maps";
     window.level = NSFloatingWindowLevel;
     NSTextField *progressLabel = label(window.contentView, @"Preparing a managed copy…", NSMakeRect(24, 78, 422, 22), NO);
     NSProgressIndicator *bar = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(24, 48, 422, 18)];
@@ -600,7 +600,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 - (void)importImage:(NSURL *)image completion:(void (^)(BOOL))completion {
     NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 470, 130)
         styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
-    window.title = @"Importing OpenCE Maps";
+    window.title = @"Importing CoreCE Maps";
     window.level = NSFloatingWindowLevel;
     NSTextField *progressLabel = label(window.contentView, @"Reading disc image…", NSMakeRect(24, 78, 422, 22), NO);
     NSProgressIndicator *bar = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(24, 48, 422, 18)];
@@ -635,7 +635,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     if (!self.gameRunning) return;
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = @"Game data updated";
-    alert.informativeText = @"OpenCE will use your selection the next time it opens. Your current game can continue.";
+    alert.informativeText = @"CoreCE will use your selection the next time it opens. Your current game can continue.";
     [self showSettings:nil];
     [alert beginSheetModalForWindow:self.settingsWindow completionHandler:nil];
 }
@@ -712,7 +712,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
             if (!error) halo_fork_update_set_notice(NULL);
             if (!quiet) {
                 NSAlert *alert = [[NSAlert alloc] init];
-                alert.messageText = error ? @"OpenCE could not check for an update" : @"OpenCE is up to date";
+                alert.messageText = error ? @"CoreCE could not check for an update" : @"CoreCE is up to date";
                 alert.informativeText = error.localizedDescription ?: @"This is the latest Mac release from this fork.";
                 [alert runModal];
             }
@@ -735,7 +735,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     host_sdl_release_mouse();
     [NSApp activateIgnoringOtherApps:YES];
     NSAlert *question = [[NSAlert alloc] init];
-    question.messageText = @"A new version of OpenCE is available";
+    question.messageText = @"A new version of CoreCE is available";
     question.informativeText = [NSString stringWithFormat:
         @"Mac %ld is available. This is mac %d.\n\nDo you want to update? The game will close and start the new version.",
         build, HALO_MAC_UPDATE_BUILD];
@@ -762,7 +762,7 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
     self.forkUpdateBusy = YES;
     NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 420, 120)
         styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
-    window.title = @"Updating OpenCE";
+    window.title = @"Updating CoreCE";
     window.releasedWhenClosed = NO;
     label(window.contentView, @"Downloading the new version.", NSMakeRect(24, 72, 372, 22), NO);
     NSTextField *status = label(window.contentView, @"Starting the download.", NSMakeRect(24, 48, 372, 20), YES);
@@ -825,13 +825,13 @@ static void migrationProgress(void *context, const char *file, unsigned long lon
 - (void)standardUserDriverWillHandleShowingUpdate:(BOOL)handle forUpdate:(SUAppcastItem *)update state:(SPUUserUpdateState *)state {
     (void)handle; (void)state;
     self.availableVersion = update.displayVersionString;
-    self.status.button.toolTip = [NSString stringWithFormat:@"OpenCE %@ is available", self.availableVersion];
+    self.status.button.toolTip = [NSString stringWithFormat:@"CoreCE %@ is available", self.availableVersion];
 }
 - (BOOL)updater:(SPUUpdater *)updater shouldPostponeRelaunchForUpdate:(SUAppcastItem *)update untilInvokingBlock:(void (^)(void))install {
     (void)updater; (void)update;
     if (!self.gameRunning) return NO;
     self.pendingInstall = install;
-    self.status.button.toolTip = @"OpenCE update ready — quit the game to install";
+    self.status.button.toolTip = @"CoreCE update ready — quit the game to install";
     return YES;
 }
 - (BOOL)updater:(SPUUpdater *)updater willInstallUpdateOnQuit:(SUAppcastItem *)update immediateInstallationBlock:(void (^)(void))install {
@@ -918,7 +918,7 @@ int host_menu_prepare(const char *support, const char *fallback, char *data, siz
         }
         while (!valid) {
             NSAlert *alert = [[NSAlert alloc] init];
-            alert.messageText = @"Choose your OpenCE game data";
+            alert.messageText = @"Choose your CoreCE game data";
             alert.informativeText = @"Use your own original Xbox Halo disc image or extracted maps folder. The app does not include game data.";
             [alert addButtonWithTitle:@"Choose Disc Image…"];
             [alert addButtonWithTitle:@"Choose Maps Folder…"];

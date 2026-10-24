@@ -2,7 +2,7 @@
 
 ## Project direction
 
-This is **OpenCE**, `pfista/halo-og`, a cross-platform Xbox-derived port. Preserve original
+This is **CoreCE**, `pfista/halo-og`, a cross-platform Xbox-derived port. Preserve original
 Xbox Halo: Combat Evolved NTSC gameplay and presentation while improving native
 performance, portability and online play. Community maps are separate content
 imports. Custom maps and explicitly selected competitive options serve serious
@@ -22,7 +22,7 @@ dependencies, not just the commit title. Do not merge upstream wholesale.
 - Consider netcode and matchmaking improvements case by case. Review their
   effects on simulation timing, input, fairness, session compatibility and
   service dependencies before adoption. Their category alone is not approval.
-- Exclude renaming/rebranding (including OpenCE), replacement fonts or artwork,
+- Exclude renaming/rebranding (including CoreCE), replacement fonts or artwork,
   new overhead player labels, and changes to sounds, weapons, balance or game
   rules from the original-game baseline. Timers and other competitive
   modifications require separate explicit user direction.
@@ -53,7 +53,7 @@ to an Xbox executable, or a successful smoke test as proof of full retail parity
 ## Local Mac build installation
 
 After each successful local macOS app build, install the built app into
-`/Applications/OpenCE.app`. This is the user's default for this
+`/Applications/CoreCE.app`. This is the user's default for this
 project. Use the build script's `--install` option or its `install_app` helper
 for an already-built app; the installer verifies the bundle and preserves the
 previous copy. Verify the installed signature and `Contents/Resources/BuildInfo.txt`

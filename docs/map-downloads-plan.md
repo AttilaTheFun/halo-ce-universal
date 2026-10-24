@@ -35,7 +35,7 @@ images remain user-imported data. No import/join operation uploads user data.
 The canonical macOS location is outside the app bundle:
 
 ```text
-~/Library/Application Support/OpenCE/
+~/Library/Application Support/CoreCE/
   macos-settings.json            data/source-image paths, display/download consent
   config.toml                    existing advanced game settings
   <existing saves/profiles/cache/logs>
@@ -50,7 +50,7 @@ The canonical macOS location is outside the app bundle:
 ```
 
 On first launch the app copies the previous Application
-Support tree into `OpenCE`, including settings, profiles, saves and maps.
+Support tree into `CoreCE`, including settings, profiles, saves and maps.
 Original files and existing destination files are preserved. Managed selections
 are repointed only after their copied targets are complete. A copy failure
 stops launch with an error so an empty new directory cannot hide prior settings.

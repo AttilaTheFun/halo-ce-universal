@@ -31,8 +31,7 @@
 		<child widget="main_menu/multiplayer_type_select/lobby/list_item_8" x="20" y="313"/>
 		<child widget="main_menu/multiplayer_type_select/lobby/list_item_9" x="20" y="343"/>
 		<child widget="main_menu/multiplayer_type_select/lobby/list_item_10" x="20" y="373"/>
-		<child widget="main_menu/multiplayer_type_select/lobby/lobby_views" x="20" y="343"/>
-		<child widget="main_menu/multiplayer_type_select/lobby/lobby_view_slot" x="20" y="373"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_settings" x="20" y="373"/>
 		<child widget="main_menu/multiplayer_type_select/lobby/lobby_button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/list_item_0" width="390" height="28" bitmap="bitmaps/sel_list_item_bkd_top" font="ui\large_ui" color="#FF2896FF" align="center" text_y="3">
@@ -90,6 +89,33 @@
 		<child widget="main_menu/new_select/list_item_text" x="25"/>
 		<child widget="main_menu/new_select/list_item_arrows"/>
 	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_settings" width="390" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/sel_list_item_bkd" color="#FF2896FF">
+		<on event="a" open="main_menu/multiplayer_type_select/lobby/lobby_settings_screen" branch="true"/>
+		<on event="start" open="main_menu/multiplayer_type_select/lobby/lobby_settings_screen" branch="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_settings_label"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_settings_label" type="text" controller="1" width="360" height="22" text="SETTINGS" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4" text_flags="no_focus_test">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_settings_screen" width="640" height="480" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/gradient">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/new_select/sel_list_desc_bkd"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_settings_list"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_settings_title"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_settings_help" x="20" y="446"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_settings_title" type="text" controller="1" left="48" top="22" width="300" height="32" text="SETTINGS" font="ui\large_ui" color="#FF2896FF" text_flags="no_focus_test">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_settings_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children">
+		<data input="port lobby settings"/>
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_views" x="20" y="73"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_view_slot" x="20" y="103"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_timer_voice" x="20" y="133"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_settings_buttons" y="414"/>
+	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/lobby_views" width="390" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/sel_list_item_bkd" color="#FF2896FF">
 		<child widget="main_menu/multiplayer_type_select/lobby/lobby_views_label"/>
 		<child widget="main_menu/multiplayer_type_select/lobby/lobby_views_spinner" x="198" y="1"/>
@@ -111,6 +137,27 @@
 		<on event="created" run="port setting load"/>
 		<on event="deleted" run="port setting save"/>
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_timer_voice" width="390" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/sel_list_item_bkd" color="#FF2896FF">
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_timer_voice_label"/>
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_timer_voice_spinner" x="198" y="1"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_timer_voice_label" type="text" controller="1" width="184" height="22" text="TIMER VOICE" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_timer_voice_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|ON" setting="audio.hardcore_timer_voice" values="false|true" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+		<on event="created" run="port setting load"/>
+		<on event="deleted" run="port setting save"/>
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_settings_buttons" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/multiplayer_type_select/lobby/lobby_settings_back" x="256" y="1"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_settings_back" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" text="BACK" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" back="true"/>
+		<on event="start" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/lobby/lobby_settings_help" type="text" width="350" height="24" text="This machine only." font="ui\small_ui" color="#FF2896FF" text_y="5" text_flags="no_focus_test">
 	</widget>
 	<widget name="main_menu/multiplayer_type_select/lobby/lobby_desc" width="640" height="480">
 		<child widget="main_menu/current_profile_name"/>

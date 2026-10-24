@@ -1,4 +1,4 @@
-# OpenCE native Apple Silicon build
+# CoreCE native Apple Silicon build
 
 The experimental native Mac build is playable. On 2026-09-27, the main menu,
 campaign loading and gameplay, mouse capture, and audible output were confirmed
@@ -15,7 +15,7 @@ For shared testing, use a published tag in the
 [testing releases](https://github.com/pfista/halo-og/releases) and
 download `Halo-OG-macos-arm64.dmg` directly from its assets. The
 [`test-v0.3.0-net11-dmg2` installer](https://github.com/pfista/halo-og/releases/download/test-v0.3.0-net11-dmg2/Halo-OG-macos-arm64.dmg)
-opens a window with OpenCE, a drag arrow and the Applications folder. Testing
+opens a window with CoreCE, a drag arrow and the Applications folder. Testing
 prereleases have permanent URLs containing the tag and require no GitHub sign-in.
 See [manual testing publication](../../docs/macos-menu-and-releases.md#manual-testing-prerelease)
 for the publishing workflow. No testing prerelease is created automatically.
@@ -29,7 +29,7 @@ Choose a successful run, then download **halo-macos-arm64-dmg** from its
 started manually. Artifacts expire after 14 days.
 
 Extract the downloaded ZIP and open `Halo-OG-macos-arm64.dmg`.
-Drag **OpenCE.app** onto the Applications shortcut, then launch it
+Drag **CoreCE.app** onto the Applications shortcut, then launch it
 from Applications. `README.txt` records that build's minimum macOS version and
 installation steps. `BuildInfo.txt` records the source revision and guest hash;
 `SHA256SUMS` lets you verify the DMG with `shasum -a 256 -c SHA256SUMS` from the
@@ -54,7 +54,7 @@ and build checks; play between platforms still needs testing.
 
 ## Launch
 
-Open `build/macos/OpenCE.app` in Finder. There is no automatic timeout.
+Open `build/macos/CoreCE.app` in Finder. There is no automatic timeout.
 The app includes SDL3, ANGLE, Sparkle, and the compiled game image. It remembers
 your chosen local data location. Development builds can fall back to this
 checkout's `assets/` directory. The helmet menu icon opens Settings, changes
@@ -82,15 +82,16 @@ menu dimming and flat backgrounds cover the whole display.
 Saves, cache files, `config.toml`, and `halo.log` are under:
 
 ```text
-~/Library/Application Support/OpenCE/
+~/Library/Application Support/CoreCE/
 ```
 
 [Runtime files](../../docs/macos-runtime-files.md) lists every directory and file the installed app and a running game use.
 
 On first launch, prior settings, saves and managed game data are copied from
-`~/Library/Application Support/Halo OG/`, or from `Halo CE Universal` when
-that is the only older folder. The original files remain in place, and
-existing files under OpenCE are preserved. The bundle identifier remains stable.
+`~/Library/Application Support/OpenCE/`, or from `Halo OG` when that is the
+only older folder, or from `Halo CE Universal` when that is the only one left.
+The original files remain in place, and existing files under CoreCE are
+preserved. The bundle identifier remains stable.
 
 Keyboard/mouse controls:
 
@@ -120,7 +121,7 @@ See [native settings](../../docs/native-settings.md) for live Audio/Video option
 in the main and pause menus.
 
 All keyboard/controller actions and mouse buttons can be changed in the
-`[bindings]` section of `~/Library/Application Support/OpenCE/config.toml`.
+`[bindings]` section of `~/Library/Application Support/CoreCE/config.toml`.
 The first launch adds any missing bindings with their defaults, preserving
 existing settings, bindings and comments. Quit Halo, edit the file, and restart
 to apply changes. These bindings emit Xbox controller buttons, so an in-game
@@ -192,7 +193,7 @@ From the repository root:
 
 ```sh
 python3 tools/macos_build.py
-open "build/macos/OpenCE.app"
+open "build/macos/CoreCE.app"
 ```
 
 To build and install a single copy in Applications for Spotlight:
@@ -204,7 +205,7 @@ python3 tools/macos_build.py --install
 To build without local game data, use `--no-data-path --install` instead;
 the app will ask for a disc image or game folder on first launch.
 
-Then press Command-Space, type `OpenCE`, and press Return. An
+Then press Command-Space, type `CoreCE`, and press Return. An
 optional directory, such as `--install ~/Applications`, installs for just your
 account. Installation verifies the signed bundle before replacing a previous
 copy, preserves the previous app in a hidden backup directory, and registers

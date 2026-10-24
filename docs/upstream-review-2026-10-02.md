@@ -47,7 +47,7 @@ All seven new commits' actual diffs and relevant dependencies were reviewed.
 | [`d1c7243cb20eab4488efa1266e259b1f4d5240f6`](https://github.com/cybersecurity/halo-ce-universal/commit/d1c7243cb20eab4488efa1266e259b1f4d5240f6) | Adds version-10 ping telemetry alongside a redesigned/scaled scoreboard, ping column, pagination and scoreboard input capture. | **Partially adopt.** Take the protocol and protocol documentation; exclude the redesigned scoreboard, text scaling, settings and input capture. | Integrated as `ea4dec3c`. The four selected upstream files match this revision exactly. Native build, five protocol tests, consecutive-match gameplay and both mixed-version rejection checks passed; details below. |
 
 The October 1 exclusions remain: `0182da817285b67eee8264663ca79f7c32d66b5e`
-(replacement fonts / OpenCE titles) and
+(replacement fonts / CoreCE titles) and
 `f2ba71d9af4c6fc65d7419cc22e8f4899b16da88` (overhead player names). Neither is
 reintroduced. Existing high-resolution HUD assets were already present in the
 older baseline; this update does not enable them or alter the fork's original-HUD

@@ -1,77 +1,69 @@
 # CoreCE: Halo: Combat Evolved for Linux, Windows, Android, and macOS
 
 <p align="center">
-  <img src="port/assets/icon/CoreCE-icon.png" alt="CoreCE" width="128">
+  <img src="port/assets/icon/corece-icon.png" alt="CoreCE" width="128">
 </p>
 
 <p align="center">
-  <a href="https://github.com/innerhat-dev/CoreCE/releases/latest"><img src="https://img.shields.io/github/v/release/innerhat-dev/CoreCE?label=Mac%20download&style=for-the-badge" alt="Mac download"></a>
+  <a href="https://github.com/mastercheese-dev/CoreCE/releases/latest"><img src="https://img.shields.io/github/v/release/mastercheese-dev/CoreCE?label=Mac%20download&style=for-the-badge" alt="Mac download"></a>
   <a href="https://github.com/OpenCommunityEdition/CoreCE/releases/latest"><img src="https://img.shields.io/github/v/release/OpenCommunityEdition/CoreCE?label=Other%20platforms&style=for-the-badge" alt="Other platforms"></a>
   <a href="https://discord.gg/9gqcHyr5km"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
-**CoreCE** (Open Community Edition) is an open source port of the Halo: Combat Evolved decompilation, based on an early Xbox development build (2342) and forked from [bnunu/halo-1](https://github.com/bnunu/halo-1). It adds 128-player multiplayer, online campaign co-op, mod packs, field-of-view settings, a server browser, peer-to-peer hosting, automatic map downloads, and voice chat, and it can play Custom Edition maps.
+**CoreCE** (Open Community Edition) is an open source port of the Halo: Combat Evolved decompilation, from Xbox development build 2342 and [bnunu/halo-1](https://github.com/bnunu/halo-1). It adds 128-player multiplayer, online campaign co-op, mod packs, field-of-view settings, a server browser, peer-to-peer hosting, automatic map downloads, and voice chat, and it can play Custom Edition maps.
 
-The game runs natively on **Windows, Linux, Android, and Apple Silicon**. It is not an emulator. The game's own code is compiled for each platform, with a new layer in place of the Xbox's hardware. Windows, Linux, and Android draw with OpenGL (Android uses OpenGL ES). The Mac build draws with Metal. Sound, input, and gamepads go through SDL3. With Smooth Motion on, the game draws a frame for every refresh of the display, while the simulation stays at 30 ticks a second, as on the Xbox.
-
-The CoreCE project also publishes a browser build at [halocombatevolved.com](https://halocombatevolved.com/). This checkout does not include that web tree.
+Windows, Linux, Android, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows, Linux, and Android draw with OpenGL (Android uses OpenGL ES). The Mac build draws with Metal. Sound, input, and gamepads go through SDL3. With Smooth Motion on, the game draws a frame for every refresh of the display, while the simulation stays at 30 ticks a second, as on the Xbox. The CoreCE project also publishes a browser build at [halocombatevolved.com](https://halocombatevolved.com/). This checkout does not include that web tree.
 
 ![Original Halo main menu running on Apple Silicon](docs/images/main-menu.png)
 
 <img width="1284" height="1007" alt="The game running on Windows" src="https://github.com/user-attachments/assets/0a4412e1-f6d3-48ed-8e17-0a374c2122f1" />
 <p align="center"><em>CoreCE running on Windows (release build)</em></p>
 
-## A copy of Halo: Combat Evolved is required
+## Your own copy
 
-CoreCE does not include the game data, you need to use your own copy of the game.
+CoreCE does not include the game data. Use your own copy of the game.
 
 1. Start the game (`CoreCE.app` on Mac, `halo.exe` on Windows, `halo` on Linux).
-2. At the first start, choose the disc image in the file picker. On Linux and Windows, a disc image next to the executable is used without the file picker. Where no file picker can be shown (on Linux, without the desktop portal or `zenity`), the game says to put the disc image next to the executable, and stops.
-3. On Mac, an extracted folder offers **Copy and Manage**, **Use This Folder**, or **Cancel**. Managed copies and disc imports go under `~/Library/Application Support/CoreCE/Game Data/`. Saves, profiles, and `config.toml` stay in that Application Support directory. Prior files are copied from `~/Library/Application Support/Halo OG/`, or from `Halo CE Universal` when that is the only older folder. The old folder is left in place.
-4. The game extracts the `maps` folder, then starts.
+2. At the first start, choose your copy in the file picker. On Linux and Windows, a copy next to the executable is used without the file picker. Where no file picker can be shown (on Linux, without the desktop portal or `zenity`), the game says to put your copy next to the executable, and stops.
+3. On Mac, an extracted folder offers **Copy and Manage**, **Use This Folder**, or **Cancel**. Managed copies and imports go under `~/Library/Application Support/CoreCE/Game Data/`. Saves, profiles, and `config.toml` stay in that Application Support directory. Prior files are copied from `~/Library/Application Support/OpenCE/`, or from `Halo OG` when that is the only older folder, or from `Halo CE Universal` when that is the only one left. The old folder is left in place.
+4. The game sets up `maps` from your copy, then starts.
 
-The `maps` folder holds the Xbox maps only. If it holds Halo PC's maps instead, the game says so and stops. Custom Edition maps go in a `custom_maps` folder beside `maps`.
+`maps` holds the Xbox maps only. If it holds Halo PC's maps instead, the game says so and stops. Custom Edition maps go in `custom_maps` beside `maps`.
 
-On Linux and Windows, the game puts `maps` next to the executable. On Android, copy the disc image to the phone first. The app puts `maps/` in its data folder. See [port/android/README.md](port/android/README.md). On Mac, see [Mac data import](docs/macos-menu-and-releases.md#independently-supplied-data).
+On Linux and Windows, the game puts `maps` next to the executable. On Android, copy your game to the phone first. The app puts `maps/` in its data folder. See [port/android/README.md](port/android/README.md). On Mac, see [Mac data import](docs/macos-menu-and-releases.md#independently-supplied-data).
 
 ## Download
 
 | Platform | Release | Debug | Guide |
 | --- | --- | --- | --- |
-| Mac | [CoreCE-macos-arm64-net32-mac36.dmg](https://github.com/innerhat-dev/CoreCE/releases/download/test-v0.3.0-net32-mac36/CoreCE-macos-arm64-net32-mac36.dmg) |  | [Mac](port/macos/README.md) |
+| Mac | [CoreCE-macos-arm64-net32-mac37.dmg](https://github.com/mastercheese-dev/CoreCE/releases/download/test-v0.3.0-net32-mac37/CoreCE-macos-arm64-net32-mac37.dmg) |  | [Mac](port/macos/README.md) |
 | Linux | [halo-linux-release.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-linux-release.zip) | [halo-linux-debug.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-linux-debug.zip) | [Linux](port/linux/README.md) |
 | Windows | [halo-windows-release.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-windows-release.zip) | [halo-windows-debug.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-windows-debug.zip) | [Windows](port/windows/README.md) |
 | Android | [halo-android-release.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-android-release.zip) | [halo-android-debug.zip](https://github.com/OpenCommunityEdition/CoreCE/releases/latest/download/halo-android-debug.zip) | [Android](port/android/README.md) |
 
-The Mac package is Apple Silicon and macOS 26 or later. Open the DMG and drag **CoreCE.app** into Applications. No Homebrew or developer tools are needed to run it. The app is ad hoc signed and is not notarized, so macOS may ask you to open it from Privacy & Security the first time. The network protocol of this Mac release is **32**. A classic game can include another protocol 32 player. Hardcore needs this build.
+The Mac package is Apple Silicon and macOS 26 or later. Open the DMG and drag **CoreCE.app** into Applications. No Homebrew or developer tools are needed to run it. The app is ad hoc signed and is not notarized, so macOS may ask you to open it from Privacy & Security the first time. This Mac release uses network protocol **32**, so a classic game can include another protocol 32 player. Hardcore needs this build. The Mac app looks for a newer release from this fork and asks before installing it. Linux, Windows, and Android update from the [CoreCE project releases](https://github.com/OpenCommunityEdition/CoreCE/releases). A debug build stops at the first failed check and writes it to the log.
 
-The Mac app looks for a newer Mac release from this fork and asks before installing it. Linux, Windows, and Android builds on the CoreCE project page update from that project's releases. A debug build stops at the first failed check and writes it to the log.
-
-The Arch-based distribution release is on the [AUR](https://aur.archlinux.org/packages/CoreCE-bin).
-
-The Linux README covers the controls, the settings, and the multiplayer features. Most of those are the same on every platform. On Mac, settings live in `~/Library/Application Support/CoreCE/config.toml`.
+Arch Linux users can install the [AUR package](https://aur.archlinux.org/packages/CoreCE-bin). The [Linux README](port/linux/README.md) covers controls, settings, and multiplayer. Most of that is the same on every platform. On Mac, settings live in `~/Library/Application Support/CoreCE/config.toml`.
 
 ## Multiplayer
 
 - **Up to 128 players** on up to 128 machines, and up to 4 players on one device in split screen.
-- **The native builds play together:** Windows, Linux, Android, and Mac. On a local network they can play LAN.
-- **Peer-to-peer internet hosting:** join through the server browser or an invite link. A host lists a game as public, or keeps it private for players with the invite. With Discord, the host can send the invite through Discord.
-- **Online co-op campaign:** friendly fire, player collisions, and how many enemies to add as the player count grows.
+- **Windows, Linux, Android, and Mac play together.** On a local network they can play LAN.
+- **Peer-to-peer internet hosting.** Join through the server browser or an invite link. A host lists a game as public, or keeps it private for players with the invite. With Discord, the host can send the invite through Discord.
+- **Online co-op campaign,** with friendly fire, player collisions, and more enemies as the player count grows.
 - **Voice chat:** push to talk (V) or an open microphone, changed in the audio settings.
-- **Map sharing:** a player who does not have the game's Custom Edition map downloads it from the other players.
+- **Map sharing:** a player missing the game's Custom Edition map downloads it from the other players.
 - **Moderation:** the host can kick and ban from the scoreboard, or with the `kick` and `ban` console commands. Players can vote to kick.
 - **Scrollable scoreboard:** the mouse wheel or Page Up and Page Down moves through a large lobby.
 - **Netcode:** each machine moves its own player at once, and the host decides the game. See [port/linux/NETCODE.md](port/linux/NETCODE.md).
 
 ## Custom Edition maps
 
-Halo Custom Edition maps go in a `custom_maps` folder, not in `maps`. That folder also needs `bitmaps.map`, `sounds.map`, and `loc.map` from an installed copy of Halo Custom Edition. On Mac, put `custom_maps` beside the Xbox `maps` folder the game is using, including a managed copy under Application Support.
+Put Halo Custom Edition maps in `custom_maps`, not in `maps`. That folder also needs `bitmaps.map`, `sounds.map`, and `loc.map` from your installed copy of Halo Custom Edition. On Mac, put `custom_maps` beside the Xbox `maps` folder the game is using, including a managed copy under Application Support.
 
-The Gearbox maps that shipped with Halo PC (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland, and Gephyrophobia) are not included. Copy them from a Halo Custom Edition install's `maps` folder into `custom_maps`.
+The Gearbox maps that shipped with Halo PC (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland, and Gephyrophobia) are separate. Copy them from a Halo Custom Edition install's `maps` folder into `custom_maps`. They then appear under Custom Singleplayer and Custom Multiplayer. A custom singleplayer map plays as a campaign level, alone or as online co-op. Maps that require OpenSauce will not load.
 
-Those maps then appear under Custom Singleplayer and Custom Multiplayer. A custom singleplayer map plays as a campaign level, alone or as online co-op. Maps that require OpenSauce are not compatible.
-
-The server browser and the LAN browser can download a missing custom map from the other players, including `bitmaps.map`, `sounds.map`, and `loc.map`. This works on a LAN and on the internet when the host has map sharing on, which is the default. See [docs/custom_edition_caches.md](docs/custom_edition_caches.md).
+The server browser and the LAN browser can download a missing custom map from the other players, including `bitmaps.map`, `sounds.map`, and `loc.map`. This works on a LAN, and on the internet when the host has map sharing on (the default). See [docs/custom_edition_caches.md](docs/custom_edition_caches.md).
 
 ## Mods
 

@@ -165,7 +165,7 @@ static int verify_any(void *context, mbedtls_x509_crt *certificate, int depth, u
 
 static int make_certificate(void)
 {
-	static const unsigned char serial[] = { 0x4F, 0x70, 0x65, 0x6E, 0x43, 0x45 };
+	static const unsigned char serial[] = { 0x43, 0x6F, 0x72, 0x65, 0x43, 0x45 };
 	mbedtls_x509write_cert writer;
 	unsigned char buffer[CERTIFICATE_SIZE];
 	int size;
@@ -186,8 +186,8 @@ static int make_certificate(void)
 	mbedtls_x509write_crt_set_subject_key(&writer, &dtls.key);
 	mbedtls_x509write_crt_set_issuer_key(&writer, &dtls.key);
 	size = -1;
-	if (mbedtls_x509write_crt_set_subject_name(&writer, "CN=OpenCE") == 0 &&
-		mbedtls_x509write_crt_set_issuer_name(&writer, "CN=OpenCE") == 0 &&
+	if (mbedtls_x509write_crt_set_subject_name(&writer, "CN=CoreCE") == 0 &&
+		mbedtls_x509write_crt_set_issuer_name(&writer, "CN=CoreCE") == 0 &&
 		mbedtls_x509write_crt_set_serial_raw(&writer, (unsigned char *)serial, sizeof(serial)) == 0 &&
 		mbedtls_x509write_crt_set_validity(&writer, "20240101000000", "20491231235959") == 0)
 	{

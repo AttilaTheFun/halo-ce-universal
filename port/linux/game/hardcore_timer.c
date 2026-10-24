@@ -3,7 +3,8 @@ HARDCORE_TIMER.C
 
 A hardcore match draws one clock at the bottom right, from the game's own
 ticks, on whichever map it started. A map that still speaks from talking_timer
-and power_call is left running. Classic games do not draw the clock.
+and power_call is left running. This machine's audio.hardcore_timer_voice
+can quiet talking_timer. power_call stays on. Classic games do not draw the clock.
 */
 
 #include "cseries.h"
@@ -26,6 +27,7 @@ and power_call is left running. Classic games do not draw the clock.
 #include "custom_edition_cache.h"
 #include "hardcore_rules.h"
 #include "hardcore_timer.h"
+#include "port_config.h"
 
 /* the minutes field of those titles starts at column 534 of 640, on the row
    215 of a 240-tall cell. that row is the bottom of the screen, not of a
@@ -64,8 +66,9 @@ struct hardcore_timer_global
 	long value;
 };
 
-static void hardcore_timer_force_true(
-	short designator)
+static void hardcore_timer_force(
+	short designator,
+	int on)
 {
 	long index;
 	struct hardcore_timer_global *global;
@@ -77,7 +80,7 @@ static void hardcore_timer_force_true(
 
 	index = (designator & 0x7FFF) + hs_external_global_count;
 	global = datum_get(hs_global_data, index);
-	global->value = 1;
+	global->value = on ? 1 : 0;
 
 	return;
 }
@@ -102,8 +105,8 @@ void hardcore_timer_after_scripts(
 		power_call = hs_find_global_by_name("power_call");
 	}
 
-	hardcore_timer_force_true(talking_timer);
-	hardcore_timer_force_true(power_call);
+	hardcore_timer_force(talking_timer, config_boolean("audio.hardcore_timer_voice"));
+	hardcore_timer_force(power_call, 1);
 
 	return;
 }

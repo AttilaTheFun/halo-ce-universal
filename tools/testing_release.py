@@ -179,7 +179,7 @@ def check_platform_archive(path, name):
 def release_notes(record):
     url = "https://github.com/" + record["repository"]
     source = f"{url}/blob/{record['sha']}"
-    return (f"OpenCE testing build `{record['tag']}` from [{record['sha']}]({url}/commit/{record['sha']}).\n\n"
+    return (f"CoreCE testing build `{record['tag']}` from [{record['sha']}]({url}/commit/{record['sha']}).\n\n"
             f"Network protocol: **{record['network_protocol']}**.\n\n"
             f"Start with the [playtesting setup guide]({source}/docs/playtesting.md) "
             f"or [project README]({source}/README.md). Download your platform's asset below; "
@@ -190,7 +190,7 @@ def release_notes(record):
             "See macos-README.txt for the required macOS version and first-launch instructions. "
             f"Linux requires the [32-bit runtime dependencies]({source}/port/linux/README.md#requirements).\n\n"
             "On Mac, choosing a maps folder offers **Copy and Manage**. Managed maps, saves "
-            "and preferences persist in `~/Library/Application Support/OpenCE/` across app updates. "
+            "and preferences persist in `~/Library/Application Support/CoreCE/` across app updates. "
             "With original Xbox NTSC 2276 data selected, opt into **Download approved community maps "
             "in the background** in Settings to get the hosted Downrush map. Downloads default off.\n\n"
             f"For manual setup on any platform, download [downrush.map]({DOWNRUSH_URL}) "
@@ -292,7 +292,7 @@ def main():
                 stdout=subprocess.DEVNULL)
             subprocess.run(["gh", "release", "create", args.tag, "--repo", args.repository,
                 "--verify-tag", "--prerelease", "--latest=false",
-                "--title", "OpenCE testing " + args.tag, "--notes-file", str(args.directory / "release-notes.md"),
+                "--title", "CoreCE testing " + args.tag, "--notes-file", str(args.directory / "release-notes.md"),
                 *(str(args.directory / name) for name in sorted(ASSETS))], check=True)
             print(f"DMG: https://github.com/{args.repository}/releases/download/{args.tag}/{DMG}")
         else:

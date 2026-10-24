@@ -131,7 +131,7 @@ static void migrationFixtures(NSURL *test, NSURL *valid, NSURL *image) {
     const char *previousOverride = getenv("HALO_SAVE_ROOT");
     NSString *savedOverride = previousOverride ? @(previousOverride) : nil;
     setenv("HALO_SAVE_ROOT", test.fileSystemRepresentation, 1);
-    NSURL *canonical = [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/OpenCE"] isDirectory:YES];
+    NSURL *canonical = [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/CoreCE"] isDirectory:YES];
     assert(!HaloSupportDirectoryNeedsMigration(canonical));
     if (savedOverride) setenv("HALO_SAVE_ROOT", savedOverride.UTF8String, 1);
     else unsetenv("HALO_SAVE_ROOT");
@@ -240,24 +240,24 @@ int main(int argc, const char **argv) {
         assert(!HaloUpdateConfigurationIsValid(@{@"SUFeedURL":@"https://example.com/feed.xml", @"SUPublicEDKey":@"invalid"}));
         assert(HaloForkUpdateBuildFromTag(@"test-v0.3.0-net28-mac16") == 16);
         assert([HaloForkUpdateAssetName(@"test-v0.3.0-net28-mac16")
-            isEqual:@"OpenCE-macos-arm64-net28-mac16.dmg"]);
+            isEqual:@"CoreCE-macos-arm64-net28-mac16.dmg"]);
         assert(HaloForkUpdateBuildFromTag(@"build-70") == 0);
         assert(HaloForkUpdateAssetName(@"test-v0.3.0-net28-mac16-extra") == nil);
-        NSString *mac16 = @"https://github.com/innerhat-dev/OpenCE/releases/download/test-v0.3.0-net28-mac16/OpenCE-macos-arm64-net28-mac16.dmg";
+        NSString *mac16 = @"https://github.com/mastercheese-dev/CoreCE/releases/download/test-v0.3.0-net28-mac16/CoreCE-macos-arm64-net28-mac16.dmg";
         assert(HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac16", mac16));
         assert(!HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac16",
-            @"https://example.com/OpenCE-macos-arm64-net28-mac16.dmg"));
+            @"https://example.com/CoreCE-macos-arm64-net28-mac16.dmg"));
         assert(!HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac17", mac16));
         assert(HaloForkUpdateBuildFromTag(@"test-v0.3.0-net28-ios3") == 0);
         assert(HaloForkUpdateAssetName(@"test-v0.3.0-net28-ios3") == nil);
-        NSString *mac17 = @"https://github.com/innerhat-dev/OpenCE/releases/download/test-v0.3.0-net28-mac17/OpenCE-macos-arm64-net28-mac17.dmg";
+        NSString *mac17 = @"https://github.com/mastercheese-dev/CoreCE/releases/download/test-v0.3.0-net28-mac17/CoreCE-macos-arm64-net28-mac17.dmg";
         NSArray *releases = @[
             @{@"tag_name": @"test-v0.3.0-net28-ios9", @"draft": @NO, @"prerelease": @NO,
-              @"assets": @[@{@"name": @"OpenCE-ios.ipa", @"browser_download_url": @"https://github.com/innerhat-dev/OpenCE/releases/download/test-v0.3.0-net28-ios9/OpenCE-ios.ipa"}]},
+              @"assets": @[@{@"name": @"CoreCE-ios.ipa", @"browser_download_url": @"https://github.com/mastercheese-dev/CoreCE/releases/download/test-v0.3.0-net28-ios9/CoreCE-ios.ipa"}]},
             @{@"tag_name": @"test-v0.3.0-net28-mac17", @"draft": @NO, @"prerelease": @YES,
-              @"assets": @[@{@"name": @"OpenCE-macos-arm64-net28-mac17.dmg", @"browser_download_url": mac17}]},
+              @"assets": @[@{@"name": @"CoreCE-macos-arm64-net28-mac17.dmg", @"browser_download_url": mac17}]},
             @{@"tag_name": @"test-v0.3.0-net28-mac16", @"draft": @NO, @"prerelease": @NO,
-              @"assets": @[@{@"name": @"OpenCE-macos-arm64-net28-mac16.dmg", @"browser_download_url": mac16}]},
+              @"assets": @[@{@"name": @"CoreCE-macos-arm64-net28-mac16.dmg", @"browser_download_url": mac16}]},
         ];
         NSString *chosenTag = nil;
         NSString *chosenURL = nil;

@@ -41,8 +41,8 @@ GL = BUILD / "toolchain/gl"
 APP_ICON = "AppIcon.icns"
 APP_VERSION = "0.3.0"
 APP_BUILD = "12"
-APP_NAME = "OpenCE"
-LEGACY_APP_NAMES = ("Halo CE Universal.app", "Halo OG.app")
+APP_NAME = "CoreCE"
+LEGACY_APP_NAMES = ("OpenCE.app", "Halo CE Universal.app", "Halo OG.app")
 
 
 def run(*args):
@@ -67,7 +67,7 @@ def build_plugin():
 
 
 def resolve_update_build(explicit):
-    """This app's Mac release number. A newer tag on innerhat-dev/OpenCE is offered.
+    """This app's Mac release number. A newer tag on mastercheese-dev/CoreCE is offered.
     Zero does not look. The guest updater does not run in this build."""
     if explicit is None:
         raw = os.environ.get("HALO_MAC_UPDATE_BUILD", "0")
@@ -296,7 +296,7 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
         "NSHumanReadableCopyright": "Local experimental Apple Silicon port",
     }
     if update_build > 0:
-        info["OpenCEMacUpdateBuild"] = update_build
+        info["CoreCEMacUpdateBuild"] = update_build
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
         updates = update_configuration(configuration)
@@ -477,7 +477,7 @@ def main():
     parser.add_argument("--version", default=APP_VERSION)
     parser.add_argument("--build-number", default=APP_BUILD)
     parser.add_argument("--update-build", type=int, default=None,
-                        help="Offer a newer Mac release from innerhat-dev/OpenCE. 0 does not look.")
+                        help="Offer a newer Mac release from mastercheese-dev/CoreCE. 0 does not look.")
     parser.add_argument("--content-tools", type=Path, metavar="TOOLCHAIN_DIRECTORY",
                         help="Opt in to reviewed Invader helpers for local community package import")
     parser.add_argument("--install", nargs="?", const=Path("/Applications"), type=Path,

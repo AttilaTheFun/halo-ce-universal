@@ -4747,7 +4747,7 @@ static struct widget_instance *focused_leaf(struct widget_instance *widget)
 }
 
 /* "port lobby open" (the lobby made, or come back to): no player being added.
-the split rows stay hidden until the lobby knows the game is hardcore. */
+settings stays hidden until the lobby knows the game is hardcore. */
 static boolean lobby_join_reset(void)
 {
 	lobby_join.adding = FALSE;
@@ -4758,8 +4758,7 @@ static boolean lobby_join_reset(void)
 static boolean lobby_open(struct widget_instance *screen)
 {
 	lobby_join_reset();
-	visible_set(named(screen, "lobby_views", 0), FALSE);
-	visible_set(named(screen, "lobby_view_slot", 0), FALSE);
+	visible_set(named(screen, "lobby_settings", 0), FALSE);
 	return TRUE;
 }
 
@@ -4865,9 +4864,8 @@ static void lobby_join_help(struct widget_instance *list)
 	wchar_t const *text = L"";
 	short controller;
 
-	/* the split rows are this machine's, so the line says so while one is chosen */
-	if (list->focused_child && (!strcmp(list->focused_child->name, "lobby_views") ||
-		!strcmp(list->focused_child->name, "lobby_view_slot")))
+	/* settings is this machine's, so the line says so while it is chosen */
+	if (list->focused_child && !strcmp(list->focused_child->name, "lobby_settings"))
 	{
 		text = L"This machine only.";
 	}
@@ -5031,36 +5029,39 @@ static boolean lobby_is_hardcore(struct network_game *game)
 		_game_variant_anniversary_rules_bit) ? TRUE : FALSE;
 }
 
-/* teammate views are this machine's. a hardcore lobby shows the rows for
-whoever is waiting, and writes a change as they make it so the match uses
-it. the host's choice does not leave the host. */
-static void lobby_views_apply(struct widget_instance *list, boolean hardcore)
+/* settings is this machine's. a hardcore lobby shows the button for
+whoever is waiting. a classic lobby hides it and moves the focus on. */
+static void lobby_settings_apply(struct widget_instance *list, boolean hardcore)
 {
-	struct widget_instance *views = named(list, "lobby_views", 0);
-	struct widget_instance *slot = named(list, "lobby_view_slot", 0);
-	struct widget_instance *spinner;
+	struct widget_instance *settings = named(list, "lobby_settings", 0);
 
-	visible_set(views, hardcore);
-	visible_set(slot, hardcore);
-	/* the lobby row's bar is its second frame. the list does not switch a
+	visible_set(settings, hardcore);
+	/* the row's bar is its second frame. the list does not switch a
 	three-frame picture, so the focused row is set here. */
-	if (views)
-		views->animation.current_frame_index = hardcore && list->focused_child == views ? 1 : 0;
-	if (slot)
-		slot->animation.current_frame_index = hardcore && list->focused_child == slot ? 1 : 0;
-	if (!hardcore)
+	if (settings)
+		settings->animation.current_frame_index = hardcore && list->focused_child == settings ? 1 : 0;
+	if (!hardcore && list->focused_child == settings)
+		focus_row(list, NONE);
+}
+
+/* "port lobby settings": write a change as it is made, so a countdown that
+starts while the screen is open still uses it. the host's choice does not
+leave the host. */
+static void lobby_settings_save(struct widget_instance *list)
+{
+	static char const *const names[] =
 	{
-		if (list->focused_child && (!strcmp(list->focused_child->name, "lobby_views") ||
-			!strcmp(list->focused_child->name, "lobby_view_slot")))
-			focus_row(list, NONE);
-		return;
+		"lobby_views_spinner", "lobby_view_slot_spinner", "lobby_timer_voice_spinner"
+	};
+	short index;
+
+	for (index = 0; index < NUMBEROF(names); index++)
+	{
+		struct widget_instance *spinner = named(list, names[index], 0);
+
+		if (spinner)
+			setting_save(spinner);
 	}
-	spinner = named(views, "lobby_views_spinner", 0);
-	if (spinner)
-		setting_save(spinner);
-	spinner = named(slot, "lobby_view_slot_spinner", 0);
-	if (spinner)
-		setting_save(spinner);
 }
 
 /* "port lobby update" */
@@ -5073,8 +5074,8 @@ static void lobby_update(struct widget_instance *list)
 	wchar_t text[LOBBY_TEXT_LENGTH];
 	short index;
 	boolean hardcore = lobby_is_hardcore(game);
-	/* the last two player rows are the split choices */
-	short rows = hardcore ? (short)(LOBBY_ROWS - 2) : LOBBY_ROWS;
+	/* the last player row is Settings */
+	short rows = hardcore ? (short)(LOBBY_ROWS - 1) : LOBBY_ROWS;
 
 	lobby_player_count = 0;
 	for (index = 0; game && state >= _client_state_pregame && index < HALO_PORT_MAXIMUM_NETWORK_PLAYERS; index++)
@@ -5101,8 +5102,8 @@ static void lobby_update(struct widget_instance *list)
 		}
 		lobby_icons.updated_at = system_milliseconds();
 	}
-	lobby_views_apply(list, hardcore);
-	/* a player row the split choices took over cannot keep the focus */
+	lobby_settings_apply(list, hardcore);
+	/* a player row Settings took over cannot keep the focus */
 	if (hardcore && focused_row(list) >= rows)
 		focus_row(list, (short)(rows - 1));
 	lobby_join_help(list);
@@ -7462,6 +7463,8 @@ void pc_menu_game_data_function_invoke(
 		preview_update(widget);
 	else if (!strcmp(name, "port lobby update"))
 		lobby_update(widget);
+	else if (!strcmp(name, "port lobby settings"))
+		lobby_settings_save(widget);
 	else if (!strcmp(name, "port settings help"))
 	{
 		video_rows_show(widget);

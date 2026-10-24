@@ -267,7 +267,7 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("setup-updates", help="Create Halo's separate Sparkle key in the login Keychain")
     local = commands.add_parser("local-dmg", help="Package a verified asset-free local app without hosting or Developer ID")
-    local.add_argument("--app", type=Path, default=APP, help="Existing signed OpenCE.app to package")
+    local.add_argument("--app", type=Path, default=APP, help="Existing signed CoreCE.app to package")
     local.add_argument("--output", type=Path)
     build = commands.add_parser("build")
     build.add_argument("--version", default=APP_VERSION)

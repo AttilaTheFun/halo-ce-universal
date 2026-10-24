@@ -4,7 +4,7 @@ Start here for both macOS and iPhone. All commands run on an Apple Silicon Mac
 from the repository root unless stated otherwise. The Mac game runs natively;
 the iPhone build also uses native ARM code and ANGLE's Metal renderer.
 
-To run OpenCE on Mac without compiling, download the
+To run CoreCE on Mac without compiling, download the
 [macOS DMG](../port/macos/README.md#download). Published testing prereleases have
 direct asset links; unpublished CI artifacts require GitHub sign-in and expire.
 The DMG bundles the runtime
@@ -169,11 +169,12 @@ before packaging and retains the DMG artifact for 14 days. This CI download is
 separate from the Developer ID and Sparkle release process. Manual testing
 publication can promote those audited CI outputs to a GitHub prerelease with
 tagged direct download links, without personal signing credentials or game data.
-The Mac download is `Halo-OG-macos-arm64.dmg` containing `OpenCE.app`.
+The Mac download is `Halo-OG-macos-arm64.dmg` containing `CoreCE.app`.
 The bundle identifier remains stable. The app copies prior data from
-`~/Library/Application Support/Halo OG/` into the canonical
-`~/Library/Application Support/OpenCE/` directory, preserving original files
-and any files already present in the new directory.
+`~/Library/Application Support/OpenCE/` into the canonical
+`~/Library/Application Support/CoreCE/` directory. If that folder is absent,
+it copies `Halo OG`, or `Halo CE Universal` when that is the only older folder.
+Original files and any files already in the new directory are preserved.
 
 Device signing settings belong in your local Xcode account and ignored build
 directory. Pass your team ID and bundle identifier on the command line; do not
