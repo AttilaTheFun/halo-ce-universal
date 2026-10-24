@@ -1,11 +1,11 @@
 # CoreCE: Halo: Combat Evolved for Linux, Windows, and macOS
 
 <p align="center">
-  <img src="port/assets/icon/corece-icon.png" alt="CoreCE" width="384">
+  <a href="https://discord.gg/4q7tpz7Gs"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
 <p align="center">
-  <a href="https://discord.gg/4q7tpz7Gs"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <img src="port/assets/icon/corece-icon.png" alt="CoreCE" width="384">
 </p>
 
 **CoreCE** (Open Community Edition) is an open source port of the Halo: Combat Evolved decompilation, from Xbox development build 2342 and [bnunu/halo-1](https://github.com/bnunu/halo-1). It adds 128-player multiplayer, online campaign co-op, mod packs, field-of-view settings, a server browser, peer-to-peer hosting, automatic map downloads, and voice chat, and it can play Custom Edition maps.
