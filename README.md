@@ -8,7 +8,10 @@
 
 Windows, Linux, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows and Linux draw with OpenGL. The Mac build draws with Metal. Sound, input, and gamepads go through SDL3. With Smooth Motion on, the game draws a frame for every refresh of the display, while the simulation stays at 30 ticks a second, as on the Xbox.
 
-![Original Halo main menu running on Apple Silicon](docs/images/main-menu.png)
+<p align="center">
+  <img src="port/assets/icon/corece-icon.png" alt="CoreCE" width="384">
+  <img src="docs/images/main-menu.png" alt="Original Halo main menu running on Apple Silicon" width="512">
+</p>
 
 ## Your own copy
 
