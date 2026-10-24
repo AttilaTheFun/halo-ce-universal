@@ -3,10 +3,11 @@
 
     python tools/app_icon.py
 
-- corece-icon.png, the helmet on its background (512x512): the Windows
-  executable's icon (port/windows/corece-icon.ico, which port/windows/halo.rc
-  puts in halo.exe) and the desktop builds' window icon (corece-icon-256.png,
-  which tools/embed_assets.py embeds and sdl_platform.c gives the window);
+- corece-icon.png: the Windows executable's icon (port/windows/corece-icon.ico,
+  which port/windows/halo.rc puts in halo.exe), the Linux and Windows window
+  icon (corece-icon-256.png, which tools/embed_assets.py embeds and
+  sdl_platform.c gives the window), and the Mac app icon
+  (tools/macos_build.py);
 - corece-icon-render.png, the helmet alone on transparency (1024x1024, the same
   framing): the Android app's launcher icon.
 
@@ -108,7 +109,8 @@ def main() -> None:
                 directory / f"{name}.png", optimize=True)
         print(f"{directory.relative_to(ROOT)}: {size}x{size}")
 
-    top, bottom = background_gradient(icon, render)
+    # Android keeps its own launcher art. Do not sample the desktop icon.
+    top, bottom = (0x0A, 0x2B, 0x54), (0x03, 0x06, 0x10)
     drawable = RESOURCES / "drawable"
     drawable.mkdir(parents=True, exist_ok=True)
     (drawable / "ic_launcher_background.xml").write_text(

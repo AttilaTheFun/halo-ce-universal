@@ -140,7 +140,7 @@ def build_host(update_build):
 
 
 def package_icon(resources):
-    source = require(ROOT / "port/ios/Assets.xcassets/AppIcon.appiconset/AppIcon.png")
+    source = require(ROOT / "port/assets/icon/corece-icon.png")
     with tempfile.TemporaryDirectory(prefix="halo-macos-icon-") as temporary:
         iconset = Path(temporary) / "AppIcon.iconset"
         iconset.mkdir()

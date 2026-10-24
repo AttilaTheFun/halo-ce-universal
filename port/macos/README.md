@@ -227,8 +227,8 @@ python3 -m unittest tools.test_macos_preflight
 python3 -m unittest tools.test_visibility_queries
 ```
 
-Packaging creates the Mac app icon from the existing
-`port/ios/Assets.xcassets/AppIcon.appiconset/AppIcon.png` artwork. The built-in
+Packaging creates the Mac app icon from
+`port/assets/icon/corece-icon.png`. The built-in
 macOS `sips` tool generates standard and Retina PNG sizes, which packaging embeds
 in `AppIcon.icns` before signing. The editable menu icon is `Helmet.svg`.
 
