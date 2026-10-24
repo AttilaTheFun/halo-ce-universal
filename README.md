@@ -1,6 +1,10 @@
 # CoreCE: Halo: Combat Evolved for Linux, Windows, and macOS
 
 <p align="center">
+  <img src="port/assets/icon/corece-icon.png" alt="CoreCE" width="384">
+</p>
+
+<p align="center">
   <a href="https://discord.gg/4q7tpz7Gs"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
@@ -9,7 +13,6 @@
 Windows, Linux, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows and Linux draw with OpenGL. The Mac build draws with Metal. Sound, input, and gamepads go through SDL3. With Smooth Motion on, the game draws a frame for every refresh of the display, while the simulation stays at 30 ticks a second, as on the Xbox.
 
 <p align="center">
-  <img src="port/assets/icon/corece-icon.png" alt="CoreCE" width="384">
   <img src="docs/images/main-menu.png" alt="Original Halo main menu running on Apple Silicon" width="512">
 </p>
 
