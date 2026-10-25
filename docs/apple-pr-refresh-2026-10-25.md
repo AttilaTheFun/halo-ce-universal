@@ -118,3 +118,17 @@ a full campaign/multiplayer match.
 Targeted suite: 12 tests and 3 subtests passed. The device rebuild after the GL
 fix is in progress. The leased simulator has been released and extracted test
 maps removed. No personal devices or existing saves were changed.
+
+## Review readiness
+
+The final iOS device rebuild after the renderer fix passed. This PR's remaining
+Apple delta is ready for code review: dynamic memory, retained Mac ISO import,
+controller routing/settings access, GL bridge dispatch, packaging and accurate
+documentation. Simulator main-menu and settings checks are complete. Physical
+full-match, free-account signing and performance measurements are not claimed.
+Private optional cloud-sync/sandbox distribution work remains on the separate
+apple/sandbox-sync branch; it is not silently included in this upstream PR.
+
+The public PR intentionally retains CoreCE's protocol and discovery namespace.
+Restoring the user's mainline server compatibility remains unresolved and is not
+implied by marking this CoreCE-targeted contribution ready for review.
