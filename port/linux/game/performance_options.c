@@ -22,6 +22,7 @@
 #include "network_distributed.h"
 #include "performance_options.h"
 #include "hardcore_rules.h"
+#include "hardcore_timer.h"
 #include "performance_audio.h"
 #include "performance_timer_schedule.h"
 #include "performance_timer_items.h"
@@ -288,9 +289,10 @@ void performance_options_update(void)
 		return;
 	/* port: hardcore ammo rules, each tick, and only while that mode is on. */
 	hardcore_rules_tick();
-	/* port: a hardcore match uses the timer recordings on any map. the
-	   cue toggles still choose which lines play. a missing pack is silent. */
-	if (((performance_flags & _performance_option_timer_audio) || hardcore_rules_active()) &&
+	/* port: timer sounds are the host's PB rule. a match option does not
+	   turn them on. the cue toggles still choose which lines play, and
+	   they stay quiet when the host's rule is off. a missing pack is silent. */
+	if ((performance_flags & _performance_option_timer_audio) &&
 		!cinematic_in_progress() && !game_engine_showing_postgame())
 	{
 		performance_timer_audio_update(performance_options_timer_ticks());
@@ -422,7 +424,8 @@ void performance_options_render(void)
 	performance_options_render_spawn_points();
 	/* port: hardcore markers and the random-spawn estimate. */
 	hardcore_rules_render();
-	if (performance_flags & _performance_option_match_timer)
+	/* the client clock replaces this graphic while it is on */
+	if ((performance_flags & _performance_option_match_timer) && !hardcore_timer_mode())
 		performance_timer_render(performance_options_timer_ticks());
 }
 

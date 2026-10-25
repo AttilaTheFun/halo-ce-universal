@@ -24,6 +24,48 @@ changes since the last recorded review so useful core improvements are not misse
 Fetching upstream does not authorize merging it. Do not merge upstream `main`
 wholesale; select focused changes and split mixed commits when necessary.
 
+## Match opening, October 24, 2026
+
+Network version 34. Every multiplayer match skips map-item placement at
+game time 0. The retail disc does not include loading.tga, so the opening
+plays maps/opening_frames.bin, a film of that loading screen. It runs for
+its own length, about 2.7 seconds, and the last frame stays if a player is
+still being placed or is still drawing a weapon. The screen stays at least
+3 seconds even when the map is already loaded. Those happen while it is up.
+When the screen ends, the film fades off the match over a short moment.
+The match clock stays at 0 until that fade is finished. On a private LAN
+Invasion on Sidewinder the ring thinned over the world, the shotgun was
+already out, and the clock read 00:00.
+The lobby does not stay up over the start. A campaign load, and a co-op
+load, play that same film instead of the stand-in ring and fade it off the
+level. They do not hold the mission clock or wait for a weapon.
+A version 33 game cannot join. Overshield drain is the retail fade in every
+match. These are explicit player directions, not an upstream import.
+
+Match settings on this machine, the same day. Graphics' Match Timer is
+Off, On, or On with Voice. On draws the blue bottom-right clock in every
+multiplayer game and does not draw the old white HUD clock. A private
+LAN Team Race showed 00:20 there. On with Voice also forces a map's
+talking timer when that global exists. Team panes are the hardcore split
+in every team game when this machine has one local player. Free-for-all
+does not split. That pane path was not played with a second player.
+Streamer mode is one switch. A new server starts at 2 players. Text chat
+is a host switch in every lobby. A client sees that switch locked and
+follows the host's chat message. Match Options that leave retail
+(movement sounds, training, camo, team scores, pistol spread, shotgun
+spread) ride the host's rules message. A joined client applies that
+message and does not substitute its own sheet. Leaving that game
+restores the sheet saved with its game type, which is what it hosts
+next. The removed rows stay retail, including flag and ball pickup
+and the next hill, even when another match option turns the sheet on. Map download defaults off for a new
+config, and the lobby has a download button. The host row reads SHARING
+MAPS while map sharing stays on. These are explicit player directions.
+
+Chat lines use the small UI font. On October 24 a typed line in a private
+Team Slayer was smaller than the ammo digits. The magnum's low-clip Reload
+word is drawn centered under the reticle. The plasma pistol has no such
+word. These are explicit player directions.
+
 The last review compared this fork with upstream `main` at
 `c20866353` on October 18, 2026. The WebRTC gap recovery was adopted.
 The halo-1 reconcile's restored original bugs, the PC pause pitch, and the

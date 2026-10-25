@@ -374,10 +374,8 @@ enum native_flush_reason {
     NATIVE_FLUSH_KICK_PUSH_BUFFER,
     NATIVE_FLUSH_INSERT_CALLBACK,
     NATIVE_FLUSH_PRESENT,
-    NATIVE_FLUSH_SETTINGS,
     NATIVE_FLUSH_RESIZE,
     NATIVE_FLUSH_READBACK,
-    NATIVE_FLUSH_EXIT,
     NATIVE_FLUSH_REASON_COUNT
 };
 struct native_flush_statistics {
@@ -387,8 +385,8 @@ static struct native_flush_statistics flush_statistics[NATIVE_FLUSH_REASON_COUNT
 static const char *native_flush_reason_name(enum native_flush_reason reason) {
     static const char *const names[NATIVE_FLUSH_REASON_COUNT]={
         "SoftBatchLimit", "HardCapacity", "CommandLimit", "VisibilityCollect",
-        "KickPushBuffer", "InsertCallback", "Present", "Settings", "Resize",
-        "Readback", "Exit"
+        "KickPushBuffer", "InsertCallback", "Present", "Resize",
+        "Readback"
     };
     return names[reason];
 }
@@ -507,9 +505,6 @@ static void packet_finish(void) {
         native_fail("complete original command reservation",HALO_METAL_INVALID);
     if (transport.size>=NATIVE_BATCH_SOFT_BYTES || transport.command_count>=65536u)
         packet_flush(transport.command_count>=65536u ? NATIVE_FLUSH_COMMAND_LIMIT:NATIVE_FLUSH_SOFT_BATCH_LIMIT);
-}
-void halo_metal_flush_pending(void) {
-    if (device.ready) packet_flush(NATIVE_FLUSH_EXIT);
 }
 static void color_to_vec4(D3DCOLOR color, float out[4]) {
     out[0]=((color>>16)&255)/255.0f; out[1]=((color>>8)&255)/255.0f;
@@ -2259,13 +2254,6 @@ void WINAPI D3DDevice_Clear(DWORD count,const D3DRECT *rectangles,DWORD flags,D3
         if (command.clear.planes&HALO_METAL_COLOR) target->last_rendered=rendered_serial_next();
         if (depth && (command.clear.planes&6)) depth->last_rendered=rendered_serial_next();
     }
-}
-int halo_metal_apply_video_settings(void) {
-    if (!device.ready || !(transport.reply.capabilities&HALO_METAL_CAP_PRESENT_SCALED)) return 0;
-    packet_flush(NATIVE_FLUSH_SETTINGS);
-    struct halo_metal_display_settings command={0};command.command.opcode=HALO_METAL_DISPLAY_SETTINGS;
-    command.display_flags=config_boolean("display.vsync") ? HALO_METAL_DISPLAY_VSYNC:0;
-    packet_begin(sizeof(command),NULL,0);command_append(&command,sizeof(command));packet_finish();packet_flush(NATIVE_FLUSH_SETTINGS);return 1;
 }
 static void ui_point_from_window(float wx,float wy,int centered,short *x,short *y) {
     int ww,wh,pw,ph;

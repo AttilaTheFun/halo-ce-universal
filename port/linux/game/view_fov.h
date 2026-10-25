@@ -17,7 +17,7 @@ real render_fov_reticle_scale(short local_player_index);
 /* the view's own vertical angle when display.fov widened it, else 0 */
 real render_fov_authored_vertical(short local_player_index);
 
-/* the first-person weapon's projection (display.viewmodel_fov) around its
+/* the first-person weapon's projection (the default view) around its
 passes: balanced and nestable, the current local render view only */
 void viewmodel_projection_begin(void);
 void viewmodel_projection_end(void);

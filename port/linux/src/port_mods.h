@@ -33,10 +33,8 @@ long port_mods_file_order(long file);
 const char *port_mods_file_mod(long file);
 const char *port_mods_file_path(long file);
 
-/* the mods found, played or not, the folder of each (in the folders' order),
-and a line about each for the console */
+/* the mods found, played or not, and a line about each for the console */
 long port_mods_count(void);
-const char *port_mods_folder(long index);
 int port_mods_describe(long index, char *text, unsigned long size, const char *map_name);
 
 /* ---------- the load order (the Mods menu's)

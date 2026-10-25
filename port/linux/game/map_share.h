@@ -116,6 +116,10 @@ host for it instead (a Custom Edition map of a version it lacks, or one
 whose resource maps are missing, with network.map_download on). The download
 runs in the lobby (the host waits for it to precache), or, for a game in
 progress, before this machine's players join. */
+/* the next map_share_download_begin may run even when network.map_download
+is off. one call, then it is off again. the lobby's Download Maps uses it */
+void map_share_download_permit(
+	void);
 boolean map_share_download_begin(
 	char const *level_name,
 	unsigned long version,
@@ -199,9 +203,6 @@ short map_share_file_hashed(
 	byte const *hash);
 struct map_share_file *map_share_file_get(
 	short index);
-/* the ready file with this hash, or NONE */
-short map_share_file_find(
-	byte const *hash);
 /* the pieces of a file of `size` bytes */
 long map_share_piece_count(
 	unsigned long size);

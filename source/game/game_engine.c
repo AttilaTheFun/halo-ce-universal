@@ -9373,6 +9373,8 @@ boolean game_engine_should_spawn_player(
 		}
 		else if (player->statistics.deaths == 0)
 		{
+			/* port: place them under the opening ring. The match clock stays
+			   at 0 until that screen is finished, so it cannot be the wait. */
 			should_spawn = TRUE;
 		}
 		else if (game_engine_player_is_out_of_lives(player_index))

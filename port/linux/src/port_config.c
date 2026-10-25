@@ -174,16 +174,16 @@ static const struct config_setting config_settings[] =
 	{ "display.player_name_scale", _config_real, "1.0", "HALO_PLAYER_NAME_SCALE", _environment_value, _platform_all,
 		"How large the players' names are drawn: 1.0 three quarters of the size of\n"
 		"the HUD's text, 0.25 to 4." },
-	{ "display.match_timer", _config_boolean, "false", "HALO_MATCH_TIMER", _environment_value, _platform_all,
-		"Draw the match clock at the bottom right in multiplayer. It counts up\n"
-		"from the game's first tick, which the items' respawn periods count from\n"
-		"too: a weapon is back on the map at every multiple of its period on the\n"
-		"clock." },
+	{ "display.match_timer", _config_string, "\"off\"", "HALO_MATCH_TIMER", _environment_value, _platform_all,
+		"The match clock at the bottom right in multiplayer: \"off\", \"on\", or\n"
+		"\"voice\". On counts up from the game's first tick. Voice also lets this\n"
+		"machine hear a map's talking_timer. A file that still has true or false\n"
+		"is read as on or off, and true with the old timer voice becomes voice." },
 	{ "display.teammate_views", _config_boolean, "false", "HALO_TEAMMATE_VIEWS", _environment_value, _platform_all,
-		"In a hardcore team game, split this screen so one player can see\n"
-		"teammates from their own eyes, up to four panes, for the whole match.\n"
-		"A dead teammate keeps the pane. Off leaves the view as it is. Classic\n"
-		"multiplayer is unchanged." },
+		"In a team game, split this screen so one local player can see teammates\n"
+		"from their own eyes, up to four panes, for the whole match. A dead\n"
+		"teammate keeps the pane. Off leaves the view as it is. A free-for-all\n"
+		"does not split, and Add Player is still a second local player." },
 	{ "display.teammate_view_slot", _config_string, "\"top_left\"", "HALO_TEAMMATE_VIEW_SLOT", _environment_value,
 		_platform_all,
 		"Which pane is yours when teammate views are on, on this machine:\n"
@@ -244,8 +244,8 @@ static const struct config_setting config_settings[] =
 		"Announce scheduled rockets and powerups on supported maps when the\n"
 		"host enables PB Timer Sounds. Off preserves the existing timer audio." },
 	{ "audio.hardcore_timer_voice", _config_boolean, "true", NULL, _environment_value, _platform_all,
-		"In a hardcore match, let this machine hear the map's timer voice\n"
-		"(talking_timer). Off keeps that voice quiet here. Powerup calls stay on." },
+		"Kept so an old file can move onto display.match_timer. The match clock's\n"
+		"Voice choice is what lets this machine hear talking_timer now." },
 	{ "audio.menu_music", _config_boolean, "true", NULL, _environment_value, _platform_all,
 		"Play the main menu title music. False keeps menu effects and gameplay\n"
 		"audio enabled. In-game audio settings apply immediately when accepted." },
@@ -369,9 +369,8 @@ static const struct config_setting config_settings[] =
 		"The language the game asks the Xbox for: \"ja\", \"de\", \"fr\", \"es\" or \"it\";\n"
 		"empty for English. The game data decides what is translated." },
 	{ "display.text_chat", _config_boolean, "true", "HALO_TEXT_CHAT", _environment_value, _platform_all,
-		"Show the text chat of network games: false hides its lines and keeps\n"
-		"its keys (and a controller's D-pad Up) from opening it, as for purists\n"
-		"and streamers." },
+		"No longer a separate switch. The lobby's text chat, which the host sets,\n"
+		"is what shows or hides the lines." },
 	{ "display.chat_style", _config_string, "\"colors\"", "HALO_CHAT_STYLE", _environment_value, _platform_all,
 		"The text chat's colours: \"colors\" (names in their team's colour, the\n"
 		"text a pale blue) or \"white\" (all white, as Custom Edition)." },
@@ -484,9 +483,10 @@ static const struct config_setting config_settings[] =
 		"Hosting: how near (world units: 1 is about 3 metres) a player must be\n"
 		"to be heard by proximity voice chat (5 to 100)." },
 	{ "network.text_chat", _config_string, "\"on\"", "HALO_NET_TEXT_CHAT", _environment_value, _platform_all,
-		"Hosting: the text chat: \"on\" (links in lines are refused), \"links\"\n"
-		"(links allowed) or \"off\", in either case. Always off in a game listed\n"
-		"in the server browser (a public internet game)." },
+		"Hosting: the text chat, \"on\" or \"off\". A saved \"links\" counts as on,\n"
+		"and lines with links are refused. Always off in a game listed in the\n"
+		"server browser (a public internet game). Clients show the host's choice\n"
+		"and cannot change it." },
 	{ "network.votekick", _config_boolean, "true", "HALO_NET_VOTEKICK", _environment_value, _platform_all,
 		"Hosting: let the players vote to kick a player (the scoreboard's\n"
 		"right-click, or the console's votekick). More than half of the players\n"
@@ -509,7 +509,7 @@ static const struct config_setting config_settings[] =
 		"Hosting: the most kilobytes a second the host sends of maps (16 to\n"
 		"20480: 20 MB/s), so that the game's own traffic keeps the rest of the\n"
 		"upload." },
-	{ "network.map_seed", _config_boolean, "true", "HALO_NET_MAP_SEED", _environment_value, _platform_all,
+	{ "network.map_seed", _config_boolean, "false", "HALO_NET_MAP_SEED", _environment_value, _platform_all,
 		"Playing in another's game: help send its map to players who join\n"
 		"without it, as a torrent's peers do (the pieces this machine has, at\n"
 		"most network.map_seed_upload)." },
@@ -517,7 +517,7 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"Playing in another's game: the most kilobytes a second this machine\n"
 		"sends of maps to other players (16 to 10240: 10 MB/s)." },
-	{ "network.map_download", _config_boolean, "true", "HALO_NET_MAP_DOWNLOAD", _environment_value, _platform_all,
+	{ "network.map_download", _config_boolean, "false", "HALO_NET_MAP_DOWNLOAD", _environment_value, _platform_all,
 		"Joining a game on a Custom Edition map this machine does not have:\n"
 		"download it (and the resource maps it needs) from the game's players\n"
 		"into custom_maps, if its host shares it (network.map_share); false\n"
@@ -778,6 +778,10 @@ struct config_value
 
 static struct config_value config_values[NUMBER_OF_CONFIG_SETTINGS];
 static int config_loaded = 0;
+/* display.match_timer used to be true or false. -1: the file had a string
+or no value. 0 or 1: the file had that boolean, so a true can become
+"voice" once audio.hardcore_timer_voice has been read. */
+static int match_timer_file_boolean = -1;
 static volatile unsigned long config_change_count;
 static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1237,6 +1241,12 @@ static void config_set_from_file(struct config_value *value, const struct config
 			free(value->string);
 			value->string = strdup(datum.u.s);
 		}
+		else if (datum.type == TOML_BOOLEAN && !strcmp(setting->name, "display.match_timer"))
+		{
+			free(value->string);
+			value->string = strdup(datum.u.boolean ? "on" : "off");
+			match_timer_file_boolean = datum.u.boolean ? 1 : 0;
+		}
 		else
 		{
 			wrong_type = 1;
@@ -1341,6 +1351,20 @@ static void config_load(int complete_file)
 			}
 			for (index = 0; index < NUMBER_OF_CONFIG_SETTINGS; index++)
 				config_set_from_file(&config_values[index], &config_settings[index], result.toptab);
+			/* an old true, and the old timer voice still on, is On with Voice.
+			an explicit string "on" is left on, even when that voice key is true */
+			if (match_timer_file_boolean == 1)
+			{
+				long voice = config_setting_index("audio.hardcore_timer_voice");
+				long timer = config_setting_index("display.match_timer");
+
+				if (voice >= 0 && timer >= 0 && config_values[voice].boolean && config_values[timer].string)
+				{
+					free(config_values[timer].string);
+					config_values[timer].string = strdup("voice");
+				}
+			}
+			match_timer_file_boolean = -1;
 			config_report_unknown_keys(result.toptab);
 			platform_log("settings: %s", path);
 			completed = complete_file ? config_add_missing(text, result.toptab) : NULL;

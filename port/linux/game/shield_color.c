@@ -1,13 +1,11 @@
 /*
 SHIELD_COLOR.C
 
-Your energy shield's color, as this machine draws it (Video Setup > FOV and
-Viewmodels > Shield Color): the flare in one of the multiplayer armor colors
-instead of the shield's own, whatever color the armor is. The shield's own
-shader is drawn, only its two colors are replaced, keeping their brightness:
-no new assets. Others see your shield as their own settings draw it.
+The shield is drawn in its own color. A chosen armor color is not offered.
+The helpers stay so a later choice can replace the two shader colors and
+keep their brightness, without new assets.
 
-Only the drawing is changed; the shield itself is the game's.
+Only the drawing would change; the shield itself is the game's.
 */
 
 #include "cseries.h"
@@ -17,38 +15,12 @@ Only the drawing is changed; the shield itself is the game's.
 #include "game/players.h"
 #include "saved games/player_profile.h"
 
-#include <string.h>
-
-/* port/linux/src/port_config.c */
-const char *config_string(const char *name);
-unsigned long config_changes(void);
-
-/* the multiplayer armor colors, in the profile's order (player_profile.c) */
-static char const *const shield_color_names[] =
-{
-	"white", "black", "red", "blue", "gray", "yellow", "green", "pink", "purple",
-	"cyan", "cobalt", "orange", "teal", "sage", "brown", "tan", "maroon", "salmon",
-};
-
-static unsigned long shield_color_changes = (unsigned long)-1;
 static short shield_color_index = NONE;
 
 static void shield_color_update(
 	void)
 {
-	char const *value;
-	short index;
-
-	if (shield_color_changes == config_changes())
-		return;
-	shield_color_changes = config_changes();
 	shield_color_index = NONE;
-	value = config_string("display.shield_color");
-	for (index = 0; value && index < (short)NUMBEROF(shield_color_names); index++)
-	{
-		if (!strcmp(value, shield_color_names[index]))
-			shield_color_index = index;
-	}
 }
 
 /* the colors a unit's shield is drawn with, given the unit's own: when the

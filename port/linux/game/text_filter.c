@@ -1,11 +1,10 @@
 /*
 TEXT_FILTER.C
 
-Streamer mode (Settings > Network Setup > Streamer Mode): the words of
-text_filter_match.c's list hidden as stars wherever text is drawn, at the
-levels set (streamer.enabled, and streamer.slurs, streamer.swearing and
-streamer.insults: "off", "severe", "strong" or "mild", each that severity
-and worse).
+Streamer mode (Settings > Video Setup > Graphics): one switch. On hides
+mild slurs and strong swearing, and leaves insults visible. Off filters
+nothing. The old streamer.slurs, streamer.swearing and streamer.insults
+keys stay in the file and are not read.
 
 draw_string.c's draw_string and draw_unicode_string take the string's
 filtered copy before they draw or measure it (draw_string_compute_bounds
@@ -32,7 +31,6 @@ Only what this machine draws changes: nothing sent between machines.
 
 /* port/linux/src/port_config.c */
 int config_boolean(const char *name);
-const char *config_string(const char *name);
 unsigned long config_changes(void);
 
 #define USER_FILE "d:\\text_filter.txt"
@@ -72,20 +70,6 @@ static struct
 	unsigned char censored[TEXT_FILTER_MAXIMUM_LENGTH];
 } text_filter_globals = { (unsigned long)-1 };
 
-static unsigned char text_filter_level(
-	char const *name)
-{
-	char const *value = config_string(name);
-
-	if (!value || !strcmp(value, "off"))
-		return _text_filter_off;
-	if (!strcmp(value, "severe"))
-		return _text_filter_severe;
-	if (!strcmp(value, "strong"))
-		return _text_filter_strong;
-	return _text_filter_mild;
-}
-
 /* the list again with the player's own words (USER_FILE) */
 static void text_filter_user_words(
 	void)
@@ -122,10 +106,14 @@ static int text_filter_enabled(
 
 		text_filter_globals.changes = config_changes();
 		text_filter_globals.enabled = config_boolean("streamer.enabled") != 0;
-		text_filter_globals.levels[_text_filter_slurs] = text_filter_level("streamer.slurs");
-		text_filter_globals.levels[_text_filter_swearing] = text_filter_level("streamer.swearing");
-		text_filter_globals.levels[_text_filter_insults] = text_filter_level("streamer.insults");
-		text_filter_globals.levels[_text_filter_own] = _text_filter_mild;
+		/* on is a fixed filter. the old severity keys are ignored */
+		text_filter_globals.levels[_text_filter_slurs] = text_filter_globals.enabled ?
+			_text_filter_mild : _text_filter_off;
+		text_filter_globals.levels[_text_filter_swearing] = text_filter_globals.enabled ?
+			_text_filter_strong : _text_filter_off;
+		text_filter_globals.levels[_text_filter_insults] = _text_filter_off;
+		text_filter_globals.levels[_text_filter_own] = text_filter_globals.enabled ?
+			_text_filter_mild : _text_filter_off;
 		for (index = 0; index < CACHE_ENTRIES; index++)
 			text_filter_globals.cache[index].length = -1;
 		if (text_filter_globals.enabled)

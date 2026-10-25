@@ -932,6 +932,8 @@ void network_game_client_dispose(
 		if (!global_network_game_server_get())
 		{
 			performance_options_apply_host_flags(0);
+			/* The joined sheet must not be what this machine hosts next. */
+			hardcore_rules_restore_local();
 			hardcore_rules_clear_session();
 		}
 #endif
@@ -1773,6 +1775,17 @@ boolean network_game_client_game_has_started(
 					client->connection_silent = FALSE;
 
 					ui_widgets_close_all();
+					/* port: the lobby used to stay up over the start of the
+					   match. The ring stays until the players are in with
+					   their weapons, and the clock waits with it. A game
+					   joined in progress keeps the host's clock. */
+					if (network_game_client_late_join_time == 0)
+					{
+						struct game_variant *held = game_engine_get_variant();
+
+						if (held && held->game_engine_index != game_engine_none)
+							hardcore_rules_hold_pregame();
+					}
 					game_time_start();
 					/* (a game in progress: the host's time when it said to start,
 					and the ticks this machine spent loading it) */

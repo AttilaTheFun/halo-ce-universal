@@ -15,8 +15,10 @@ a data message an older build ignores. */
 #include "interface/hud_definitions.h"
 #include "interface/hud_messaging.h"
 #include "interface/ui_widget.h"
+#include "interface/progress_bar.h"
+#include "cseries/cseries_windows.h"
+#include "memory/data.h"
 #include "items/weapons.h"
-#include "items/weapon_definitions.h"
 #include "objects/objects.h"
 #include "rasterizer/rasterizer.h"
 #include "rasterizer/common/rasterizer_common.h"
@@ -27,9 +29,13 @@ a data message an older build ignores. */
 #include "halo_port_limits.h"
 #include "performance_options.h"
 #include "hardcore_rules.h"
+#include "opening_film.h"
 #include "networking/network_game_globals.h"
 #include "networking/network_game_manager.h"
 #include "hardcore_timer.h"
+#include "tag_files/files.h"
+#include "saved games/saved_game_files.h"
+#include "saved games/playlist_profile.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -59,6 +65,30 @@ static int hardcore_cheats_written;
    variant is still the previous map, so the bit alone is not on yet when
    the next map loads. */
 static int hardcore_session;
+/* A joined client applies the host's sheet only after that message arrives.
+   Its own editor must not replace those bytes. */
+static int hardcore_from_host;
+
+static void hardcore_rules_kept_only(struct hardcore_rules *rules);
+static boolean hardcore_remote_client(void);
+/* The opening ring. The clock does not advance while it is up. */
+static int opening_hold;
+static int opening_release;
+static int opening_fading;
+static int opening_fade_done;
+static unsigned long opening_started_ms;
+static unsigned long opening_shown_ms;
+static unsigned long opening_fade_ms;
+static unsigned long opening_fade_shown;
+
+/* The ring stays up for 3 seconds even when the map is already loaded.
+   A spawn that is still arming holds it longer. A stuck spawn does not.
+   Once it is done, the picture fades off the match instead of cutting.
+   A slow frame only moves that fade a short step, so it cannot skip it. */
+#define OPENING_RING_MS 3000UL
+#define OPENING_FADE_MS 400UL
+#define OPENING_FADE_STEP_MS 48UL
+#define OPENING_WAIT_MS 12000UL
 
 static int hardcore_anniversary(void)
 {
@@ -69,27 +99,168 @@ static int hardcore_anniversary(void)
 
 void hardcore_rules_defaults(struct hardcore_rules *rules)
 {
+	hardcore_rules_stock(rules);
+	/* The hardcore sheet's counters. A normal game type stays at stock. */
+	rules->team_scores = 1;
+}
+
+void hardcore_rules_stock(struct hardcore_rules *rules)
+{
 	csmemset(rules, 0, sizeof(*rules));
 	rules->hill_move_s = 60;
 	rules->movement_sounds = 1;
-	/* training mode stays off. the pads and the volumes wait for that
-	   switch. comp 2v2 turns the percent on by itself. */
-	rules->team_scores = 1;
-	/* fading is the stock drain. constant holds the extra shield. */
+	/* fading is the retail drain. the byte stays so its place does not move. */
 	rules->os_type = 1;
 }
 
+boolean hardcore_rules_is_stock(struct hardcore_rules const *rules)
+{
+	struct hardcore_rules stock;
+
+	hardcore_rules_stock(&stock);
+	return rules && csmemcmp(rules, &stock, sizeof(stock)) == 0;
+}
+
+void hardcore_rules_note_variant(struct game_variant *variant)
+{
+	if (!variant)
+		return;
+	/* A removed row is not a match option, so it must not mark the variant. */
+	hardcore_rules_kept_only(&hardcore_edit);
+	SET_FLAG(variant->universal_variant.flags, _game_variant_anniversary_rules_bit,
+		!hardcore_rules_is_stock(&hardcore_edit));
+}
+
+static boolean hardcore_rules_file(long profile_index, char *path)
+{
+	char directory[MAXIMUM_FILENAME_LENGTH + 1];
+	long length;
+
+	path[0] = 0;
+	if (!saved_game_file_get_path_to_enclosing_directory(profile_index, directory))
+		return FALSE;
+	length = csstrlen(directory);
+	if (length <= 0 || length + 12 >= MAXIMUM_FILENAME_LENGTH)
+		return FALSE;
+	csstrncpy(path, directory, MAXIMUM_FILENAME_LENGTH);
+	path[MAXIMUM_FILENAME_LENGTH] = 0;
+	csstrncat(path, "match.rules", MAXIMUM_FILENAME_LENGTH - length);
+	return TRUE;
+}
+
+void hardcore_rules_store(long profile_index)
+{
+	char path[MAXIMUM_FILENAME_LENGTH + 1];
+	struct file_reference file;
+
+	if (!hardcore_rules_file(profile_index, path))
+		return;
+	if (!file_reference_create_from_path(&file, path, FALSE) || !file_create(&file) ||
+		!file_open(&file, FLAG(_permission_write_bit)) || !file_set_position(&file, 0))
+		return;
+	/* The file keeps the six rules. A removed row must not come back on load. */
+	hardcore_rules_kept_only(&hardcore_edit);
+	file_write(&file, sizeof(hardcore_edit), &hardcore_edit);
+	file_close(&file);
+}
+
+void hardcore_rules_forget(long profile_index)
+{
+	char path[MAXIMUM_FILENAME_LENGTH + 1];
+	struct file_reference file;
+
+	if (!hardcore_rules_file(profile_index, path))
+		return;
+	if (file_reference_create_from_path(&file, path, FALSE) && file_exists(&file))
+		file_delete(&file);
+}
+
+void hardcore_rules_choose(long profile_index)
+{
+	char path[MAXIMUM_FILENAME_LENGTH + 1];
+	struct file_reference file;
+	struct game_variant variant;
+	struct hardcore_rules loaded;
+	boolean opened = FALSE;
+
+	hardcore_rules_stock(&hardcore_edit);
+	if (hardcore_rules_file(profile_index, path) &&
+		file_reference_create_from_path(&file, path, FALSE) && file_exists(&file) &&
+		file_open(&file, FLAG(_permission_read_bit)))
+	{
+		opened = TRUE;
+		if (file_read(&file, sizeof(loaded), &loaded))
+			hardcore_edit = loaded;
+	}
+	if (opened)
+		file_close(&file);
+	if (!opened && playlist_profile_get(profile_index, &variant) &&
+		!ustrcmp(variant.human_readable_game_description, L"Comp 2v2"))
+		hardcore_edit.team_scores = 1;
+	hardcore_rules_kept_only(&hardcore_edit);
+	/* A client in someone else's lobby still opens game types. That
+	   editor is local. The match keeps the host's sheet. */
+	if (!hardcore_remote_client())
+		hardcore_live = hardcore_edit;
+	hardcore_session = 0;
+	if (playlist_profile_get(profile_index, &variant) &&
+		TEST_FLAG(variant.universal_variant.flags, _game_variant_anniversary_rules_bit))
+		hardcore_session = 1;
+}
+
 /* the menu's one switch for the pads and the volumes. an older sheet may
-   have set only one of them. turning that switch on shows the percent.
-   the percent can stay on without the pads, and its byte stays put. */
+   have set only one of them. the percent is on only while that switch is. */
 static void hardcore_training_pair(struct hardcore_rules *rules)
 {
 	unsigned char on = (rules->spawns_visible || rules->random_areas) ? 1 : 0;
 
 	rules->spawns_visible = on;
 	rules->random_areas = on;
-	if (on)
-		rules->random_pct = 1;
+	/* The percent is drawn only while training is on, and it must not
+	   keep a sheet off retail after training is turned off. */
+	rules->random_pct = on ? 1 : 0;
+}
+
+/* The rows that left the menu. Their bytes stay in the message so its
+   layout does not move, and they are the retail sheet: a zero used to
+   mean manual pickup and ordered hills, which a match option must not
+   turn on. The six kept rules are the only ones a host enforces. */
+static void hardcore_rules_kept_only(struct hardcore_rules *rules)
+{
+	struct hardcore_rules stock;
+	unsigned char movement;
+	unsigned char training;
+	unsigned char camo;
+	unsigned char scores;
+	unsigned char pistol;
+	unsigned char shotgun;
+
+	if (!rules)
+		return;
+	movement = rules->movement_sounds ? 1 : 0;
+	training = (rules->spawns_visible || rules->random_areas) ? 1 : 0;
+	camo = rules->camo > 2 ? 0 : rules->camo;
+	scores = rules->team_scores ? 1 : 0;
+	pistol = rules->pistol_spread > 3 ? 0 : rules->pistol_spread;
+	shotgun = rules->shotgun_spread > 3 ? 0 : rules->shotgun_spread;
+	hardcore_rules_stock(&stock);
+	*rules = stock;
+	rules->movement_sounds = movement;
+	rules->spawns_visible = training;
+	rules->random_areas = training;
+	rules->camo = camo;
+	rules->team_scores = scores;
+	rules->pistol_spread = pistol;
+	rules->shotgun_spread = shotgun;
+	hardcore_training_pair(rules);
+}
+
+/* This machine joined someone else's game. The host's own client is not
+   one: it keeps the sheet it will send. */
+static boolean hardcore_remote_client(void)
+{
+	return global_network_game_server_get() == NULL &&
+		global_network_game_client_get() != NULL;
 }
 
 struct hardcore_rules *hardcore_rules_editing(void)
@@ -104,7 +275,9 @@ void hardcore_rules_reset_editing(void)
 
 void hardcore_rules_commit(void)
 {
-	hardcore_training_pair(&hardcore_edit);
+	hardcore_rules_kept_only(&hardcore_edit);
+	if (hardcore_remote_client())
+		return;
 	hardcore_live = hardcore_edit;
 	hardcore_session = 1;
 }
@@ -112,6 +285,15 @@ void hardcore_rules_commit(void)
 void hardcore_rules_clear_session(void)
 {
 	hardcore_session = 0;
+}
+
+/* The sheet from a game this machine joined. The editor still has the
+   one saved with its game type, and that is the sheet a game it hosts uses. */
+void hardcore_rules_restore_local(void)
+{
+	hardcore_from_host = 0;
+	hardcore_rules_kept_only(&hardcore_edit);
+	hardcore_live = hardcore_edit;
 }
 
 /* port: the lobby's gametype is a classic one. the sheet from the mode
@@ -131,8 +313,13 @@ void hardcore_rules_host_variant(struct game_variant *variant)
 boolean hardcore_rules_active(void)
 {
 	/* port: the live multiplayer variant's bit. a leftover session must
-	   not change a classic game, co-op, or the campaign. */
-	return game_engine_running() && hardcore_anniversary() ? TRUE : FALSE;
+	   not change a classic game, co-op, or the campaign. a joined client
+	   waits for the host's sheet, and does not play its own. */
+	if (!game_engine_running() || !hardcore_anniversary())
+		return FALSE;
+	if (hardcore_remote_client() && !hardcore_from_host)
+		return FALSE;
+	return TRUE;
 }
 
 boolean hardcore_rules_random_areas(void)
@@ -201,6 +388,19 @@ void hardcore_list_match_started(void);
 
 void hardcore_rules_begin_map(void)
 {
+	/* Hosting. The sheet from a game this machine joined is not sent. */
+	if (global_network_game_server_get() && hardcore_from_host)
+		hardcore_rules_restore_local();
+	if (opening_hold)
+		progress_bar_end();
+	opening_hold = FALSE;
+	opening_release = FALSE;
+	opening_fading = FALSE;
+	opening_fade_done = FALSE;
+	opening_started_ms = 0;
+	opening_shown_ms = 0;
+	opening_fade_ms = 0;
+	opening_fade_shown = 0;
 	hardcore_list_match_started();
 	csmemset(hardcore_skip_armed, 0, sizeof(hardcore_skip_armed));
 	csmemset(hardcore_shot_press, 0, sizeof(hardcore_shot_press));
@@ -251,6 +451,194 @@ void hardcore_rules_begin_map(void)
 	hardcore_apply_presentation();
 }
 
+static void opening_finish(void)
+{
+	opening_hold = FALSE;
+	opening_release = FALSE;
+	opening_fading = FALSE;
+	opening_fade_done = FALSE;
+	opening_started_ms = 0;
+	opening_shown_ms = 0;
+	opening_fade_ms = 0;
+	opening_fade_shown = 0;
+	progress_bar_end();
+}
+
+/* A player counts once they are in the world and the weapon in their
+hand has finished its draw. An empty slot is not a player. A loadout
+that gives nothing is placed. A client waits until the host's weapon
+arrives. */
+static boolean opening_player_armed(struct player_datum *player)
+{
+	struct unit_datum *unit;
+	struct weapon_datum *weapon;
+	long weapon_index;
+	int slot;
+	int any = FALSE;
+
+	if (!player || player->quit_out_of_game)
+		return TRUE;
+	if (player->unit_index == NONE)
+		return FALSE;
+	unit = unit_try_and_get(player->unit_index);
+	if (!unit)
+		return FALSE;
+	for (slot = 0; slot < MAXIMUM_WEAPONS_PER_UNIT; slot++)
+	{
+		if (unit->unit.weapon_object_indices[slot] != NONE)
+			any = TRUE;
+	}
+	if (!any)
+		return !network_game_distributed_client();
+	if (unit->unit.current_weapon_index < 0 ||
+		unit->unit.current_weapon_index >= MAXIMUM_WEAPONS_PER_UNIT)
+		return FALSE;
+	weapon_index = unit->unit.weapon_object_indices[unit->unit.current_weapon_index];
+	if (weapon_index == NONE)
+		return FALSE;
+	weapon = weapon_try_and_get(weapon_index);
+	if (!weapon)
+		return FALSE;
+	return weapon->weapon.state == _weapon_state_idle;
+}
+
+static boolean opening_players_ready(void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+	int count = 0;
+
+	if (!player_data)
+		return FALSE;
+	data_iterator_new(&iterator, player_data);
+	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		if (player->quit_out_of_game)
+			continue;
+		count++;
+		if (!opening_player_armed(player))
+			return FALSE;
+	}
+	return count > 0;
+}
+
+void hardcore_rules_hold_pregame(void)
+{
+	opening_hold = TRUE;
+	opening_release = FALSE;
+	opening_fading = FALSE;
+	opening_fade_done = FALSE;
+	opening_shown_ms = 0;
+	opening_fade_ms = 0;
+	opening_fade_shown = 0;
+	opening_started_ms = system_milliseconds();
+	progress_bar_begin(TRUE);
+}
+
+boolean hardcore_rules_opening_hold(void)
+{
+	return opening_hold ? TRUE : FALSE;
+}
+
+boolean hardcore_rules_opening_fading(void)
+{
+	return opening_fading ? TRUE : FALSE;
+}
+
+void hardcore_rules_opening_before_tick(void)
+{
+	if (!opening_hold)
+		return;
+	if (!game_engine_running() || !game_in_progress())
+	{
+		opening_finish();
+		return;
+	}
+	if (opening_fading)
+	{
+		if (opening_fade_done)
+			opening_finish();
+		return;
+	}
+	if (opening_release)
+		opening_finish();
+	else if (opening_started_ms != 0 &&
+		system_milliseconds() - opening_started_ms > OPENING_WAIT_MS)
+		opening_finish();
+}
+
+void hardcore_rules_opening_frame(void)
+{
+	unsigned long now;
+	unsigned long shown;
+	real progress;
+
+	if (!opening_hold || opening_fading)
+		return;
+	if (!game_engine_running() || !game_in_progress())
+	{
+		opening_finish();
+		return;
+	}
+	now = system_milliseconds();
+	if (opening_shown_ms == 0)
+		opening_shown_ms = now;
+	shown = now - opening_shown_ms;
+	/* The film is the original loading animation. It plays at its own
+	   length and the last frame stays up when a player is still drawing.
+	   Without the film, the sweep is the stand-in ring. */
+	if (!opening_film_show(shown, 1.f))
+	{
+		progress = (real)shown / (real)OPENING_RING_MS;
+		if (progress < 0.02f)
+			progress = 0.02f;
+		if (progress > 1.f)
+			progress = 0.72f;
+		progress_bar_show_ring(progress);
+	}
+	if (!opening_players_ready())
+		return;
+	if (shown < OPENING_RING_MS)
+		return;
+	opening_fading = TRUE;
+	opening_fade_ms = 0;
+	opening_fade_shown = 0;
+	opening_fade_done = FALSE;
+}
+
+void hardcore_rules_opening_overlay(void)
+{
+	unsigned long now;
+	unsigned long shown;
+	unsigned long step;
+	real alpha;
+
+	if (!opening_hold || !opening_fading)
+		return;
+	now = system_milliseconds();
+	if (opening_fade_ms == 0)
+		opening_fade_ms = now;
+	else
+	{
+		step = now - opening_fade_ms;
+		if (step > OPENING_FADE_STEP_MS)
+			step = OPENING_FADE_STEP_MS;
+		opening_fade_shown += step;
+		opening_fade_ms = now;
+	}
+	if (opening_fade_shown >= OPENING_FADE_MS)
+	{
+		opening_fade_done = TRUE;
+		return;
+	}
+	shown = opening_shown_ms != 0 ? now - opening_shown_ms : 0;
+	alpha = 1.f - (real)opening_fade_shown / (real)OPENING_FADE_MS;
+	/* Stay under a full replace so this draws over the match. */
+	if (alpha > 0.998f)
+		alpha = 0.998f;
+	opening_film_show(shown, alpha);
+}
+
 void hardcore_rules_tick(void)
 {
 	if (!hardcore_rules_active())
@@ -273,29 +661,18 @@ void hardcore_rules_tick(void)
 
 boolean hardcore_rules_manual_pickup(long weapon_index)
 {
-	struct weapon_datum *weapon;
-	struct weapon_definition *definition;
-
-	/* The flag and the ball are weapons that do not take an inventory slot.
-	A sniper is readied too, and still picks up on its own. */
-	if (!hardcore_rules_active() || !game_engine)
-		return FALSE;
-	weapon = weapon_try_and_get(weapon_index);
-	if (!weapon)
-		return FALSE;
-	definition = weapon_definition_get(weapon->definition_index);
-	if (!definition || !TEST_FLAG(definition->weapon.flags, _weapon_doesnt_count_toward_maximum_bit))
-		return FALSE;
-	if (game_engine->type == game_engine_ctf)
-		return hardcore_live.flag_pickup == 0;
-	if (game_engine->type == game_engine_oddball)
-		return hardcore_live.ball_pickup == 0;
+	(void)weapon_index;
+	/* Pickup is a retail walk-on. The removed row stored manual as zero,
+	   which is also the empty sheet, so another match option must not
+	   hold the flag or the ball. */
 	return FALSE;
 }
 
 boolean hardcore_rules_hill_ordered(void)
 {
-	return hardcore_rules_active() && hardcore_live.hill_order == 0;
+	/* Retail draws the next hill at random. Ordered was a removed row,
+	   and a zero byte is the empty sheet. */
+	return FALSE;
 }
 
 long hardcore_rules_hill_move_ticks(void)
@@ -485,16 +862,17 @@ void hardcore_rules_on_kill(long killing_player_index, long dead_player_index)
 
 boolean hardcore_rules_overshield_fades(void)
 {
-	return !hardcore_rules_active() || hardcore_live.os_type != 0;
+	/* Fading is the retail drain, in every match. The constant byte stays
+	   in the message so its place does not move, and it is not read. */
+	return TRUE;
 }
 
 boolean hardcore_rules_omit_spawn(long now, long respawn_seconds)
 {
-	if (!hardcore_rules_active() || now != 0)
-		return FALSE;
-	if (hardcore_live.omit_first == 1)
-		return TRUE;
-	return hardcore_live.omit_first == 2 && respawn_seconds >= 30;
+	(void)respawn_seconds;
+	/* Every multiplayer match skips the time-0 item placement. Campaign
+	   does not run this engine. */
+	return now == 0 && game_engine_running();
 }
 
 long hardcore_rules_item_period(long period_ticks, long authored_seconds)
@@ -621,7 +999,12 @@ void hardcore_rules_render(void)
 	if (!hardcore_rules_active() || !game_in_progress())
 		return;
 	hardcore_markers();
-	hardcore_random_update();
+	/* The percent belongs to training mode. The byte can stay set after
+	   training is turned off, and a comp preset used to set it alone. */
+	if (!hardcore_live.random_areas && !hardcore_live.spawns_visible)
+		hardcore_random_percent = -1;
+	else
+		hardcore_random_update();
 	if (hardcore_random_percent < 0 || ui_widgets_active())
 		return;
 	/* the clock's font and top, so the percent is on its line */
@@ -666,6 +1049,7 @@ boolean hardcore_rules_write_message(void *buffer, long buffer_size)
 	bytes[4] = 'U';
 	bytes[5] = 'L';
 	bytes[6] = HARDCORE_RULES_VERSION;
+	hardcore_rules_kept_only(&hardcore_live);
 	csmemcpy(bytes + 7, &hardcore_live, sizeof(hardcore_live));
 	return TRUE;
 }
@@ -683,9 +1067,11 @@ boolean hardcore_rules_take_message(void const *message, long size)
 		bytes[1] != (unsigned char)((((unsigned)HARDCORE_RULES_MESSAGE_SIZE << 4) | (2u << 2)) >> 8))
 		return FALSE;
 	csmemcpy(&hardcore_live, bytes + 7, sizeof(hardcore_live));
-	hardcore_training_pair(&hardcore_live);
+	hardcore_rules_kept_only(&hardcore_live);
 	/* port: the loaded variant may not have the bit yet. the session is
-	   what makes this match apply the sheet, as it does on the host. */
+	   what makes this match apply the sheet, as it does on the host.
+	   these bytes are the host's. the local editor does not replace them. */
+	hardcore_from_host = 1;
 	hardcore_session = 1;
 	if (game_in_progress() && hardcore_rules_active())
 		hardcore_apply_presentation();
@@ -697,5 +1083,8 @@ boolean hardcore_rules_take_message(void const *message, long size)
 void hardcore_rules_observe_match(boolean hardcore)
 {
 	if (!hardcore)
+	{
 		hardcore_session = 0;
+		hardcore_from_host = 0;
+	}
 }

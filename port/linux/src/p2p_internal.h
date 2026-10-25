@@ -163,8 +163,6 @@ token, whose answers come to a topic of their own; 0 if there is no room.
 Stopped by its identifier */
 int p2p_signal_probe(const unsigned char *host_hash, const unsigned char *token);
 void p2p_signal_stop_probe(const unsigned char *identifier);
-/* whether any broker is connected */
-int p2p_signal_connected(void);
 /* every broker's connection made anew at once: after the p2p thread was
 stopped (the process was suspended, or the machine slept), the old ones
 may carry nothing, and would be noticed only at their silence timeout */
@@ -337,8 +335,6 @@ identifier in hex: 2 * P2P_IDENTIFIER_SIZE + 1 characters) */
 void p2p_tunnel_packet(const unsigned char *packet, int size, unsigned long address, unsigned short port);
 void p2p_tunnel_send(unsigned long address, unsigned short port, const void *data, int size);
 void p2p_peer_name(int peer, char *name);
-/* the tunnel's socket's port (network byte order) */
-unsigned short p2p_tunnel_local_port(void);
 /* the server browser's probe of a public game's host (its key's hash, its
 listing's token): the tunnel to it made, timed and closed again, its ping
 told p2p_lobby_probed (at once for this machine's own game, and a host the

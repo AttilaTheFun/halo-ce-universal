@@ -102,7 +102,13 @@ void hud_draw_weapon_overlays(
 	long type_flags,
 	long reference_time,
 	short draw_flags,
-	boolean in_multiplayer);
+	boolean in_multiplayer,
+	boolean center_reload);
+/* the reload word: centred on the pane, a short way under the reticle.
+   the offset is the HUD's own and scales with the view */
+void hud_reload_word_place(
+	struct hud_absolute_placement_definition *absolute,
+	struct hud_placement_definition *placement);
 void hud_draw_bitmap(
 	struct bitmap_data const *bitmap,
 	struct hud_absolute_placement_definition const *absolute_placement,

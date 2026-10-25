@@ -78,6 +78,7 @@ symbols in this file:
 #include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
 #include "profile_sections.h" /* port: port/linux/include/profile_sections.h */
+#include "hardcore_rules.h" /* port: the opening ring holds the match clock */
 /* port/linux/game/network_distributed.c's */
 void network_distributed_tick(void);
 
@@ -495,18 +496,27 @@ void game_time_update(
 					long final_server_time = MIN(maximum_possible_server_time, final_local_time);
 					long server_updates = final_server_time - game_time_globals->server_time;
 					long update_index;
+					long advanced = 0;
 
 					for (update_index = 0; update_index < server_updates; update_index++)
 					{
+						/* port: the opening ring. These ticks place the players.
+						   The match clock stays at 0 until that screen is finished. */
+						hardcore_rules_opening_before_tick();
 						game_tick();
 						profile_scope(game_time_render_interpolation_tick_section, render_interpolation_tick();)
-						game_time_globals->server_time++;
-						game_time_globals->local_time++;
+						if (!hardcore_rules_opening_hold())
+						{
+							game_time_globals->server_time++;
+							game_time_globals->local_time++;
+							advanced++;
+						}
 						/* the distributed netcode's per-tick state (none of the
 						main menu's scene, which a lobby's machines do not share) */
 						if (!game_time_menu_scene())
 							profile_scope(game_time_network_distributed_tick_section, network_distributed_tick();)
 					}
+					ticks_elapsed = advanced;
 				}
 
 				/* (none while a client's clock waits: a frame that runs no tick

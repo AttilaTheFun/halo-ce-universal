@@ -19,18 +19,13 @@ from pathlib import Path
 from xml.sax.saxutils import quoteattr
 
 PE = "main_menu/settings_select/player_setup/player_profile_edit"
-# the mods' screen, and its rows (_mods); the main menu's items
-# (ce/main_menu.xml): MODS in Credits' place (Credits is left out:
-# tools/ce_menus.py's LEFT_OUT), Quit a row below it (its CHILD_OFFSETS)
+# the mods' screen, and its rows (_mods). Mods is a row of Settings.
+# The main menu's Quit sits where that item was.
 MODS = "main_menu/mods"
 MOD_ROWS = 11
-MODS_ITEM_PLACE = (192, 391)
-QUIT_ITEM_PLACE = (192, 427)
+QUIT_ITEM_PLACE = (192, 391)
 YES_NO = [("YES", "true"), ("NO", "false")]
 ON_OFF = [("ON", "true"), ("OFF", "false")]
-# the multiplayer armor colors, in the profile's order (player_profile.c)
-SHIELD_COLORS = ["white", "black", "red", "blue", "gray", "yellow", "green", "pink", "purple", "cyan", "cobalt",
-                 "orange", "teal", "sage", "brown", "tan", "maroon", "salmon"]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 
@@ -107,8 +102,9 @@ SCREENS = {
              "Shields light their surroundings as they flare,\nin the shield's own color.", None),
             ("GLOW INTENSITY:", "display.shield_glow_intensity", [("DEFAULT", "default"), ("LIGHT SHOW", "light_show")],
              "Light Show: the shield glow three times as far,\nat full from a third of the flare.", None),
-            ("MATCH TIMER:", "display.match_timer", ON_OFF,
-             "Draw a clock at the bottom right in multiplayer,\ncounting up from the start of the game.", None),
+            ("MATCH TIMER:", "display.match_timer",
+             [("OFF", "off"), ("ON", "on"), ("ON WITH VOICE", "voice")],
+             "A clock at the bottom right in multiplayer.\nOn with Voice also plays the map's timer voice.", None),
         ],
     },
     "mouse_settings": {
@@ -212,37 +208,36 @@ _graphics = {"display.high_res_hud", "display.hud_button_style", "display.campai
 # (the visual modifiers: a screen of their own, Extra Effects)
 _extra_effects = {"display.shield_glow", "display.shield_glow_intensity"}
 SCREENS["video_settings/graphics"] = {
-    "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 30,
+    "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 22,
     "same_place": ["anti_aliasing_android"],
-    "rows": [row for row in _video["rows"] if row[1] in _graphics],
-}
-SCREENS["video_settings/extra_effects"] = {
-    "screen": "extra_effects_settings_screen", "header": _video["header"], "spacing": 30,
-    "rows": [row for row in _video["rows"] if row[1] in _extra_effects],
+    "rows": [row for row in _video["rows"] if row[1] in _graphics] + [
+        ("SPLIT SCREEN:", "display.teammate_views", ON_OFF,
+         "In a team game, one player sees teammates from\ntheir own eyes, up to four panes.", None),
+        ("YOUR VIEW:", "display.teammate_view_slot",
+         [("TOP", "top"), ("BOTTOM", "bottom"), ("TOP LEFT", "top_left"), ("TOP RIGHT", "top_right"),
+          ("BOTTOM LEFT", "bottom_left"), ("BOTTOM RIGHT", "bottom_right")],
+         "Which pane is yours when split screen is on.\nTwo panes are top and bottom.", None),
+        ("STREAMER MODE:", "streamer.enabled", ON_OFF,
+         "Hide mild slurs and strong swearing.\nInsults stay visible.", None),
+    ],
 }
 _video["rows"] = [row for row in _video["rows"] if row[1] not in _graphics | _extra_effects]
 _video["categories"] = [
-    ("GRAPHICS:", "video_settings/graphics", "The HUD, text, anti-aliasing, shadows and\nlighting."),
+    ("GRAPHICS:", "video_settings/graphics", "The HUD, the match clock, anti-aliasing,\nshadows, lighting and streamer mode."),
     ("FOV AND VIEWMODELS:", "video_settings/fov_viewmodels",
      "Optional field of view and first-person weapon\ndisplay settings. Defaults keep the original view."),
-    ("EXTRA EFFECTS:", "video_settings/extra_effects",
-     "Visual modifiers the stock game does not\nhave, such as the shield glow."),
 ]
 SCREENS["video_settings/fov_viewmodels"] = {
     "screen": "fov_viewmodel_settings_screen", "header": _video["header"], "spacing": 30,
     "rows": [
         ("FOV:", "display.fov", [("DEFAULT", "0")] + [(str(n), str(n)) for n in range(80, 151, 5)],
          "On-foot horizontal FOV at 16:9, in degrees.\nDefault keeps the authored view and scopes.", None),
-        ("VIEWMODEL FOV:", "display.viewmodel_fov", [("DEFAULT", "0")] + [(str(n), str(n)) for n in range(80, 151, 5)],
-         "Weapon and hands horizontal FOV at 16:9, in degrees.\nA number sets that FOV. Default keeps the original weapon view.", None),
         ("VIEWMODELS:", "display.viewmodel_visible", ON_OFF,
          "Draw first-person weapons, hands and attached\nvisuals. Gameplay and sound continue when off.", None),
         ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
          "The energy shield's flare on your first-person\narms too, as on your body.", None),
         ("LEGS:", "display.first_person_legs", ON_OFF,
          "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
-        ("SHIELD COLOR:", "display.shield_color", [("DEFAULT", "default")] + [(c.upper(), c) for c in SHIELD_COLORS],
-         "Your shield's flare in an armor color, whatever\nyour armor. Only you see it. Default: its own.", None),
     ],
 }
 
@@ -278,15 +273,9 @@ _hud_settings = ("display.player_names", "display.player_name_scale", "display.s
                  "display.scoreboard_background")
 _hud_rows = [row for row in _network["rows"] if row[1] in _hud_settings]
 _network["rows"] = [row for row in _network["rows"] if row[1] not in _hud_settings]
-_network["categories"] = [
-    ("MAP SHARING:", "network_setup/map_sharing",
-     "Downloading Custom Edition maps you do not have,\nand helping send them to other players.",
-     "desktop android"),
-    ("MULTIPLAYER HUD:", "network_setup/multiplayer_hud",
-     "Players' names above their heads, the\nscoreboard, and the text chat."),
-    ("STREAMER MODE:", "network_setup/streamer_mode",
-     "Hide offensive words in names and text from\nother players, maps and mods, as stars."),
-]
+# map download is the lobby's button. streamer mode is Graphics. names and
+# the scoreboard stay at their config values, with no page of their own.
+_network["categories"] = []
 SCREENS["network_setup/map_sharing"] = {
     "screen": "map_sharing_settings_screen", "header": _network["header"], "spacing": 30,
     "rows": [
@@ -347,7 +336,7 @@ CONTROL_ROWS = 7
 
 # the settings whose rows have the wider spinner (a device's name)
 WIDE_SETTINGS = {"audio.output_device", "audio.input_device", "streamer.slurs", "streamer.swearing",
-                 "streamer.insults"}
+                 "streamer.insults", "display.match_timer", "display.teammate_view_slot"}
 
 # the host's voice chat and vote kicks, on Teamplay Options
 # (_teamplay_options_extras): each row's key, its label, its choices' words
@@ -356,13 +345,6 @@ WIDE_SETTINGS = {"audio.output_device", "audio.input_device", "streamer.slurs", 
 TEAMPLAY_EDIT = "main_menu/settings_select/multiplayer_setup/teamplay_options_edit"
 VOICE_QUALITIES = (8, 12, 16, 24, 32, 48, 64)
 TEAMPLAY_ROWS = [
-    ("voice_mode", "VOICE CHAT:", ["OFF", "TEAM NEAR", "ANYONE NEAR", "TEAM", "TEAM, ENEMIES NEAR"], [
-        "No voice chat during the game.",
-        "Players hear their teammates who are near them.",
-        "Players hear everyone who is near them.",
-        "Players hear all their teammates, wherever they\\nare.",
-        "Players hear all their teammates, and the enemies\\nwho are near them.",
-    ]),
     ("voice_lobby", "LOBBY VOICE CHAT:", ["ON", "OFF"], [
         "Everyone hears everyone in the lobby, before and\\nafter the game.",
         "No voice chat in the lobby.",
@@ -375,13 +357,6 @@ TEAMPLAY_ROWS = [
     ("votekick", "VOTE KICK:", ["ON", "OFF"], [
         "Players can vote to kick a player, from the\\nscoreboard.",
         "Players cannot vote to kick anyone.",
-    ]),
-    # (network_chat.c: one row for the chat and its links, as Teamplay
-    # Options has room for one more)
-    ("text_chat", "TEXT CHAT:", ["ON", "WITH LINKS", "OFF"], [
-        "Players can type to each other; lines with links\\nare refused. Off in a public internet game.",
-        "Players can type to each other, links too. Off\\nin a public internet game.",
-        "No text chat in the game.",
     ]),
 ]
 
@@ -397,6 +372,7 @@ STRING_OVERRIDES = {
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
         "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
         "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
+        "Choose which mods are on.\\n\\n\\nProfile:",
     ],
 }
 
@@ -419,6 +395,20 @@ def _button(name: str, caption: int, handlers: list) -> list:
              ("string_list", "strings/common_button_captions"), ("string_index", caption), ("font", "ui\\small_ui"),
              ("color", "#FFFFFFFF"), ("align", "center"), ("text_y", 2)]
     return _widget(name, pairs, handlers + ['<on event="left_mouse" run="mouse emit accept event"/>'])
+
+
+def _row_metrics(spacing: int) -> dict:
+    """Retail settings rows are 28 tall on a step of 30, a gap of 2. A shorter
+    step keeps that gap by shortening the row, its label and its spinner."""
+    if spacing >= 30:
+        return {"row": 28, "label": 22, "label_y": 4, "spin": 20, "spin_top": 2, "arrow_y": 7, "arrow_b": 19,
+                "font": "ui\\large_ui", "spin_y": None, "bitmap": "bitmaps/option_bkds"}
+    # A short row uses ui\small_ui (ascent 14, capitals about 11). text_y 1
+    # puts those capitals between the short bar's lines. The spinner is placed
+    # one down, so its text_y is 0 and the two baselines meet.
+    row = spacing - 2
+    return {"row": row, "label": row, "label_y": 1, "spin": 18, "spin_top": 0, "arrow_y": 3, "arrow_b": 15,
+            "font": "ui\\small_ui", "spin_y": 0, "bitmap": "bitmaps/option_bkds_short"}
 
 
 def _screen(folder: str, spec: dict, rows: list, list_inputs: list, list_handlers: list, extra: list) -> list:
@@ -463,6 +453,7 @@ def _setting_screen(folder: str, spec: dict) -> list:
     base = f"{PE}/{folder}"
     rows, extra = [], []
     place = -1
+    metrics = _row_metrics(spec["spacing"])
     # (platform_places: each platform's rows in places of their own, with
     # no gap where the other's are; a row for both, a child for each)
     places = {"desktop": -1, "android": -1}
@@ -485,23 +476,27 @@ def _setting_screen(folder: str, spec: dict) -> list:
         # (a device's name wants the wider spinner Server Setup's co-op rows
         # have: WIDE_SETTINGS)
         wide = setting in WIDE_SETTINGS
-        extra += _widget(row, [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
-                               ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF"), ("platform", platform)],
+        extra += _widget(row, [("width", 512), ("height", metrics["row"]), ("flags", "pass_unhandled_to_focused_child"),
+                               ("bitmap", metrics["bitmap"]), ("color", "#FF2896FF"), ("platform", platform)],
                          [f'<child{attributes([("widget", f"{base}/{key}_label")])}/>',
                           f'<child{attributes([("widget", f"{base}/{key}_spinner"), ("x", 286 if wide else 320), ("y", 1)])}/>'])
         extra += _widget(f"{base}/{key}_label",
-                         [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
-                          ("string_list", f"{base}/labels"), ("string_index", index), ("font", "ui\\large_ui"),
-                          ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+                         [("type", "text"), ("controller", 1), ("width", 300), ("height", metrics["label"]),
+                          ("string_list", f"{base}/labels"), ("string_index", index), ("font", metrics["font"]),
+                          ("color", "#FF2896FF"), ("text_x", 13), ("text_y", metrics["label_y"])], [])
         extra += _widget(f"{base}/{key}_spinner",
-                         [("type", "spinner"), ("left", None if wide else 3), ("top", 2), ("width", 206 if wide else 147),
-                          ("height", 20), ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
+                         [("type", "spinner"), ("left", None if wide else 3), ("top", metrics["spin_top"]),
+                          ("width", 206 if wide else 147),
+                          ("height", metrics["spin"]), ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
                           ("strings", "|".join(shown for shown, _ in choices)), ("setting", setting),
-                          ("values", "|".join(value for _, value in choices)), ("font", "ui\\large_ui"),
-                          ("color", "#FF2896FF"), ("align", "center"), ("text_y", 4 if wide else 1),
+                          ("values", "|".join(value for _, value in choices)), ("font", metrics["font"]),
+                          ("color", "#FF2896FF"), ("align", "center"),
+                          ("text_y", metrics["spin_y"] if metrics["spin_y"] is not None else (4 if wide else 1)),
                           ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                          ("header_bounds", "7 -13 19 -7" if wide else "7 -6 19 0"),
-                          ("footer_bounds", "7 208 19 214" if wide else "7 150 19 156")],
+                          ("header_bounds", f"{metrics['arrow_y']} -13 {metrics['arrow_b']} -7" if wide
+                           else f"{metrics['arrow_y']} -6 {metrics['arrow_b']} 0"),
+                          ("footer_bounds", f"{metrics['arrow_y']} 208 {metrics['arrow_b']} 214" if wide
+                           else f"{metrics['arrow_y']} 150 {metrics['arrow_b']} 156")],
                          ['<on event="created" run="port setting load"/>'])
     # (each category's row: its label, the screen it opens, its help, and the
     # platforms it is for, as a row's: every one's when it names none)
@@ -523,15 +518,16 @@ def _setting_screen(folder: str, spec: dict) -> list:
         # Mac menus accept only platform="desktop" or platform="android". A row
         # named for both is written with no platform, so it is shown.
         menu_platform = platform if platform in (None, "desktop", "android") else None
-        extra += _widget(row, [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
+        extra += _widget(row, [("width", 512), ("height", metrics["row"]), ("flags", "pass_unhandled_to_focused_child"),
                                ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF"), ("platform", menu_platform)],
                          [f'<on event="a" open="{target}"/>', f'<on event="start" open="{target}"/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>',
                           f'<child widget="{base}/{key}_label"/>'])
         extra += _widget(f"{base}/{key}_label",
-                         [("type", "text"), ("controller", 1), ("width", 512), ("height", 22),
+                         [("type", "text"), ("controller", 1), ("width", 512), ("height", metrics["label"]),
                           ("string_list", f"{base}/labels"), ("string_index", len(spec["rows"]) + index),
-                          ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+                          ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                          ("text_y", metrics["label_y"])], [])
     extra += _button(f"{base}/button_defaults", 3, ['<on event="a" run="port settings defaults"/>',
                                                     '<on event="start" run="port settings defaults"/>'])
     extra += _button(f"{base}/button_ok", 1, ['<on event="a" run="port settings save" back="true"/>',
@@ -672,7 +668,6 @@ STRING_OVERRIDES.update({
         "Host a game on the Internet:\\nplayers join by its invite\\nlink or Discord.",
         "Host a game on your LAN\\nonly.",
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
-        "A hardcore mode for\\ncompetitive gameplay on the\\nclassic and custom maps.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
     ],
     "main_menu/gametype_select/var_gametype_banks": ["STANDARD", "CUSTOM"],
@@ -720,7 +715,7 @@ STRING_OVERRIDES.update({
 # menu_tags.c's map_strings); the inserted strings (STRING_INSERTS) are the
 # port's own, the rest of their lists the PC version's
 OVERRIDE_ORIGINALS = {
-    f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
+    f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
     f"{MT}/multiplayer_option_descriptions": [0, 1, None, None, 4, None, None, 5],
     "main_menu/gametype_select/var_gametype_banks": [0, 2],
@@ -744,13 +739,13 @@ WIDGET_PATCHES = {
     f"{MT}/connected/connected_map_select_wrapper": {"set": {
         "flags": "pass_unhandled_to_focused_child pause_game main_menu_if_no_history tag_controller_index force_handle_mouse",
     }},
-    # (the main menu's MODS, before Quit: _mods)
-    "main_menu/main_menu_select_list": {"insert_before": {"main_menu/main_menu_item_quit_game": [
-        f'<child widget="main_menu/main_menu_item_mods" x="{MODS_ITEM_PLACE[0]}" y="{MODS_ITEM_PLACE[1]}"/>']}},
+    # Mods is a row on Settings, not a main-menu item.
     f"{PLAYER_EDIT}/player_options_menu": {"insert_before": {
         f"{PLAYER_EDIT}/player_button_bar": [
             f'<child widget="{PLAYER_EDIT}/op_aim_assist" x="54" y="313"/>']}},
     f"{PLAYER_EDIT}/player_options_help": {"set": {"top": 345, "height": 60}},
+    "main_menu/settings_select/multiplayer_setup/playlist_edit/edit_playlist_select_list": {"children": [
+        '<child widget="main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_match_item"/>']},
     # (the profile settings' picture: on Gamepad Setup's row, the profile's
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)
@@ -772,11 +767,10 @@ WIDGET_PATCHES = {
         f'<on event="start" run="mp type set mode" open="{MT}/join_game/join_game_screen"/>',
         '<on event="left_mouse" run="mouse emit accept event"/>',
     ]},
-    # (Co-op, then the line, then Hardcore above Edit Gametypes)
+    # (Co-op, then the line, then Edit Gametypes. Hardcore is a game type.)
     f"{MT}/multiplayer_type_select_list": {"insert_before": {
         f"{MT}/multiplayer_type_gametypes_item": [
-            f'<child widget="{MT}/multiplayer_type_coop_item" y="274"/>',
-            f'<child widget="{MT}/multiplayer_type_hardcore_item" y="323"/>'],
+            f'<child widget="{MT}/multiplayer_type_coop_item" y="274"/>'],
     }},
     # (the Map screen's and New Game's lists: SINGLEPLAYER or MULTIPLAYER
     # maps, the first row's chooser's (_map_kind); B on the Map screen goes
@@ -849,7 +843,60 @@ WIDGET_PATCHES = {
 # picture's 279 by 202
 XBOX_CONTROLLER_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\controller_edit\\config_controller"
 BITMAP_FRAMES = {
-    f"{PE}/profile_options": [(XBOX_CONTROLLER_PICTURES, 4 + preset, 279, 279, 0, 34) for preset in range(5)],
+    # Mods is the tenth profile row (index 9). The five button layouts follow it
+    # (menu_functions.c's PROFILE_FIRST_LAYOUT_FRAME).
+    f"{PE}/profile_options": [
+        ("ui\\shell\\main_menu\\halo_logo", 0, 279, 70, 0, 132),
+        *[(XBOX_CONTROLLER_PICTURES, 4 + preset, 279, 279, 0, 34) for preset in range(5)],
+    ],
+}
+
+# placeholder frames drawn from a settings card the menus already load
+# (the Xbox bitmap, its frame, and, when set, the size and place in the widget).
+# ce_menus.py writes these in place of the placeholder PNG.
+PORT_CARD_FRAMES = {
+    "shell/main_menu/multiplayer_type_select/mp_options__0":
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, 0, 0, 0, 0),
+    "shell/main_menu/multiplayer_type_select/mp_options__1":
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, 0, 0, 0, 0),
+    "shell/main_menu/multiplayer_type_select/mp_options__2":
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__0":
+        ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options", 0, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__3":
+        ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options", 3, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__4":
+        ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options", 4, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__6":
+        ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options", 1, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__7":
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 3, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__1":
+        (XBOX_CONTROLLER_PICTURES, 0, 279, 279, 0, 34),
+    "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__3":
+        ("ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_options", 2, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__5":
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 0, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__6":
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, 0, 0, 0, 0),
+    "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__8":
+        ("ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_options", 4, 0, 0, 0, 0),
+}
+# the audio card is the voice speaker, composed into this frame. A later
+# ce_menus.py run keeps the file instead of writing the placeholder back.
+PRESERVE_FRAMES = {
+    "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__4",
+}
+# frames after the PC bitmap's own, before BITMAP_FRAMES. Multiplayer's card
+# has one picture per row; the PC bitmap had three.
+PORT_EXTRA_FRAMES = {
+    "main_menu/multiplayer_type_select/mp_options": [
+        ("map", "ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, 0, 0, 0, 0),
+        ("map", "ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, 0, 0, 0, 0),
+        ("map", "ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 0, 0, 0, 0, 0),
+        ("png", "ce/shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__1.png",
+         512, 256, 0, 0, 0),
+    ],
 }
 
 # the titles this port has that the PC version has not, set as its headers
@@ -973,20 +1020,25 @@ FIELD_BACK = ['<on event="b"/>', '<on event="back"/>']
 SCREEN_BACK = ['<on event="b" run="gamespy back handler"/>', '<on event="back" run="gamespy back handler"/>']
 
 
-def _value_row(base: str, key: str, label_index: int, run: str) -> list:
+def _value_row(base: str, key: str, label_index: int, run: str, compact: bool = False) -> list:
     """a row of a label and a value the player sets (A edits it)"""
-    lines = _widget(f"{base}/op_{key}", [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
-                                         ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+    # a compact row uses small_ui. text_y 1 on the label and text_y 0 on the
+    # value, placed one down, share a baseline between the short bar's lines.
+    row, label_h, label_y, value_h, value_y, label_font = (
+        (20, 20, 1, 18, 0, "ui\\small_ui") if compact else (28, 22, 4, 22, 5, "ui\\large_ui"))
+    lines = _widget(f"{base}/op_{key}", [("width", 512), ("height", row), ("flags", "pass_unhandled_to_focused_child"),
+                                         ("bitmap", "bitmaps/option_bkds_short" if compact else "bitmaps/option_bkds"),
+                                         ("color", "#FF2896FF")],
                     [f'<on event="a" run="{run}"/>', f'<on event="start" run="{run}"/>', *FIELD_BACK,
                      '<on event="left_mouse" run="mouse emit accept event"/>',
                      f'<child widget="{base}/{key}_label"/>', f'<child widget="{base}/{key}_value" x="230" y="1"/>'])
-    lines += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 230), ("height", 22),
+    lines += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 230), ("height", label_h),
                                              ("string_list", f"{base}/labels"), ("string_index", label_index or None),
-                                             ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
-                                             ("text_y", 4)], [])
-    lines += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", 280), ("height", 22),
+                                             ("font", label_font), ("color", "#FF2896FF"), ("text_x", 13),
+                                             ("text_y", label_y)], [])
+    lines += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", 280), ("height", value_h),
                                              ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("align", "center"),
-                                             ("text_y", 5), ("text_flags", "no_focus_test")], [])
+                                             ("text_y", value_y), ("text_flags", "no_focus_test")], [])
     return lines
 
 
@@ -1047,69 +1099,69 @@ def _server_settings() -> list:
     game's)"""
     base = f"{MT}/server_settings"
     # (thirteen rows: the help and the buttons sit under Hardcore)
-    spec = {"screen": "server_settings_screen", "spacing": 24, "help_top": 390, "help_height": 48,
-            "button_y": 440,
+    spec = {"screen": "server_settings_screen", "spacing": 22, "help_top": 350, "help_height": 60,
+            "button_y": 414,
             "header": ("header_server_settings", f"{base}/header_server_settings")}
     rows, extra = [], []
-    extra += _value_row(base, "server_name", 0, "ss edit server name")
+    extra += _value_row(base, "server_name", 0, "ss edit server name", compact=True)
     rows.append((f"{base}/op_server_name", None))
-    extra += _widget(f"{base}/op_max_players", [("width", 512), ("height", 28),
+    extra += _widget(f"{base}/op_max_players", [("width", 512), ("height", 20),
                                                 ("flags", "pass_unhandled_to_focused_child"),
-                                                ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                                ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                      [f'<child widget="{base}/max_players_label"/>',
                       f'<child widget="{base}/max_players_spinner" x="320" y="1"/>'])
     extra += _widget(f"{base}/max_players_label", [("type", "text"), ("controller", 1), ("width", 300),
-                                                   ("height", 22), ("string_list", f"{base}/labels"),
-                                                   ("string_index", 1), ("font", "ui\\large_ui"),
-                                                   ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+                                                   ("height", 20), ("string_list", f"{base}/labels"),
+                                                   ("string_index", 1), ("font", "ui\\small_ui"),
+                                                   ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 1)], [])
     extra += _widget(f"{base}/max_players_spinner",
-                     [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147), ("height", 20),
+                     [("type", "spinner"), ("left", 3), ("top", 0), ("width", 147), ("height", 18),
                       ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
-                      ("strings", "|".join(str(count) for count in MAXIMUM_PLAYERS)), ("font", "ui\\large_ui"),
-                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 1),
+                      ("strings", "|".join(str(count) for count in MAXIMUM_PLAYERS)), ("font", "ui\\small_ui"),
+                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 0),
                       ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")], [])
+                      ("header_bounds", "3 -6 15 0"), ("footer_bounds", "3 150 15 156")], [])
     rows.append((f"{base}/op_max_players", None))
-    extra += _value_row(base, "invite", 2, "ss copy invite")
+    extra += _value_row(base, "invite", 2, "ss copy invite", compact=True)
     rows.append((f"{base}/op_invite", None))
     # (PUBLIC or PRIVATE: menu_functions.c's server_settings_update)
-    extra += _widget(f"{base}/op_listing", [("width", 512), ("height", 28),
+    extra += _widget(f"{base}/op_listing", [("width", 512), ("height", 20),
                                             ("flags", "pass_unhandled_to_focused_child"),
-                                            ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                            ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                      [f'<child widget="{base}/listing_label"/>',
                       f'<child widget="{base}/listing_spinner" x="320" y="1"/>'])
     extra += _widget(f"{base}/listing_label", [("type", "text"), ("controller", 1), ("width", 300),
-                                               ("height", 22),                                                ("string_list", f"{base}/labels"),
-                                               ("string_index", 10), ("font", "ui\\large_ui"),
-                                               ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+                                               ("height", 20), ("string_list", f"{base}/labels"),
+                                               ("string_index", 9), ("font", "ui\\small_ui"),
+                                               ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 1)], [])
     extra += _widget(f"{base}/listing_spinner",
-                     [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147), ("height", 20),
+                     [("type", "spinner"), ("left", 3), ("top", 0), ("width", 147), ("height", 18),
                       ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
-                      ("strings", "PUBLIC|PRIVATE"), ("font", "ui\\large_ui"),
-                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 1),
+                      ("strings", "PUBLIC|PRIVATE"), ("font", "ui\\small_ui"),
+                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 0),
                       ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
+                      ("header_bounds", "3 -6 15 0"), ("footer_bounds", "3 150 15 156")],
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     rows.append((f"{base}/op_listing", None))
     # PASSWORD (a public internet game's: menu_functions.c's server_settings_update),
     # which players from the server browser must type
-    extra += _value_row(base, "password", 11 + len(COOP_SETUP_SCREENS), "ss edit server password")
+    extra += _value_row(base, "password", 10 + len(COOP_SETUP_SCREENS), "ss edit server password", compact=True)
     rows.append((f"{base}/op_password", None))
     # MAP SHARING (map_share.c), a screen of its own as co-op's options are,
     # for any game: SETUP_OPTIONS_PLACE below it
     key, _, _, _ = MAP_SHARE_SETUP
     target = f"{base}/{key}/{key}_screen"
-    extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
+    extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 20),
                                          ("flags", "pass_unhandled_to_focused_child"),
-                                         ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                         ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                      [f'<on event="a" open="{target}"/>', f'<on event="start" open="{target}"/>',
                       '<on event="left_mouse" run="mouse emit accept event"/>',
                       f'<child widget="{base}/{key}_label"/>'])
-    extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
+    extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 300), ("height", 20),
                                              ("string_list", f"{base}/labels"),
-                                             ("string_index", 12 + len(COOP_SETUP_SCREENS)),
-                                             ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
-                                             ("text_y", 4)], [])
+                                             ("string_index", 11 + len(COOP_SETUP_SCREENS)),
+                                             ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                                             ("text_y", 1)], [])
     rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE - 1))
     # co-op's options, in the place of the gametype's rows, which co-op hides
     # as multiplayer hides co-op's (menu_functions.c's server_settings_update):
@@ -1117,35 +1169,35 @@ def _server_settings() -> list:
     # (_setup_option_screen; COOP_SETUP_SCREENS)
     for index, (key, title, _, _) in enumerate(COOP_SETUP_SCREENS):
         target = f"{base}/{key}/{key}_screen"
-        extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
+        extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 20),
                                              ("flags", "pass_unhandled_to_focused_child"),
-                                             ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                             ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                          [f'<on event="a" open="{target}"/>', f'<on event="start" open="{target}"/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>',
                           f'<child widget="{base}/{key}_label"/>'])
-        extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
-                                                 ("string_list", f"{base}/labels"), ("string_index", 11 + index),
-                                                 ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
-                                                 ("text_y", 4)], [])
+        extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 300), ("height", 20),
+                                                 ("string_list", f"{base}/labels"), ("string_index", 10 + index),
+                                                 ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                                                 ("text_y", 1)], [])
         rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE + index))
     # the gametype's options for this game (the gametype editor's screens,
     # editing a copy of the gametype chosen: "port setup edit")
     for index, (key, screen) in enumerate(SETUP_OPTION_SCREENS):
         target = f"main_menu/settings_select/multiplayer_setup/{screen}"
-        extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
+        extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 20),
                                              ("flags", "pass_unhandled_to_focused_child"),
-                                             ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                             ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                          [f'<on event="a" run="port setup edit" open="{target}"/>',
                           f'<on event="start" run="port setup edit" open="{target}"/>',
                           '<on event="left_mouse" run="mouse emit accept event"/>',
                           f'<child widget="{base}/{key}_label"/>', f'<child widget="{base}/{key}_value" x="230" y="1"/>'])
-        extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 230), ("height", 22),
+        extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 230), ("height", 20),
                                                  ("string_list", f"{base}/labels"), ("string_index", 3 + index),
-                                                 ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
-                                                 ("text_y", 4)], [])
-        extra += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", 280), ("height", 22),
+                                                 ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                                                 ("text_y", 1)], [])
+        extra += _widget(f"{base}/{key}_value", [("type", "text"), ("controller", 1), ("width", 280), ("height", 18),
                                                  ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("align", "center"),
-                                                 ("text_y", 5), ("text_flags", "no_focus_test")], [])
+                                                 ("text_y", 0), ("text_flags", "no_focus_test")], [])
         rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE + index))
     extra += _button(f"{base}/button_defaults", 3, [])
     extra += _widget(f"{base}/button_ok", [("type", "text"), ("width", 128), ("height", 24),
@@ -1194,7 +1246,8 @@ def _server_settings() -> list:
     return lines
 
 
-MAXIMUM_PLAYERS = [2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128]
+MAXIMUM_PLAYERS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                    20, 24, 32, 40, 48, 64, 80, 96, 112, 128]
 # CO-OP OPTIONS' amounts of PER PLAYER (network.coop_enemies, percentages)
 # and STATIC MULTIPLIER (network.coop_enemies_multiplier), as menu_functions.c's
 # gametype_options have their values
@@ -1238,7 +1291,7 @@ COOP_SETUP_SCREENS = [
             "Players walk through each other, so that no one\\nblocks a doorway. The AI's characters still block.",
         ]),
     ]),
-    ("voice_options", "VOICE AND VOTING", "Voice chat, text chat and votes to kick a player,\\nfor this game.",
+    ("voice_options", "VOICE AND VOTING", "Voice chat and votes to kick a player,\\nfor this game.",
      TEAMPLAY_ROWS),
 ]
 # Server Setup's map sharing (port/linux/game/map_share.c), for any game,
@@ -1333,17 +1386,12 @@ SETUP_OPTION_SCREENS = [
 
 
 def _lobby_local_row(base: str, key: str, label: str, setting: str, strings: str, values: str) -> list:
-    """one row of this machine's config. the hardcore lobby's settings
-    screen shows it for the host and for each client, and the value stays
-    on that machine."""
+    """one row of this machine's config, laid out as a settings row."""
     wide = _choice_wide(strings)
-    # the options page puts a short value at 320 and a long one at 286, in a
-    # 512-wide row. the lobby row is 390, so both move left by that difference
-    # and the values stay in the same column, inside the row's bar.
-    spin_x = (286 if wide else 320) - (512 - 390)
-    lines = _widget(f"{base}/{key}", [("width", 390), ("height", 28),
+    spin_x = 286 if wide else 320
+    lines = _widget(f"{base}/{key}", [("width", 512), ("height", 28),
                                       ("flags", "pass_unhandled_to_focused_child"),
-                                      ("bitmap", "bitmaps/sel_list_item_bkd"), ("color", "#FF2896FF")],
+                                      ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                     [f'<child widget="{base}/{key}_label"/>',
                      f'<child widget="{base}/{key}_spinner" x="{spin_x}" y="1"/>'])
     lines += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1),
@@ -1371,9 +1419,7 @@ def _lobby() -> list:
     """the lobby the host's and the joining players wait in (the Xbox's
     pregame's functions, which need no widget of theirs): up to the port's
     128 players, scrolling; the game's map and gametype; the countdown.
-    A hardcore game also has Settings, for this machine's teammate views,
-    which pane is yours, and the map's timer voice. Those stay on this
-    machine."""
+    Every lobby has Settings: the host's text chat, and Download Maps."""
     base = f"{MT}/lobby"
     # (split screen: another controller's START joins it, its B leaves alone:
     # menu_functions.c's lobby_join. After a game it is the only screen,
@@ -1406,8 +1452,8 @@ def _lobby() -> list:
                                             ("description", f"{base}/lobby_desc")],
                      ['<data input="net splitscreen prejoin players"/>', '<data input="port lobby update"/>',
                       *rows,
-                      # (hardcore only: menu_functions.c shows this and gives
-                      # it the last player row. a classic lobby hides it)
+                      # (every lobby: menu_functions.c gives this the last
+                      # player row)
                       f'<child widget="{base}/lobby_settings" x="20" y="373"/>',
                       f'<child widget="{base}/lobby_button_bar" y="414"/>'])
     for index in range(11):
@@ -1430,19 +1476,18 @@ def _lobby() -> list:
                                                       ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
                                                       ("text_x", 13), ("text_y", 4),
                                                       ("text_flags", "no_focus_test")], [])
-    # this machine's hardcore choices. the list saves them while it is open,
-    # so a countdown that starts first still keeps the change
+    # the host's text chat, and Download Maps. the list writes the chat
+    # while it is open. a client sees the host's choice and cannot change it
     lines += _widget(f"{base}/lobby_settings_screen", [("width", 640), ("height", 480),
                                                        ("flags", "pass_unhandled_to_focused_child"),
                                                        ("bitmap", "bitmaps/gradient")],
                      ['<on event="b" back="true"/>',
                       '<on event="back" back="true"/>',
-                      '<child widget="main_menu/new_select/sel_list_desc_bkd"/>',
                       f'<child widget="{base}/lobby_settings_list"/>',
                       f'<child widget="{base}/lobby_settings_title"/>',
-                      f'<child widget="{base}/lobby_settings_help" x="20" y="446"/>'])
+                      f'<child widget="{base}/lobby_settings_help"/>'])
     lines += _widget(f"{base}/lobby_settings_title", [("type", "text"), ("controller", 1),
-                                                      ("left", 48), ("top", 22), ("width", 300), ("height", 32),
+                                                      ("left", 68), ("top", 28), ("width", 400), ("height", 28),
                                                       ("text", "SETTINGS"), ("font", "ui\\large_ui"),
                                                       ("color", "#FF2896FF"), ("text_flags", "no_focus_test")], [])
     lines += _widget(f"{base}/lobby_settings_list", [("type", "column_list"), ("width", 640), ("height", 480),
@@ -1450,29 +1495,36 @@ def _lobby() -> list:
                      ['<data input="port lobby settings"/>',
                       '<on event="b" back="true"/>',
                       '<on event="back" back="true"/>',
-                      f'<child widget="{base}/lobby_views" x="20" y="73"/>',
-                      f'<child widget="{base}/lobby_view_slot" x="20" y="103"/>',
-                      f'<child widget="{base}/lobby_timer_voice" x="20" y="133"/>',
+                      f'<child widget="{base}/lobby_chat" x="54" y="73"/>',
+                      f'<child widget="{base}/lobby_download" x="54" y="103"/>',
                       f'<child widget="{base}/lobby_settings_buttons" y="414"/>'])
-    lines += _lobby_local_row(base, "lobby_views", "SPLIT SCREEN", "display.teammate_views",
-                              "OFF|ON", "false|true")
-    lines += _lobby_local_row(base, "lobby_view_slot", "YOUR VIEW", "display.teammate_view_slot",
-                              "TOP|BOTTOM|TOP LEFT|TOP RIGHT|BOTTOM LEFT|BOTTOM RIGHT",
-                              "top|bottom|top_left|top_right|bottom_left|bottom_right")
-    lines += _lobby_local_row(base, "lobby_timer_voice", "TIMER VOICE", "audio.hardcore_timer_voice",
-                              "OFF|ON", "false|true")
+    lines += _lobby_local_row(base, "lobby_chat", "TEXT CHAT", "network.text_chat",
+                              "ON|OFF", "on|off")
+    lines += _widget(f"{base}/lobby_download", [("width", 512), ("height", 28),
+                                                ("flags", "pass_unhandled_to_focused_child"),
+                                                ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                     ['<on event="a" run="port lobby download"/>',
+                      '<on event="start" run="port lobby download"/>',
+                      '<on event="left_mouse" run="mouse emit accept event"/>',
+                      f'<child widget="{base}/lobby_download_label"/>'])
+    lines += _widget(f"{base}/lobby_download_label", [("type", "text"), ("controller", 1),
+                                                      ("width", 480), ("height", 22), ("text", "DOWNLOAD MAP"),
+                                                      ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
+                                                      ("text_x", 13), ("text_y", 4),
+                                                      ("text_flags", "no_focus_test")], [])
     lines += _widget(f"{base}/lobby_settings_buttons", [("type", "column_list"), ("width", 640), ("height", 28),
                                                        ("flags", "pass_unhandled_to_focused_child left_right_tabs_items")],
-                     [f'<child widget="{base}/lobby_settings_back" x="256" y="1"/>'])
+                     [f'<child widget="{base}/lobby_settings_back" x="510" y="1"/>'])
     lines += _widget(f"{base}/lobby_settings_back", [("type", "text"), ("width", 128), ("height", 24),
                                                      ("bitmap", "bitmaps/text_button_background"),
                                                      ("text", "BACK"), ("font", "ui\\small_ui"),
                                                      ("color", "#FFFFFFFF"), ("align", "center"), ("text_y", 2)],
                      ['<on event="a" back="true"/>', '<on event="start" back="true"/>',
                       '<on event="left_mouse" run="mouse emit accept event"/>'])
-    lines += _widget(f"{base}/lobby_settings_help", [("type", "text"), ("width", 350), ("height", 24),
-                                                     ("text", "This machine only."),
-                                                     ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("text_y", 5),
+    lines += _widget(f"{base}/lobby_settings_help", [("type", "text"), ("controller", 1),
+                                                     ("left", 68), ("top", 350), ("width", 482), ("height", 60),
+                                                     ("text", "The host sets text chat."),
+                                                     ("font", "ui\\large_ui"), ("color", "#FFFFFFFF"),
                                                      ("text_flags", "no_focus_test")], [])
     lines += _widget(f"{base}/lobby_desc", [("width", 640), ("height", 480)],
                      ['<child widget="main_menu/current_profile_name"/>',
@@ -1593,7 +1645,7 @@ def _coop() -> list:
     coop_begin)"""
     base = f"{MT}/coop"
     lines = _widget(f"{MT}/multiplayer_type_coop_item",
-                    [("type", "text"), ("left", 51), ("width", 232), ("height", 32), ("bitmap", "bitmaps/list_item_bkd"),
+                    [("type", "text"), ("left", 51), ("width", 226), ("height", 32), ("bitmap", "bitmaps/list_item_bkd"),
                      ("string_list", f"{MT}/multiplayer_options"), ("string_index", 7), ("font", "ui\\large_ui"),
                      ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 5)],
                     [f'<on event="a" run="port coop begin" open="{base}/player_2_profile_screen" branch="true"/>',
@@ -1676,7 +1728,7 @@ def _player_options_extras() -> list:
     """The host's aim-assist policy, hidden while editing saved gametypes."""
     base = PLAYER_EDIT
     lines = _widget(f"{base}/op_aim_assist", [("width", 512), ("height", 28),
-        ("flags", "pass_unhandled_to_focused_child"), ("bitmap", "bitmaps/option_bkds"),
+        ("flags", "pass_unhandled_to_focused_child"), ("bitmap", "bitmaps/option_bkds_short"),
         ("color", "#FF2896FF")], [f'<child widget="{base}/aim_assist_label"/>',
         f'<child widget="{base}/aim_assist_spinner" x="286" y="1"/>'])
     lines += _widget(f"{base}/aim_assist_label", [("type", "text"), ("controller", 1),
@@ -1781,12 +1833,12 @@ def _hardcore_local_setting(base: str, row: str, label: str, setting: str, strin
     wide = _choice_wide(strings)
     lines = _widget(f"{base}/op_{row}", [("width", 512), ("height", 28),
                                          ("flags", "pass_unhandled_to_focused_child"),
-                                         ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                         ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                     [f'<child widget="{base}/op_{row}_label"/>',
                      f'<child widget="{base}/hardcore_{row}" x="{286 if wide else 320}" y="1"/>'])
     lines += _widget(f"{base}/op_{row}_label", [("type", "text"), ("controller", 1), ("width", 300),
                                                 ("height", 22), ("text", label), ("font", "ui\\large_ui"),
-                                                ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+                                                ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 1)], [])
     lines += _widget(f"{base}/hardcore_{row}", [("type", "spinner"), ("left", None if wide else 3), ("top", 2),
                                             ("width", 206 if wide else 147), ("height", 20),
                                             ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
@@ -2080,12 +2132,12 @@ def _hardcore_screen() -> list:
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     lines += _widget(f"{base}/teams_row", [("width", 512), ("height", 28),
                                            ("flags", "pass_unhandled_to_focused_child"),
-                                           ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                           ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                      [f'<child widget="{base}/teams_label"/>',
                       f'<child widget="{base}/hardcore_teams_spinner" x="320" y="1"/>'])
     lines += _widget(f"{base}/teams_label", [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
                                              ("text", "TEAMS"), ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
-                                             ("text_x", 13), ("text_y", 4)], [])
+                                             ("text_x", 13), ("text_y", 1)], [])
     lines += _widget(f"{base}/hardcore_teams_spinner", [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147),
                                                            ("height", 20),
                                                            ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
@@ -2144,13 +2196,13 @@ def _hardcore_screen() -> list:
     lines += _hardcore_field(base, "server_name", "GAME NAME", "ss edit server name")
     lines += _widget(f"{base}/op_max_players", [("width", 512), ("height", 28),
                                                 ("flags", "pass_unhandled_to_focused_child"),
-                                                ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                                ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                      [f'<child widget="{base}/max_players_label"/>',
                       f'<child widget="{base}/max_players_spinner" x="320" y="1"/>'])
     lines += _widget(f"{base}/max_players_label", [("type", "text"), ("controller", 1), ("width", 300),
                                                    ("height", 22), ("text", "MAXIMUM PLAYERS"),
                                                    ("font", "ui\\large_ui"), ("color", "#FF2896FF"),
-                                                   ("text_x", 13), ("text_y", 4)], [])
+                                                   ("text_x", 13), ("text_y", 1)], [])
     lines += _widget(f"{base}/max_players_spinner",
                      [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147), ("height", 20),
                       ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
@@ -2162,12 +2214,12 @@ def _hardcore_screen() -> list:
     lines += _hardcore_field(base, "invite", "INVITE LINK", "ss copy invite")
     lines += _widget(f"{base}/op_listing", [("width", 512), ("height", 28),
                                             ("flags", "pass_unhandled_to_focused_child"),
-                                            ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                            ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                      [f'<child widget="{base}/listing_label"/>',
                       f'<child widget="{base}/listing_spinner" x="320" y="1"/>'])
     lines += _widget(f"{base}/listing_label", [("type", "text"), ("controller", 1), ("width", 300),
                                                ("height", 22), ("text", "LISTING"), ("font", "ui\\large_ui"),
-                                               ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+                                               ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 1)], [])
     lines += _widget(f"{base}/listing_spinner",
                      [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147), ("height", 20),
                       ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
@@ -2179,23 +2231,23 @@ def _hardcore_screen() -> list:
     lines += _hardcore_field(base, "password", "PASSWORD", "ss edit server password")
     lines += _widget(f"{base}/op_map_share", [("width", 512), ("height", 28),
                                               ("flags", "pass_unhandled_to_focused_child"),
-                                              ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                              ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                      [f'<on event="a" open="{share}"/>', f'<on event="start" open="{share}"/>',
                       '<on event="left_mouse" run="mouse emit accept event"/>',
                       f'<child widget="{base}/map_share_label"/>'])
     lines += _widget(f"{base}/map_share_label", [("type", "text"), ("controller", 1), ("width", 300),
                                                  ("height", 22), ("text", "MAP SHARING"), ("font", "ui\\large_ui"),
-                                                 ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+                                                 ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 1)], [])
     lines += _widget(f"{base}/op_game_rules", [("width", 512), ("height", 28),
                                                ("flags", "pass_unhandled_to_focused_child"),
-                                               ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
+                                               ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
                      [f'<on event="a" run="port hardcore prepare" open="{base}/hardcore_setup_screen"/>',
                       f'<on event="start" run="port hardcore prepare" open="{base}/hardcore_setup_screen"/>',
                       '<on event="left_mouse" run="mouse emit accept event"/>',
                       f'<child widget="{base}/game_rules_label"/>'])
     lines += _widget(f"{base}/game_rules_label", [("type", "text"), ("controller", 1), ("width", 300),
                                                   ("height", 22), ("text", "GAME RULES"), ("font", "ui\\large_ui"),
-                                                  ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
+                                                  ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 1)], [])
     lines += _widget(f"{base}/server_desc", [("width", 640), ("height", 480)],
                      [f'<child widget="{base}/server_help" x="68" y="345"/>'])
     lines += _widget(f"{base}/server_help", [("type", "text"), ("controller", 1), ("width", 482), ("height", 60),
@@ -2224,7 +2276,7 @@ def _hardcore_screen() -> list:
                      [f'<on event="a" run="port hardcore start" open="{lobby}"/>',
                       f'<on event="start" run="port hardcore start" open="{lobby}"/>',
                       '<on event="left_mouse" run="mouse emit accept event"/>'])
-    lines += _widget(f"{MT}/multiplayer_type_hardcore_item", [("type", "text"), ("left", 51), ("width", 232),
+    lines += _widget(f"{MT}/multiplayer_type_hardcore_item", [("type", "text"), ("left", 51), ("width", 226),
                                                                  ("height", 32), ("bitmap", "bitmaps/list_item_bkd"),
                                                                  ("text", "HARDCORE"), ("font", "ui\\large_ui"),
                                                                  ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 5)],

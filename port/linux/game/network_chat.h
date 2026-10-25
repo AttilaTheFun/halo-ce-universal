@@ -35,6 +35,9 @@ void network_chat_say_unchecked(short channel, char const *text);
 /* whether a line is being typed: the keyboard types into it, and drives no
 player (xinput_sdl.c), as with the console */
 boolean network_chat_typing(void);
+/* whether this game's host has text chat on. a client uses the host's
+message. a listed public game is off */
+boolean network_chat_allowed(void);
 /* (hud_unit.c) where the local player's motion sensor was drawn: its left
 and the top of its circle, in the window's units */
 void network_chat_note_motion_sensor(short local_player_index, short left, short top);

@@ -1231,6 +1231,19 @@ pixel32 get_flash_color(
 	return real_argb_color_to_pixel32(&result);
 }
 
+void hud_reload_word_place(
+	struct hud_absolute_placement_definition *absolute,
+	struct hud_placement_definition *placement)
+{
+	if (absolute)
+		absolute->corner = _hud_anchor_center;
+	if (placement)
+	{
+		placement->offset.x = 0;
+		placement->offset.y = 24;
+	}
+}
+
 void hud_draw_weapon_overlays(
 	short local_player_index,
 	struct hud_absolute_placement_definition const *absolute_placement,
@@ -1238,7 +1251,8 @@ void hud_draw_weapon_overlays(
 	long type_flags,
 	long reference_time,
 	short draw_flags,
-	boolean in_multiplayer)
+	boolean in_multiplayer,
+	boolean center_reload)
 {
 	long return_eip = get_return_eip();
 	long stack_buffer[STACK_BUFFER_LENGTH];
@@ -1322,11 +1336,23 @@ void hud_draw_weapon_overlays(
 					FALSE,
 					TRUE))
 				{
+					struct hud_absolute_placement_definition anchor = *absolute_placement;
+					struct hud_placement_definition place = item->placement;
+					/* weapon_overlay_on_flags in hud_weapon.c: reload is
+					bit 2. an item on screen for that bit alone is the
+					reload word. ammo, heat and grenades are other items.
+					grenades pass center_reload false, so their default
+					bit, which is also bit 2, stays where the tag put it */
+					boolean reload_word = center_reload &&
+						(item->type & type_flags) == (long)FLAG(2);
+
+					if (reload_word)
+						hud_reload_word_place(&anchor, &place);
 					hud_draw_bitmap_with_meter(
 						NULL,
 						bitmap,
-						absolute_placement,
-						&item->placement,
+						reload_word ? &anchor : absolute_placement,
+						reload_word ? &place : &item->placement,
 						clip,
 						1.0f,
 						0.0f,

@@ -182,6 +182,7 @@ symbols in this file:
  * ABI and code shape.
  */
 #include <xtl.h>
+#include <math.h>
 #include "rasterizer/xbox/rasterizer_xbox.h"
 #include "rasterizer/xbox/rasterizer_xbox_pixel_shader.h"
 
@@ -1478,6 +1479,8 @@ real delta_z= 5.f;
 real num_layers= 40.f;
 static real blur_offset= 0.1f;
 static boolean progress_bar_restart= TRUE;
+/* port: the match-opening ring outlives the one second texture drop */
+static boolean progress_bar_pinned= FALSE;
 static struct progress_bar_globals progress_bar_globals= {0};
 struct progress_bar_mode progress_bar_mode= {0};
 real last_t= 0.f;
@@ -1584,6 +1587,9 @@ void progress_bar_begin(
 {
 	progress_bar_mode.capture_frame= !skip_frame_capture;
 	progress_bar_mode.active= TRUE;
+	/* port: a match opening plays the sweep from the start, not from
+	   wherever the last map load left it */
+	last_t= 0.f;
 	SetThreadPriority((void *)-2, 2);
 
 	return;
@@ -1592,6 +1598,7 @@ void progress_bar_begin(
 void progress_bar_end(
 	void)
 {
+	progress_bar_pinned= FALSE;
 	progress_bar_mode.active= FALSE;
 	SetThreadPriority((void *)-2, 0);
 
@@ -1776,6 +1783,14 @@ void progress_bar_eachframe(
 	unsigned long time= GetTickCount();
 	long sound_index;
 
+	/* port: a match holds this screen past the map load. The one second
+	   drop would free the ring and its chant and build them again. */
+	if (progress_bar_pinned)
+	{
+		progress_bar_globals.start_time= GetTickCount();
+		return;
+	}
+
 	if (progress_bar_restart)
 	{
 		progress_bar_globals.start_time= GetTickCount();
@@ -1835,6 +1850,27 @@ void progress_bar_display(
 				(1.f - progress_bar_globals.initial_progress));
 		}
 	}
+
+	return;
+}
+
+void progress_bar_show_ring(
+	real progress)
+{
+	if (progress<0.f)
+		progress= 0.f;
+	if (progress>1.f)
+		progress= 1.f;
+	progress_bar_pinned= TRUE;
+	progress_bar_mode.active= TRUE;
+	progress_bar_globals.start_time= GetTickCount();
+	if (!progress_bar_mode.texture0)
+	{
+		progress_bar_make_stuff_ready();
+		progress_bar_globals.initial_progress= 0.f;
+	}
+	if (progress_bar_rendering_enabled && progress_bar_mode.texture0 && progress>0.f)
+		progress_bar_render(progress);
 
 	return;
 }
@@ -1973,6 +2009,157 @@ void generate_gravy_rect(
 #line 898 "c:\\halo\\SOURCE\\interface\\progress_bar.c"
 	match_assert(__FILE__, __LINE__, rect->x0 < rect->x1);
 	match_assert(__FILE__, __LINE__, rect->y0 < rect->y1);
+
+	return;
+}
+
+/* The film is the whole frame. The sweep's shader would hide all but a
+slice of it, so this samples the picture on its own. */
+void progress_bar_show_picture(
+	long width,
+	long height,
+	void const *rgba,
+	real opacity)
+{
+	static IDirect3DTexture8 *texture;
+	static long texture_width;
+	static long texture_height;
+	static int sounds_started;
+	static int shader_ready;
+	static struct pixel_shader_definition shader;
+	D3DLOCKED_RECT locked;
+	struct gravy_layer layer;
+	struct gravy_rectangle2d rect;
+	byte const *source;
+	int stage;
+	int y;
+
+	if (width<1 || height<1 || !rgba || !global_d3d_device)
+		return;
+	if (opacity<0.f)
+		opacity= 0.f;
+	if (opacity>1.f)
+		opacity= 1.f;
+	if (opacity<=0.f)
+		return;
+	if (!sounds_started)
+	{
+		progress_bar_make_stuff_ready();
+		sounds_started= 1;
+	}
+	progress_bar_pinned= TRUE;
+	if (!texture || texture_width!=width || texture_height!=height)
+	{
+		if (texture)
+			IDirect3DTexture8_Release(texture);
+		texture= NULL;
+		IDirect3DDevice8_CreateTexture(global_d3d_device, (UINT)width, (UINT)height, 1, 0,
+			D3DFMT_LIN_A8B8G8R8, 0, &texture);
+		texture_width= width;
+		texture_height= height;
+	}
+	if (!texture)
+		return;
+	IDirect3DTexture8_LockRect(texture, 0, &locked, NULL, 0);
+	source= rgba;
+	for (y= 0; y<height; y++)
+		csmemcpy((byte *)locked.pBits + y*locked.Pitch, source + (long)y*width*4, (size_t)width*4);
+	IDirect3DTexture8_UnlockRect(texture, 0);
+
+	if (!shader_ready)
+	{
+		csmemset(&shader, 0, sizeof(shader));
+		shader.texture_modes= 0x01;
+		shader.combiner_count= 0;
+		/* rgb = texture. alpha = the vertex diffuse, so a fade can blend it off */
+		shader.final_combiner_inputs_abcd= 0x08;
+		shader.final_combiner_inputs_efg= 0x00001400;
+		shader_ready= 1;
+	}
+
+	D3DXMatrixIdentity(&progress_bar_globals.world);
+	D3DXMatrixIdentity(&progress_bar_globals.view);
+	D3DXMatrixOrthoLH(&progress_bar_globals.projection, 2.f, 2.f, -1.f, 2.f);
+	D3DXMatrixPerspectiveLH(&progress_bar_globals.screen_transform, 0.64f, 0.48f, 1.f, 1000.f);
+	IDirect3DDevice8_GetTransform(global_d3d_device, D3DTS_WORLD, &progress_bar_globals.saved_world);
+	IDirect3DDevice8_GetTransform(global_d3d_device, D3DTS_VIEW, &progress_bar_globals.saved_view);
+	IDirect3DDevice8_GetTransform(global_d3d_device, D3DTS_PROJECTION, &progress_bar_globals.saved_projection);
+	IDirect3DDevice8_SetTransform(global_d3d_device, D3DTS_WORLD, &progress_bar_globals.world);
+	IDirect3DDevice8_SetTransform(global_d3d_device, D3DTS_VIEW, &progress_bar_globals.view);
+	IDirect3DDevice8_SetTransform(global_d3d_device, D3DTS_PROJECTION, &progress_bar_globals.projection);
+	IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_ALPHATESTENABLE, FALSE);
+	IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_CULLMODE, D3DCULL_NONE);
+	IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_ZENABLE, FALSE);
+	IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_LIGHTING, FALSE);
+	IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_FOGENABLE, FALSE);
+	IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALL);
+	for (stage= 0; stage<4; stage++)
+	{
+		IDirect3DDevice8_SetTextureStageState(global_d3d_device, stage, D3DTSS_TEXCOORDINDEX, stage);
+		IDirect3DDevice8_SetTextureStageState(global_d3d_device, stage, D3DTSS_TEXTURETRANSFORMFLAGS, 0);
+		IDirect3DDevice8_SetTexture(global_d3d_device, stage, NULL);
+	}
+	IDirect3DDevice8_SetTexture(global_d3d_device, 0, (D3DBaseTexture *)texture);
+	IDirect3DDevice8_SetTextureStageState(global_d3d_device, 0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
+	IDirect3DDevice8_SetTextureStageState(global_d3d_device, 0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
+	IDirect3DDevice8_SetTextureStageState(global_d3d_device, 0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
+	IDirect3DDevice8_SetTextureStageState(global_d3d_device, 0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
+	IDirect3DDevice8_SetVertexShader(global_d3d_device, 0);
+	IDirect3DDevice8_SetPixelShaderProgram(global_d3d_device, (D3DPIXELSHADERDEF *)&shader);
+	/* A full frame replaces the screen. A fade leaves the match underneath. */
+	if (opacity<0.999f)
+	{
+		IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_ALPHABLENDENABLE, TRUE);
+		IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_BLENDOP, D3DBLENDOP_ADD);
+	}
+	else
+	{
+		IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_ALPHABLENDENABLE, FALSE);
+		IDirect3DDevice8_Clear(global_d3d_device, 0, NULL, D3DCLEAR_TARGET, 0, 1.f, 0);
+	}
+
+	csmemset(&layer, 0, sizeof(layer));
+	layer.texture_width= 640.f;
+	layer.texture_height= 480.f;
+	layer.half_width= 320.f;
+	layer.half_height= 240.f;
+	generate_gravy_rect(&layer, &rect);
+	/* The fixed-function draw shifts this quad half a pixel down and right,
+	   which left the map along the top and the left. The sweep draws past
+	   the screen by the same margin. The picture still meets the screen edge. */
+	{
+		real pad= 1.f/128.f;
+		real span_x= rect.x1 - rect.x0;
+		real span_y= rect.y1 - rect.y0;
+		real x0= rect.x0 - pad;
+		real y0= rect.y0 - pad;
+		real x1= rect.x1 + pad;
+		real y1= rect.y1 + pad;
+		real u0= -pad/span_x*(real)width;
+		real u1= (span_x + pad)/span_x*(real)width;
+		real v_top= -pad/span_y*(real)height;
+		real v_bottom= (span_y + pad)/span_y*(real)height;
+
+		IDirect3DDevice8_Begin(global_d3d_device, D3DPT_TRIANGLEFAN);
+		IDirect3DDevice8_SetVertexData4f(global_d3d_device, D3DVSDE_DIFFUSE, 1.f, 1.f, 1.f, opacity);
+		IDirect3DDevice8_SetVertexData2f(global_d3d_device, D3DVSDE_TEXCOORD0, u0, v_bottom);
+		IDirect3DDevice8_SetVertexData4f(global_d3d_device, D3DVSDE_VERTEX, x0, y0, 0.5f, 1.f);
+		IDirect3DDevice8_SetVertexData2f(global_d3d_device, D3DVSDE_TEXCOORD0, u1, v_bottom);
+		IDirect3DDevice8_SetVertexData4f(global_d3d_device, D3DVSDE_VERTEX, x1, y0, 0.5f, 1.f);
+		IDirect3DDevice8_SetVertexData2f(global_d3d_device, D3DVSDE_TEXCOORD0, u1, v_top);
+		IDirect3DDevice8_SetVertexData4f(global_d3d_device, D3DVSDE_VERTEX, x1, y1, 0.5f, 1.f);
+		IDirect3DDevice8_SetVertexData2f(global_d3d_device, D3DVSDE_TEXCOORD0, u0, v_top);
+		IDirect3DDevice8_SetVertexData4f(global_d3d_device, D3DVSDE_VERTEX, x0, y1, 0.5f, 1.f);
+		IDirect3DDevice8_End(global_d3d_device);
+	}
+
+	IDirect3DDevice8_SetTexture(global_d3d_device, 0, NULL);
+	IDirect3DDevice8_SetRenderState(global_d3d_device, D3DRS_ALPHABLENDENABLE, FALSE);
+	IDirect3DDevice8_SetTransform(global_d3d_device, D3DTS_WORLD, &progress_bar_globals.saved_world);
+	IDirect3DDevice8_SetTransform(global_d3d_device, D3DTS_VIEW, &progress_bar_globals.saved_view);
+	IDirect3DDevice8_SetTransform(global_d3d_device, D3DTS_PROJECTION, &progress_bar_globals.saved_projection);
 
 	return;
 }
@@ -2234,6 +2421,102 @@ static void progress_bar_make_stuff_ready(
 	return;
 }
 
+/* The retail maps folder does not ship loading.tga. With nothing in the
+texture the sweep above is a black clear. This is the same blue channel
+the tga reader stores: full intensity is the bright core of the ring. */
+static unsigned long loading_blue_pixel(
+	int intensity)
+{
+	unsigned long value;
+
+	if (intensity<0)
+		intensity= 0;
+	if (intensity>255)
+		intensity= 255;
+	value= (unsigned long)intensity;
+	return ((value<<9) | (value & ~1UL))<<7 | value>>2 | 0xff000000UL;
+}
+
+static int loading_letter_pixel(
+	int x,
+	int y)
+{
+	static unsigned char const letters[7][7]=
+	{
+		{0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1f},
+		{0x0e, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0e},
+		{0x0e, 0x11, 0x11, 0x1f, 0x11, 0x11, 0x11},
+		{0x1e, 0x11, 0x11, 0x11, 0x11, 0x11, 0x1e},
+		{0x1f, 0x04, 0x04, 0x04, 0x04, 0x04, 0x1f},
+		{0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11},
+		{0x0e, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0e}
+	};
+	int scale= 3;
+	int cell= 5*scale + 4;
+	int origin_x= (320 - (7*cell - 4))/2;
+	int origin_y= 240/2 - (7*scale)/2;
+	int letter;
+	int column;
+	int row;
+
+	if (y<origin_y || y>=origin_y + 7*scale)
+		return 0;
+	row= (y - origin_y)/scale;
+	for (letter= 0; letter<7; letter++)
+	{
+		int left= origin_x + letter*cell;
+
+		if (x<left || x>=left + 5*scale)
+			continue;
+		column= (x - left)/scale;
+		if (letters[letter][row] & (0x10>>column))
+			return 255;
+		return 0;
+	}
+
+	return 0;
+}
+
+static void progress_bar_paint_ring(
+	void *bits,
+	int pitch)
+{
+	int x;
+	int y;
+
+	csmemset(bits, 0, (size_t)pitch*240);
+	for (y= 0; y<240; y++)
+	{
+		unsigned long *row= (unsigned long *)((byte *)bits + y*pitch);
+		float dy= (float)y - 119.5f;
+
+		for (x= 0; x<320; x++)
+		{
+			float dx= (float)x - 159.5f;
+			float nx= dx/36.f;
+			float ny= dy/108.f;
+			float radius= (float)sqrt(nx*nx + ny*ny);
+			float band= radius - 1.f;
+			float ring= (float)exp(-(band*band)*36.0);
+			float glow= (float)exp(-(nx*nx)*0.55 - (ny*ny)*0.045);
+			float streak= (float)exp(-(dy*dy)/220.0) * (float)exp(-(dx*dx)/5200.0);
+			float value= ring*0.9f + glow*0.28f + streak*0.62f;
+			int intensity;
+			int letter;
+
+			if (value>1.f)
+				value= 1.f;
+			intensity= (int)(value*255.f);
+			letter= loading_letter_pixel(x, y);
+			if (letter>intensity)
+				intensity= letter;
+			row[x]= loading_blue_pixel(intensity);
+		}
+	}
+
+	return;
+}
+
 static void progress_bar_load_loading_texture(
 	IDirect3DTexture8 **texture)
 {
@@ -2266,8 +2549,12 @@ static void progress_bar_load_loading_texture(
 			image.pixels= pixels;
 			tgaLoadImageData(file, &image);
 		}
+		else
+			progress_bar_paint_ring(pixels, locked_rect.Pitch);
 		fclose(file);
 	}
+	else
+		progress_bar_paint_ring(pixels, locked_rect.Pitch);
 	IDirect3DTexture8_UnlockRect(*texture, 0);
 
 	return;

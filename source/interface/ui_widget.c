@@ -7400,6 +7400,23 @@ static void widget_instance_render_recursive(
 				texels.y1 = (short)((long)(bounds.y1 - bounds.y0) * bitmap->height / frame_height);
 				shown = bounds.x1 > bounds.x0 && bounds.y1 > bounds.y0;
 			}
+			/* A settings row shorter than its 32-tall bar draws the whole bar
+			into the row. The stock path crops from the top, which cuts the
+			bar's lower rim. The server browser's rows are wider than this and
+			keep that crop. */
+			else if (!stretched && bitmap->height == 32 && bitmap->width >= 256)
+			{
+				short row_w = (short)(bounds.x1 - bounds.x0);
+				short row_h = (short)(bounds.y1 - bounds.y0);
+
+				if (row_w >= 400 && row_w <= 560 && row_h >= 16 && row_h < 26)
+				{
+					texels.x0 = 0;
+					texels.y0 = 0;
+					texels.x1 = bitmap->width;
+					texels.y1 = bitmap->height;
+				}
+			}
 			if (pane_dim)
 				rasterizer_screen_fit_suspend(TRUE);
 			if (shown)

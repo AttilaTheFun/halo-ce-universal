@@ -9,6 +9,8 @@ anniversary bit is set. */
 #include "cseries.h"
 #include "math/real_math.h"
 
+struct game_variant;
+
 struct hardcore_rules
 {
 	unsigned char flag_pickup;      /* 0 manual, 1 automatic */
@@ -44,11 +46,33 @@ struct hardcore_rules
 typedef char hardcore_rules_size_assert[sizeof(struct hardcore_rules) == 28 ? 1 : -1];
 
 void hardcore_rules_defaults(struct hardcore_rules *rules);
+/* A normal game type with no saved sheet: movement sounds on, the other
+kept rows off, overshield fading. */
+void hardcore_rules_stock(struct hardcore_rules *rules);
+boolean hardcore_rules_is_stock(struct hardcore_rules const *rules);
+/* The anniversary bit follows the sheet being edited. The motion sensor
+is left as the variant already has it. */
+void hardcore_rules_note_variant(struct game_variant *variant);
+void hardcore_rules_store(long profile_index);
+void hardcore_rules_forget(long profile_index);
+void hardcore_rules_choose(long profile_index);
+/* The black loading screen with the halo ring. The match clock stays at
+0 until that screen has faded out and the players are in with their weapons. */
+void hardcore_rules_hold_pregame(void);
+boolean hardcore_rules_opening_hold(void);
+/* The film is leaving. The match is drawn under it. */
+boolean hardcore_rules_opening_fading(void);
+void hardcore_rules_opening_before_tick(void);
+void hardcore_rules_opening_frame(void);
+void hardcore_rules_opening_overlay(void);
 struct hardcore_rules *hardcore_rules_editing(void);
 void hardcore_rules_reset_editing(void);
 void hardcore_rules_commit(void);
 /* A classic mode was chosen. The match that was started stays until then. */
 void hardcore_rules_clear_session(void);
+/* Left a game this machine joined. The sheet saved with its game type
+   is what it hosts next. */
+void hardcore_rules_restore_local(void);
 struct game_variant;
 /* The host's match is this variant. A classic one ends the mode. */
 void hardcore_rules_host_variant(struct game_variant *variant);

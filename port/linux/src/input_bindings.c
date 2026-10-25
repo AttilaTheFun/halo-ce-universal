@@ -221,24 +221,6 @@ static void ensure_bindings(void)
 	pthread_mutex_unlock(&bindings_lock);
 }
 
-int input_binding_down(enum input_binding_action action, const unsigned char *keys,
-	const unsigned char *mouse_buttons, int wheel)
-{
-	const struct input_binding *binding;
-	int index;
-
-	ensure_bindings();
-	if (action < 0 || action >= _binding_count) return 0;
-	binding = &bindings[action];
-	if (keys)
-		for (index = 1; index < SDL_SCANCODE_COUNT; index++)
-			if (binding->keys[index] && keys[index]) return 1;
-	if (mouse_buttons)
-		for (index = SDL_BUTTON_LEFT; index <= SDL_BUTTON_X2; index++)
-			if ((binding->mouse_buttons & (1U << index)) && mouse_buttons[index]) return 1;
-	return binding->wheel && wheel;
-}
-
 int input_binding_matches_key(enum input_binding_action action, SDL_Scancode key)
 {
 	ensure_bindings();

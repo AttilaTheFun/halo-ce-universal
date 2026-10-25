@@ -223,11 +223,4 @@ int halo_metal_guest_readback(struct halo_metal_guest_transport *t, struct halo_
     }
     return result;
 }
-void halo_metal_guest_shutdown(struct halo_metal_guest_transport *t) {
-    if (!t) return;
-    if (t->initialized) host_metal_shutdown();
-    t->initialized = t->recording = t->poisoned = 0;
-    t->size = t->command_count = t->command_offset = t->command_fixed_size = 0;
-    t->sequence = 0; zero_bytes(&t->reply, sizeof(t->reply));
-}
 #endif

@@ -1,12 +1,13 @@
-/* One local player can watch teammates in a hardcore team game for the
-whole match. A teammate who dies stays in that pane on the death camera,
-with the respawn line, instead of the pane clearing. The extra panes are
-render windows only. They are not local players, so input, scoring and
-the single-player HUD stay with the one player. The menu option
-display.teammate_views is off until chosen. Which pane is the local
-player's is this machine's display.teammate_view_slot. Each teammate pane
-keeps a spare HUD slot, so the weapon pose continues between frames. The
-slot is a local player only while that pane is drawn. */
+/* One local player can watch teammates in a team game for the whole match.
+A free-for-all does not split. A teammate who dies stays in that pane on
+the death camera, with the respawn line, instead of the pane clearing.
+The extra panes are render windows only. They are not local players, so
+input, scoring and the single-player HUD stay with the one player. Add
+Player is still a second local player, and two local players do not use
+these panes. display.teammate_views is off until chosen. Which pane is
+the local player's is this machine's display.teammate_view_slot. Each
+teammate pane keeps a spare HUD slot, so the weapon pose continues
+between frames. The slot is a local player only while that pane is drawn. */
 #include "cseries.h"
 #include "game/game.h"
 #include "game/game_engine.h"
@@ -21,7 +22,6 @@ slot is a local player only while that pane is drawn. */
 #include "physics/collisions.h"
 #include "scenario/scenario.h"
 #include "units/units.h"
-#include "hardcore_rules.h"
 #include "hardcore_views.h"
 #include "port_config.h"
 #include <string.h>
@@ -135,12 +135,12 @@ static void hardcore_views_slots_assign(void)
 /* Two panes are top and bottom. Three are a wide top and two bottoms.
 Four are the corners. The name is this machine's setting, so a bottom
 choice stays on a bottom pane instead of being moved to the top. */
-/* A hardcore team game has one team on this display. The other team's
-local player would be looking at this team, and this team at them. */
+/* A team game has one team on this display. The other team's local player
+would be looking at this team, and this team at them. A free-for-all
+does not split. */
 static boolean hardcore_views_team_screen(void)
 {
-	return hardcore_rules_active() && game_in_progress() && game_engine_running() &&
-		game_engine_has_teams();
+	return game_in_progress() && game_engine_running() && game_engine_has_teams();
 }
 
 static long hardcore_views_screen_team(void)

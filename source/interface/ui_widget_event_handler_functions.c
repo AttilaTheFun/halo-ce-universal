@@ -913,6 +913,7 @@ symbols in this file:
 #include "bungie_net/network/transport_endpoint_winsock.h"
 #include "cseries/errors.h"
 #include "game/game_engine.h"
+#include "hardcore_rules.h"
 #include "game/players.h"
 #include "interface/marketing_and_strategic_business_development.h"
 #include "interface/player_ui.h"
@@ -5846,6 +5847,8 @@ static boolean multiplayer_profile_set_for_game(
 		player_ui_set_game_variant(&profile);
 		if (server)
 			network_game_server_change_game_variant(server, &profile);
+		/* The port list loads the sheet with the game type. This list does too. */
+		hardcore_rules_choose(profile_index);
 		return TRUE;
 	}
 	error(2, "failed to retrieve user selected game variant");
@@ -6043,28 +6046,13 @@ short ui_widget_port_gametypes(
 				*last_used = index;
 		}
 	}
-	{
-		short kept = 0;
-		short mapped = 0;
-		boolean dropped = FALSE;
-
-		/* port: comp 2v2 is a hardcore game. a classic list does not offer it. */
+		/* Comp 2v2 is a normal built-in. It edits as a copy. */
 		for (index = 0; index < (short)count; index++)
 		{
 			wchar_t *name = saved_game_file_get_display_name(indices[index]);
 
-			if (name && !ustrcmp(name, L"Comp 2v2"))
-			{
-				if (index == *last_used)
-					dropped = TRUE;
-				continue;
-			}
-			if (index == *last_used)
-				mapped = kept;
-			indices[kept++] = indices[index];
-		}
-		count = (word)kept;
-		*last_used = dropped || !count ? 0 : mapped;
+		if (name && !ustrcmp(name, L"Comp 2v2"))
+			indices[index] |= FLAG(_saved_game_file_index_read_only_bit);
 	}
 	return (short)count;
 }
@@ -6138,6 +6126,7 @@ boolean ui_widget_port_gametype_choose(
 		player_ui_set_game_variant_options(&options);
 	}
 	player_ui_set_chosen_variant_index(profile_index);
+	hardcore_rules_choose(profile_index);
 	if (server)
 		network_game_server_change_game_variant(server, &profile);
 	return TRUE;

@@ -75,6 +75,8 @@ their handlers open opens.
 #include "cache/cache_files.h"
 #include "game/game_engine.h"
 #include "hardcore_rules.h"
+#include "map_share.h"
+#include "network_chat.h"
 #include "cache_file_formats.h"
 #include "scenario/scenario_definitions.h"
 #include "game/game_engine_playlist.h"
@@ -546,6 +548,121 @@ static boolean game_function(char const *name, struct widget_instance *widget, s
 	return FALSE;
 }
 
+/* Settings (the machine) or Profiles (the player). Settings is the main
+menu's and the pause menu's. Profiles' EDIT opens the same screen for the
+name, the color and the controller. */
+static boolean profile_menu_machine = TRUE;
+
+static struct widget_instance *named(struct widget_instance *widget, char const *name, long nth);
+static void visible_set(struct widget_instance *widget, boolean visible);
+
+/* "port profile rows": show one set, packed from the top. a game's pause
+menu settings keeps every row but the profile name and Mods, closed up. */
+static void profile_rows_apply(struct widget_instance *list)
+{
+	static char const *const machine[] =
+	{
+		"controller_setup_profile_item", "mouse_settings_profile_item", "audio_settings_profile_item",
+		"video_settings_profile_item", "network_settings_profile_item", "about_item", "mods_profile_item"
+	};
+	static char const *const profile[] =
+	{
+		"name_profile_item", "gamepads_profile_item", "color_profile_item"
+	};
+	/* the top each row was given. the offset is added to that, so a packed
+	row's offset is where it should sit minus that top */
+	static struct
+	{
+		char const *name;
+		short top;
+	} all[] =
+	{
+		{ "name_profile_item", 78 },
+		{ "controller_setup_profile_item", 111 },
+		{ "gamepads_profile_item", 144 },
+		{ "mouse_settings_profile_item", 177 },
+		{ "audio_settings_profile_item", 210 },
+		{ "video_settings_profile_item", 243 },
+		{ "network_settings_profile_item", 276 },
+		{ "color_profile_item", 309 },
+		{ "about_item", 342 },
+		{ "mods_profile_item", 375 }
+	};
+	char const *const *show = profile_menu_machine ? machine : profile;
+	short show_count = profile_menu_machine ? (short)NUMBEROF(machine) : (short)NUMBEROF(profile);
+	short place = 0;
+	short index;
+	struct widget_instance *mods = named(list, "mods_profile_item", 0);
+
+	/* pause settings is the machine set. Profiles' EDIT keeps its name row
+	even if a match is running */
+	if (!main_menu_is_active() && profile_menu_machine)
+	{
+		struct widget_instance *name = named(list, "name_profile_item", 0);
+
+		visible_set(mods, FALSE);
+		if (mods)
+			mods->disabled = TRUE;
+		visible_set(name, FALSE);
+		if (name)
+			name->disabled = TRUE;
+		/* the name row is the top one. the rest move up into its place */
+		for (index = 0; index < (short)NUMBEROF(all); index++)
+		{
+			struct widget_instance *row = named(list, all[index].name, 0);
+
+			if (!row || row == name || row == mods)
+				continue;
+			row->vertical_offset = -33;
+		}
+		if (list->focused_child && !list->focused_child->visible)
+		{
+			struct widget_instance *child;
+
+			for (child = list->child; child; child = child->next)
+			{
+				if (child->visible && !child->disabled && child->type == 1)
+				{
+					list->focused_child = child;
+					break;
+				}
+			}
+		}
+		return;
+	}
+	for (index = 0; index < (short)NUMBEROF(all); index++)
+	{
+		struct widget_instance *row = named(list, all[index].name, 0);
+		boolean on = FALSE;
+		short shown;
+
+		if (!row)
+			continue;
+		for (shown = 0; shown < show_count; shown++)
+		{
+			if (!strcmp(all[index].name, show[shown]))
+				on = TRUE;
+		}
+		visible_set(row, on);
+		row->disabled = !on;
+		if (on)
+			row->vertical_offset = (short)(78 + 33 * place++ - all[index].top);
+	}
+	if (list->focused_child && !list->focused_child->visible)
+	{
+		struct widget_instance *child;
+
+		for (child = list->child; child; child = child->next)
+		{
+			if (child->visible && !child->disabled && child->type == 1)
+			{
+				list->focused_child = child;
+				break;
+			}
+		}
+	}
+}
+
 /* "profile set edit begin": Settings, the main menu's and a game's pause
 menu's. With no profile, the main menu's asks for a new one's name, as the
 menu's other items do ("new game if no plyr profiles"), and fails: the
@@ -556,6 +673,7 @@ and only fails. */
 static boolean profile_edit_begin(struct widget_instance *widget, struct event_record *event,
 	boolean *widget_deleted)
 {
+	profile_menu_machine = TRUE;
 	if (pc_menu_profile_edit_begin())
 		return TRUE;
 	/* (a press: the profile is made on its controller) */
@@ -575,6 +693,25 @@ static boolean new_profile_decision(struct widget_instance *widget, struct event
 	if (!game_function("new campaign decision", widget, event, widget_deleted))
 		return FALSE;
 	return strcmp(widget->name, "settings_creating_profile") || pc_menu_profile_edit_begin();
+}
+
+static boolean profile_choose(short controller);
+
+/* "port profile edit": Profiles' EDIT. the name, the color and the
+controller, for the profile chosen. */
+static boolean profile_edit_open(struct widget_instance *widget, struct event_record *event,
+	boolean *widget_deleted)
+{
+	(void)widget_deleted;
+	if (!profile_choose(event_controller(widget, event)))
+		return FALSE;
+	profile_menu_machine = FALSE;
+	if (!pc_menu_profile_edit_begin())
+	{
+		profile_menu_machine = TRUE;
+		return FALSE;
+	}
+	return TRUE;
 }
 
 /* ---------- the campaign */
@@ -671,6 +808,16 @@ static void text_set_length(struct widget_instance *text_box, wchar_t const *tex
 static void text_set(struct widget_instance *text_box, wchar_t const *text)
 {
 	text_set_length(text_box, text, ROW_TEXT_LENGTH);
+}
+
+/* a label whose tags give it a string. the string is drawn again each
+frame unless the box is marked as its own text */
+static void label_set(struct widget_instance *label, wchar_t const *text)
+{
+	if (!label)
+		return;
+	label->parameters.text_box.string_list_index = HALO_CUSTOM_MAP_TEXT;
+	text_set(label, text);
 }
 
 /* one of our string lists' strings, on one line (its line breaks spaces) */
@@ -1646,7 +1793,8 @@ BITMAP_FRAMES): Gamepad Setup's row's, as the list numbers its rows
 (player_profile_edit_select_menu_update_extended_description), and after
 the PC version's nine the Xbox's five of the button settings */
 #define PROFILE_GAMEPAD_FRAME 2
-#define PROFILE_FIRST_LAYOUT_FRAME 9
+/* frame 9 is Mods' card. The five button layouts follow it. */
+#define PROFILE_FIRST_LAYOUT_FRAME 10
 #define PROFILE_LAYOUT_FRAMES (_button_preset_swap_b_and_right_thumb + 1)
 
 /* "port gamepad layout preview" (the picture's own): on Gamepad Setup's
@@ -2770,7 +2918,10 @@ int config_boolean(char const *name);
 void ui_widget_port_post_button(short controller_index, short button_index);
 
 static wchar_t const *const engine_names[] = { L"", L"CTF", L"SLAYER", L"ODDBALL", L"KING OF THE HILL", L"RACE" };
-static short const maximum_players[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 };
+static short const maximum_players[] = {
+	2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+	20, 24, 32, 40, 48, 64, 80, 96, 112, 128
+};
 
 static struct
 {
@@ -2811,7 +2962,7 @@ static struct
 	/* (Hardcore's own game. Classic Create Game and Join Game leave it
 	clear, so their gametypes stay this build's.) */
 	boolean hardcore;
-} multiplayer = { .maximum_players_index = NUMBEROF(maximum_players) - 1 };
+} multiplayer = { .maximum_players_index = 0 };
 
 /* ---- a text field (Direct Link's link, the game's name): the keyboard
 types into it (Ctrl+V pastes), its row's A (enter) is done, B (escape)
@@ -3349,8 +3500,9 @@ static char const *const server_settings_gametype_rows[] =
 	"op_team_options",
 };
 
-/* the most players a co-op game hosted starts with (maximum_players') */
-#define COOPERATIVE_DEFAULT_PLAYERS 16
+/* the most players a co-op game hosted starts with: the first of
+maximum_players, the same 2 a new multiplayer game starts with */
+#define COOPERATIVE_DEFAULT_PLAYERS 2
 /* Server Setup's help for co-op's options' rows (CO-OP OPTIONS, VOICE AND
 VOTING), PASSWORD's and MAP SHARING's (its help_strings, tools/port_settings.py) */
 #define COOPERATIVE_OPTIONS_HELP 12
@@ -3382,18 +3534,11 @@ the co-op game's (COOPERATIVE_DEFAULT_PLAYERS the first time in each game
 hosted: multiplayer_host) */
 static short *server_settings_maximum_players_index(void)
 {
-	short index;
-
 	if (!hosting_cooperative())
 		return &multiplayer.maximum_players_index;
 	if (!multiplayer.cooperative_maximum_players_set)
 	{
-		multiplayer.cooperative_maximum_players_index = NUMBEROF(maximum_players) - 1;
-		for (index = 0; index < NUMBEROF(maximum_players); index++)
-		{
-			if (maximum_players[index] == COOPERATIVE_DEFAULT_PLAYERS)
-				multiplayer.cooperative_maximum_players_index = index;
-		}
+		multiplayer.cooperative_maximum_players_index = 0;
 		multiplayer.cooperative_maximum_players_set = TRUE;
 	}
 	return &multiplayer.cooperative_maximum_players_index;
@@ -4747,7 +4892,7 @@ static struct widget_instance *focused_leaf(struct widget_instance *widget)
 }
 
 /* "port lobby open" (the lobby made, or come back to): no player being added.
-settings stays hidden until the lobby knows the game is hardcore. */
+Settings is there in every lobby. */
 static boolean lobby_join_reset(void)
 {
 	lobby_join.adding = FALSE;
@@ -4758,7 +4903,37 @@ static boolean lobby_join_reset(void)
 static boolean lobby_open(struct widget_instance *screen)
 {
 	lobby_join_reset();
-	visible_set(named(screen, "lobby_settings", 0), FALSE);
+	visible_set(named(screen, "lobby_settings", 0), TRUE);
+	return TRUE;
+}
+
+/* the line Download Maps last set, while that row is chosen */
+static wchar_t const *lobby_download_note;
+
+/* "port lobby download": a client asks the host for this game's map.
+the host's row only says whether this game is sharing. */
+static boolean lobby_download(void)
+{
+	void *client = global_network_game_client_get();
+	struct network_game *game = client ? network_game_client_get_game(client) : NULL;
+	unsigned long version = 0;
+
+	if (global_network_game_server_get())
+	{
+		lobby_download_note = config_boolean("network.map_share") ?
+			L"Players can download this map." : L"This game is not sharing maps.";
+		return TRUE;
+	}
+	if (!game || !custom_edition_level_name(game->map.name))
+	{
+		lobby_download_note = L"This map is already on this machine.";
+		return TRUE;
+	}
+	if (!map_share_game_map_version(game->map.name, &version))
+		version = 0;
+	map_share_download_permit();
+	lobby_download_note = map_share_download_begin(game->map.name, version, "the lobby") ?
+		L"Downloading this map." : L"The host is not sharing this map.";
 	return TRUE;
 }
 
@@ -4864,10 +5039,10 @@ static void lobby_join_help(struct widget_instance *list)
 	wchar_t const *text = L"";
 	short controller;
 
-	/* settings is this machine's, so the line says so while it is chosen */
+	/* text chat is the host's, and Download Maps is on that page */
 	if (list->focused_child && !strcmp(list->focused_child->name, "lobby_settings"))
 	{
-		text = L"This machine only.";
+		text = L"Text chat and map download.";
 	}
 	else if (lobby_join.adding)
 	{
@@ -5006,61 +5181,65 @@ void menu_functions_text_box_drawn(struct widget_instance *widget, rectangle2d c
 	}
 }
 
-/* the variant the host sent. classic games do not carry the hardcore bit.
-the host's lobby can still be holding the game from before those rules
-were chosen, so the game this machine is hosting counts, and so does
-having opened the mode here. */
-static boolean lobby_is_hardcore(struct network_game *game)
-{
-	void *server = global_network_game_server_get();
-	struct network_game *hosted = server ? network_game_server_get_game(server) : NULL;
-
-	if (hosted && TEST_FLAG(hosted->variant.universal_variant.flags,
-		_game_variant_anniversary_rules_bit))
-	{
-		/* the rest of the lobby reads the client's copy */
-		if (game)
-			game->variant = hosted->variant;
-		return TRUE;
-	}
-	if (server && multiplayer.hardcore)
-		return TRUE;
-	return game && TEST_FLAG(game->variant.universal_variant.flags,
-		_game_variant_anniversary_rules_bit) ? TRUE : FALSE;
-}
-
-/* settings is this machine's. a hardcore lobby shows the button for
-whoever is waiting. a classic lobby hides it and moves the focus on. */
-static void lobby_settings_apply(struct widget_instance *list, boolean hardcore)
+/* settings is in every lobby. the last player row is its place. */
+static void lobby_settings_apply(struct widget_instance *list)
 {
 	struct widget_instance *settings = named(list, "lobby_settings", 0);
 
-	visible_set(settings, hardcore);
+	visible_set(settings, TRUE);
 	/* the row's bar is its second frame. the list does not switch a
 	three-frame picture, so the focused row is set here. */
 	if (settings)
-		settings->animation.current_frame_index = hardcore && list->focused_child == settings ? 1 : 0;
-	if (!hardcore && list->focused_child == settings)
-		focus_row(list, NONE);
+		settings->animation.current_frame_index = list->focused_child == settings ? 1 : 0;
 }
 
-/* "port lobby settings": write a change as it is made, so a countdown that
-starts while the screen is open still uses it. the host's choice does not
-leave the host. */
+/* "port lobby settings": the host's text chat, written as it changes, and
+Download Maps' words. a client sees the host's chat and cannot change it.
+a listed public game stays off. */
 static void lobby_settings_save(struct widget_instance *list)
 {
-	static char const *const names[] =
-	{
-		"lobby_views_spinner", "lobby_view_slot_spinner", "lobby_timer_voice_spinner"
-	};
-	short index;
+	struct widget_instance *spinner = named(list, "lobby_chat_spinner", 0);
+	struct widget_instance *download = named(list, "lobby_download_label", 0);
+	struct widget_instance *help = named(list->parent, "lobby_settings_help", 0);
+	boolean host = global_network_game_server_get() != NULL;
+	boolean sharing = config_boolean("network.map_share") != 0;
+	boolean locked = !host || p2p_hosting_listed();
+	static boolean chat_was_locked = TRUE;
 
-	for (index = 0; index < NUMBEROF(names); index++)
+	if (spinner)
 	{
-		struct widget_instance *spinner = named(list, names[index], 0);
-
-		if (spinner)
+		if (locked)
+		{
+			spinner->parameters.list.selected_index = !host && network_chat_allowed() ? 0 : 1;
+			if (host)
+				spinner->parameters.list.selected_index = 1;
+			spinner->disabled = TRUE;
+			chat_was_locked = TRUE;
+		}
+		else
+		{
+			spinner->disabled = FALSE;
+			if (chat_was_locked)
+				setting_load(spinner);
+			chat_was_locked = FALSE;
 			setting_save(spinner);
+		}
+	}
+	label_set(download, host ? (sharing ? L"SHARING MAPS" : L"NOT SHARING") : L"DOWNLOAD MAP");
+	{
+		wchar_t const *text = L"The host sets text chat.";
+
+		if (list->focused_child && !strcmp(list->focused_child->name, "lobby_download"))
+			text = lobby_download_note ? lobby_download_note :
+				(host ? (sharing ? L"Players can download this map." : L"This game is not sharing maps.") :
+				L"Download this game's map from the host.");
+		else
+		{
+			lobby_download_note = NULL;
+			if (host && !p2p_hosting_listed())
+				text = L"Text chat for this game. Off in a public game.";
+		}
+		label_set(help, text);
 	}
 }
 
@@ -5073,9 +5252,8 @@ static void lobby_update(struct widget_instance *list)
 	short state_data, state = client ? network_game_client_get_state(client, &state_data) : NONE;
 	wchar_t text[LOBBY_TEXT_LENGTH];
 	short index;
-	boolean hardcore = lobby_is_hardcore(game);
-	/* the last player row is Settings */
-	short rows = hardcore ? (short)(LOBBY_ROWS - 1) : LOBBY_ROWS;
+	/* the last player row is Settings, in every lobby */
+	short rows = (short)(LOBBY_ROWS - 1);
 
 	lobby_player_count = 0;
 	for (index = 0; game && state >= _client_state_pregame && index < HALO_PORT_MAXIMUM_NETWORK_PLAYERS; index++)
@@ -5102,9 +5280,9 @@ static void lobby_update(struct widget_instance *list)
 		}
 		lobby_icons.updated_at = system_milliseconds();
 	}
-	lobby_settings_apply(list, hardcore);
+	lobby_settings_apply(list);
 	/* a player row Settings took over cannot keep the focus */
-	if (hardcore && focused_row(list) >= rows)
+	if (focused_row(list) >= rows)
 		focus_row(list, (short)(rows - 1));
 	lobby_join_help(list);
 	visible_set(named(list, "lobby_button_team", 0), game && game->variant.universal_variant.teams);
@@ -5511,6 +5689,13 @@ static struct gametype_option const gametype_options[] =
 	{ "hardcore_trig_delay", _option_hardcore, RULES_FIELD(trig_delay), 0, 6, { 0, 1, 2, 3, 5, 8 } },
 	{ "hardcore_pistol_spread", _option_hardcore, RULES_FIELD(pistol_spread), 0, 4, { 0, 1, 2, 3 } },
 	{ "hardcore_shotgun_spread", _option_hardcore, RULES_FIELD(shotgun_spread), 0, 4, { 0, 1, 2, 3 } },
+	/* Match Options on a normal game type. The same bytes as the hardcore rows. */
+	{ "match_move_sounds", _option_hardcore, RULES_FIELD(movement_sounds), 0, 2, { 1, 0 } },
+	{ "match_training", _option_hardcore, RULES_FIELD(random_areas), 0, 2, { 0, 1 } },
+	{ "match_camo", _option_hardcore, RULES_FIELD(camo), 0, 3, { 0, 1, 2 } },
+	{ "match_team_scores", _option_hardcore, RULES_FIELD(team_scores), 0, 2, { 0, 1 } },
+	{ "match_pistol_spread", _option_hardcore, RULES_FIELD(pistol_spread), 0, 4, { 0, 1, 2, 3 } },
+	{ "match_shotgun_spread", _option_hardcore, RULES_FIELD(shotgun_spread), 0, 4, { 0, 1, 2, 3 } },
 };
 
 /* TEXT CHAT's (network.text_chat) OFF, which it shows while the game is
@@ -5918,6 +6103,12 @@ static void gametype_setup_classic(void)
 {
 	struct game_variant chosen;
 
+	if (gametype_edit.setup && !hardcore_rules_is_stock(hardcore_rules_editing()))
+	{
+		hardcore_rules_note_variant(&gametype_edit.setup_variant);
+		hardcore_rules_commit();
+		return;
+	}
 	hardcore_rules_clear_session();
 	if (gametype_edit.setup &&
 		TEST_FLAG(gametype_edit.setup_variant.universal_variant.flags,
@@ -6061,7 +6252,10 @@ static boolean gametype_edit_begin(void)
 		return campaign_fail();
 	gametype_edit.setup = FALSE;
 	gametype_edit.vehicle_side = 0;
-	return ui_widget_port_gametype_edit_begin(gametype_edit.gametypes[gametype_edit.chosen]);
+	if (!ui_widget_port_gametype_edit_begin(gametype_edit.gametypes[gametype_edit.chosen]))
+		return FALSE;
+	hardcore_rules_choose(gametype_edit.gametypes[gametype_edit.chosen]);
+	return TRUE;
 }
 
 /* "request del playlist profile" (X, DELETE): not a built-in one */
@@ -6254,9 +6448,9 @@ static void hardcore_variant_drop(void)
    1 keeps the flag and the hill. 2 turns those off too. */
 static void hardcore_stamp(struct game_variant *variant)
 {
-	SET_FLAG(variant->universal_variant.flags, _game_variant_anniversary_rules_bit, TRUE);
-	SET_FLAG(variant->universal_variant.flags, _game_variant_draw_object_in_motion_sensor_bit, FALSE);
-	variant->universal_variant.goal_radar = 1;
+	/* The bit means the sheet rides with the variant. The motion sensor
+	   stays whatever the variant already chose. */
+	hardcore_rules_note_variant(variant);
 }
 
 /* 0 slayer, 1 capture the flag, 2 oddball, 3 crazy king */
@@ -6528,17 +6722,21 @@ static void hardcore_comp_apply(void)
 		game_variant_options_default(variant, &gametype_edit.setup_options);
 		gametype_edit.setup_options.radar_players = _radar_players_none;
 	}
+	if (profile != NONE)
+		hardcore_rules_choose(profile);
+	else
+	{
+		hardcore_rules_reset_editing();
+		hardcore_rules_editing()->team_scores = 1;
+		SET_FLAG(variant->universal_variant.flags, _game_variant_draw_object_in_motion_sensor_bit, FALSE);
+		variant->universal_variant.goal_radar = 1;
+	}
 	hardcore_stamp(variant);
 	/* port: the saved game is free for all. a 2v2 is teams, which is
 	   what puts the counters beside the clock. the score stays. */
 	variant->universal_variant.teams = TRUE;
 	hardcore_built_rules = hardcore_rules_for_engine(variant->game_engine_index);
 	hardcore_built_teams = TRUE;
-	hardcore_rules_reset_editing();
-	/* port: comp 2v2 shows the counters and the respawn percent.
-	   training mode stays off, so the pads stay hidden. */
-	hardcore_rules_editing()->team_scores = 1;
-	hardcore_rules_editing()->random_pct = 1;
 }
 
 /* port: opening the server replaces this screen. back builds it again,
@@ -7316,6 +7514,14 @@ boolean pc_menu_event_function_invoke(
 		{
 			return lobby_open(widget);
 		}
+		else if (!strcmp(name, "port lobby download"))
+		{
+			return lobby_download();
+		}
+		else if (!strcmp(name, "port profile edit"))
+		{
+			return profile_edit_open(widget, event, widget_deleted);
+		}
 		else if (!strcmp(name, "port lobby add player"))
 		{
 			return lobby_add_player();
@@ -7465,6 +7671,8 @@ void pc_menu_game_data_function_invoke(
 		lobby_update(widget);
 	else if (!strcmp(name, "port lobby settings"))
 		lobby_settings_save(widget);
+	else if (!strcmp(name, "port profile rows"))
+		profile_rows_apply(widget);
 	else if (!strcmp(name, "port settings help"))
 	{
 		video_rows_show(widget);

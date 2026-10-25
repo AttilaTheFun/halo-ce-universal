@@ -5,7 +5,6 @@ int halo_metalfx_take_presented(void) {return 0;}
 int halo_metalfx_supported(void) {return 0;}
 int halo_metalfx_enabled(void) {return 0;}
 void halo_metalfx_set_enabled(int enabled) {(void)enabled;}
-unsigned int host_ios_render_height(void) {return 0;}
 int host_ios_metalfx_present(unsigned int t,unsigned int w,unsigned int h,unsigned int ow,unsigned int oh) {(void)t;(void)w;(void)h;(void)ow;(void)oh;return 0;}
 #else
 /* Optional ANGLE Metal -> IOSurface -> MetalFX presentation. Both APIs share the
@@ -63,7 +62,6 @@ void halo_metalfx_set_enabled(int value) {
     if(!enabled)surface.hidden=YES;
     host_logf(HOST_LOG_INFO,"MetalFX spatial upscaling %s",enabled?"enabled":"disabled");
 }
-unsigned int host_ios_render_height(void) {return enabled?720:0;}
 static void releaseImages(void) {
     [pending waitUntilCompleted];pending=nil;
     halo_graphics_shared_destroy();sharedTexture=0;

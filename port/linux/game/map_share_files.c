@@ -441,21 +441,6 @@ struct map_share_file *map_share_file_get(
 		&map_share_files_globals.files[index] : NULL;
 }
 
-short map_share_file_find(
-	byte const *hash)
-{
-	short index;
-
-	for (index = 0; index < MAXIMUM_SHARE_FILES; index++)
-	{
-		struct map_share_file const *file = &map_share_files_globals.files[index];
-
-		if (file->used && file->ready && !csmemcmp(file->hash, hash, MAP_SHARE_HASH_BYTES))
-			return index;
-	}
-	return NONE;
-}
-
 /* ---------- a download's pieces */
 
 boolean map_share_pieces_hash(

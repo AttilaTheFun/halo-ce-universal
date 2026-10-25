@@ -1,13 +1,15 @@
 /*
 HARDCORE_TIMER.C
 
-A hardcore match draws one clock at the bottom right, from the game's own
-ticks, on whichever map it started. A map that still speaks from talking_timer
-and power_call is left running. This machine's audio.hardcore_timer_voice
-can quiet talking_timer. power_call stays on. Classic games do not draw the clock.
+The match clock at the bottom right, from the game's own ticks, in any
+multiplayer game when Graphics' Match Timer is on. On with Voice forces a
+map's talking_timer on when that global exists. Off leaves the global as
+the map authored it. power_call is never forced. Team scores draw only when
+that match option is on.
 */
 
 #include "cseries.h"
+#include <string.h>
 #include "math/integer_math.h"
 #include "math/real_math.h"
 #include "game/game.h"
@@ -24,7 +26,6 @@ can quiet talking_timer. power_call stays on. Classic games do not draw the cloc
 #include "scenario/scenario.h"
 #include "text/draw_string.h"
 #include "hs/hs.h"
-#include "custom_edition_cache.h"
 #include "hardcore_rules.h"
 #include "hardcore_timer.h"
 #include "port_config.h"
@@ -85,28 +86,38 @@ static void hardcore_timer_force(
 	return;
 }
 
+int hardcore_timer_mode(
+	void)
+{
+	char const *mode = config_string("display.match_timer");
+
+	if (!mode || !strcmp(mode, "off") || !strcmp(mode, "false") || !strcmp(mode, "0"))
+		return 0;
+	if (!strcmp(mode, "voice"))
+		return 2;
+	return 1;
+}
+
 void hardcore_timer_after_scripts(
 	void)
 {
 	static long resolved_for = -1;
 	static short talking_timer = NONE;
-	static short power_call = NONE;
 
-	if (!custom_edition_cache_is_hardcore() || !hs_global_data)
+	/* off and on leave the map's global alone. voice forces it on */
+	if (hardcore_timer_mode()!=2 || !hs_global_data)
 		return;
 
 	/* resolved once a map, and again when the next one loads. the startup
-	   script sets both false on the first tick, so this runs after the
+	   script sets it false on the first tick, so this runs after the
 	   scripts and every tick after that */
 	if (resolved_for!=global_scenario_index)
 	{
 		resolved_for = global_scenario_index;
 		talking_timer = hs_find_global_by_name("talking_timer");
-		power_call = hs_find_global_by_name("power_call");
 	}
 
-	hardcore_timer_force(talking_timer, config_boolean("audio.hardcore_timer_voice"));
-	hardcore_timer_force(power_call, 1);
+	hardcore_timer_force(talking_timer, 1);
 
 	return;
 }
@@ -252,8 +263,8 @@ void hardcore_timer_render(
 	rectangle2d bounds;
 	short shift;
 
-	/* port: the match, not the map folder. a classic game does not set it. */
-	if (!hardcore_rules_active() || !game_in_progress() ||
+	/* off draws nothing. on and voice draw in any multiplayer game */
+	if (!hardcore_timer_mode() || !game_in_progress() || !game_engine_running() ||
 		ui_widgets_active() || local_player_count()<=0 || !hud_globals)
 		return;
 

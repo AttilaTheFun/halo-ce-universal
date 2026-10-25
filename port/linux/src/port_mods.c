@@ -510,19 +510,6 @@ static void mods_find(const char *root)
 	posix_directory_close(directory);
 }
 
-/* the mod `name` names (its id or folder), or -1 */
-static long mod_find(const char *name)
-{
-	long index;
-
-	for (index = 0; index < port_mods.mod_count; index++)
-	{
-		if (mod_named(&port_mods.mods[index], name))
-			return index;
-	}
-	return -1;
-}
-
 /* whether the mod `first` asks to load before the mod `second`: `first`
 names it in load_before, or `second` names `first` in load_after */
 static int mod_wants_before(long first, long second)
@@ -1081,11 +1068,6 @@ const char *port_mods_file_path(long file)
 long port_mods_count(void)
 {
 	return port_mods.mod_count;
-}
-
-const char *port_mods_folder(long index)
-{
-	return index >= 0 && index < port_mods.mod_count ? port_mods.mods[index].folder : "";
 }
 
 int port_mods_describe(long index, char *text, unsigned long size, const char *map_name)

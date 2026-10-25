@@ -391,6 +391,7 @@ symbols in this file:
 #include "camera/director.h"
 #include "camera/observer.h"
 #include "hardcore_views.h" /* port: teammate panes in a hardcore team game */
+#include "hardcore_rules.h" /* port: the opening loading screen */
 #include "cutscene/cinematics.h"
 #include "effects/player_effects.h"
 #include "physics/collision_usage.h"
@@ -3637,7 +3638,13 @@ void main_loop(
 					/* frames between ticks too (render_interpolation.c) */
 					if (halo_interpolation_enabled())
 						render_frame = main_globals.main_menu_scenario_loaded || main_globals.halt_time_scale;
-					render_frame &= !game_engine_running() || game_time_get()>=3;
+					/* port: the match clock stays at 0 while the loading screen is
+					   up, so the 3-tick gate would keep the lobby on screen.
+					   Present the film, and the match under it while it fades. */
+					if (hardcore_rules_opening_hold())
+						render_frame = TRUE;
+					else
+						render_frame &= !game_engine_running() || game_time_get()>=3;
 
 					profile_scope_enter(main_non_deterministic_update_section)
 					collision_log_continue_period(1);
@@ -3656,9 +3663,14 @@ void main_loop(
 				if (render_frame && !debug_no_drawing)
 				{
 					profile_render_start();
-					render_interpolation_frame_begin();
-					main_game_render((double)main_globals.seconds_elapsed);
-					render_interpolation_frame_end();
+					if (hardcore_rules_opening_hold() && !hardcore_rules_opening_fading())
+						main_pregame_render();
+					else
+					{
+						render_interpolation_frame_begin();
+						main_game_render((double)main_globals.seconds_elapsed);
+						render_interpolation_frame_end();
+					}
 					profile_render_end();
 				}
 			}

@@ -7,13 +7,13 @@ the machines that may hear it. The host decides everything, from its own
 config.toml:
 
 - In the lobby, before and after a game (and in a game's postgame), every
-  player hears every other (network.voice_lobby).
-- In a game, network.voice_mode: off; teammates near; anyone near; all
-  teammates; or all teammates and enemies near ("near": within
-  network.voice_proximity world units of each other, both alive). A game
-  without teams has only enemies, and co-op only teammates. A voice heard
-  for being near is quieter further away, and comes from the speaker's side
-  (each listener's own reckoning of where everyone is).
+  player hears every other.
+- In a team game, teammates hear each other anywhere. In a free-for-all,
+  anyone nearby hears each other ("near": within network.voice_proximity
+  world units, both alive). Co-op has no engine teams and hears everyone.
+  A voice heard for being near is quieter further away, and comes from the
+  speaker's side (each listener's own reckoning of where everyone is).
+  network.voice_mode is no longer what chooses this.
 - The quality: network.voice_kbps (8 to 64), in the lobby and in a game,
   which the host tells each machine to encode at, and holds it to.
 
@@ -329,6 +329,15 @@ static boolean voice_in_lobby(
 	return game_engine && game_engine_showing_postgame();
 }
 
+/* Lobby: everyone. A team game: the whole team. A free-for-all: anyone
+nearby. Co-op has no engine and hears everyone. The config mode is unused. */
+static short voice_effective_mode(void)
+{
+	if (voice_in_lobby() || !game_engine || game_engine_has_teams())
+		return _voice_mode_team_global;
+	return _voice_mode_team_enemy_proximity;
+}
+
 /* ---------- players */
 
 /* the network game this machine is in (the host's, its client's), or NULL */
@@ -456,7 +465,7 @@ static short voice_route_between(
 	real distance = 0.0f;
 
 	if (voice_in_lobby())
-		return voice_route(voice_host_settings.mode, TRUE, voice_host_settings.lobby, FALSE, FALSE, 0.0f, 0.0f);
+		return voice_route(voice_effective_mode(), TRUE, TRUE, FALSE, FALSE, 0.0f, 0.0f);
 	if (!speaker || !listener)
 		return _voice_route_none;
 	/* (co-op: one team; a game without teams: none) */
@@ -465,7 +474,7 @@ static short voice_route_between(
 		voice_player_position(listener, &listener_position);
 	if (both_alive)
 		distance = distance3d(&speaker_position, &listener_position);
-	return voice_route(voice_host_settings.mode, FALSE, voice_host_settings.lobby, teammates, both_alive, distance,
+	return voice_route(voice_effective_mode(), FALSE, TRUE, teammates, both_alive, distance,
 		voice_host_settings.proximity);
 }
 
@@ -518,8 +527,8 @@ static void voice_host_tell(
 	csmemset(&message, 0, sizeof(message));
 	voice_fill_header(&message.header, _distributed_message_voice_config, (word)sizeof(message));
 	message.config.key = voice_machines[machine_index].key;
-	message.config.flags = voice_host_settings.lobby ? FLAG(_voice_config_lobby_bit) : 0;
-	message.config.mode = (byte)voice_host_settings.mode;
+	message.config.flags = FLAG(_voice_config_lobby_bit);
+	message.config.mode = (byte)voice_effective_mode();
 	message.config.kbps = (byte)voice_host_settings.kbps;
 	message.config.proximity_tenths = (word)(voice_host_settings.proximity * 10.0f);
 	if (network_distributed_server_send_to_machine_reliably(machine_index, &message, (word)sizeof(message)))
@@ -841,6 +850,8 @@ static void voice_host_update(
 	short index;
 
 	voice_host_settings_read();
+	voice_host_settings.lobby = TRUE;
+	voice_host_settings.mode = voice_effective_mode();
 	changed = csmemcmp(&voice_host_settings, &voice_host_settings_told, sizeof(voice_host_settings)) != 0;
 	voice_host_settings_told = voice_host_settings;
 	/* (the host's own, as a client hears them) */

@@ -47,7 +47,6 @@ char const *port_mods_file_mod(long file);
 char const *port_mods_file_path(long file);
 long port_mods_count(void);
 long port_mods_at(long position);
-char const *port_mods_folder(long index);
 int port_mods_describe(long index, char *text, unsigned long size, char const *map_name);
 
 /* ---------- prototypes/MODS.C */
@@ -86,8 +85,7 @@ byte *mods_tag_file_read(long file, unsigned long *size, char const **reason);
 boolean mods_memory_take(unsigned long size);
 void mods_memory_give(unsigned long size);
 unsigned long mods_memory_left(void);
-/* the map loaded's name ("a10"), and whether its tags are loaded */
-char const *mods_map_name(void);
+/* whether the loaded map's tags are loaded */
 boolean mods_map_loaded(void);
 
 /* ---------- prototypes/MOD_SOUNDS.C */

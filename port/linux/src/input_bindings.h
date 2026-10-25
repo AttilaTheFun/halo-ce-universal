@@ -21,9 +21,6 @@ struct input_binding
 
 /* Parse a complete binding; invalid tokens reject it without a partial result. */
 int input_binding_parse(const char *text, struct input_binding *binding);
-/* A held key/button or the wheel's short pulse holds its controller action. */
-int input_binding_down(enum input_binding_action action, const unsigned char *keys,
-	const unsigned char *mouse_buttons, int wheel);
 /* For event-driven keyboard hotkeys; mouse/wheel bindings are not allowed there. */
 int input_binding_matches_key(enum input_binding_action action, SDL_Scancode key);
 /* Translate only the configured console key into the game's backquote key. */

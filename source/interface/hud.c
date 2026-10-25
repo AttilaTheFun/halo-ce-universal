@@ -113,7 +113,7 @@ symbols in this file:
 #include "text/draw_string.h"
 #include "coop_spectate.h" /* port: port/linux/game/coop_spectate.c */
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
-#include "hardcore_rules.h" /* port: a hardcore match draws its own clock */
+/* the match clock is hardcore_timer_render. this file no longer draws one */
 #include "hardcore_views.h" /* port: a teammate pane draws that player's HUD */
 #include "network_chat.h" /* port: port/linux/game/network_chat.c */
 #include "text/font_group.h"
@@ -1405,64 +1405,11 @@ static void temporary_hud_draw(
 	return;
 }
 
-/* port: the match clock (display.match_timer, off by default: Custom
-Edition's HUD has none), counting up from the game's
-first tick, which the items' respawn periods count from as well
-(game_engine_update_item_spawn's game_time_get() % respawn_period): an item
-is back on the map at every multiple of its period on the clock. */
-static boolean hud_match_timer_setting(
-	void)
-{
-	static boolean setting = FALSE;
-	static unsigned long read_at = (unsigned long)-1;
-
-	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
-	{
-		read_at = config_changes();
-		setting = config_boolean("display.match_timer") != 0;
-	}
-
-	return setting;
-}
-
+/* The white HUD clock is gone. Graphics' Match Timer draws the blue clock
+from hardcore_timer_render when it is on, and draws nothing when it is off. */
 static void hud_draw_match_timer(
 	void)
 {
-	long font_index = hud_get_font_index();
-	wchar_t time_string[32];
-	real_argb_color color;
-	rectangle2d bounds;
-	struct font_header *font;
-
-	/* a hardcore match draws its own clock. this one would sit on it
-	when the setting is on */
-	if (hardcore_rules_active() || !hud_match_timer_setting() || font_index == NONE)
-		return;
-	ticks_to_unicode_time_string(game_time_get(), NUMBEROF(time_string), time_string);
-	/* (a time under a minute is drawn with no minutes digit, which a clock
-	counting up from zero starts at: " :07") */
-	if (time_string[0] == L' ')
-		time_string[0] = L'0';
-	font = font_definition_get(font_index);
-	/* (the HUD's window, which a wide screen widens and a split screen
-	divides, in the view's coordinates; into the corner, where the first
-	person's weapon is not drawn) */
-	bounds.x1 = render.camera.window_bounds.x1 - render.camera.viewport_bounds.x0 - 5;
-	bounds.x0 = bounds.x1 - 320;
-	bounds.y1 = render.camera.window_bounds.y1 - render.camera.viewport_bounds.y0 - 14;
-	bounds.y0 = bounds.y1 - (font->ascending_height + font->descending_height);
-	hud_get_text_color(&color);
-	/* (lifted toward white, and whole: the HUD's own text colour is lost
-	against a map as bright as it) */
-	color.red += (1.0f - color.red) * 0.65f;
-	color.green += (1.0f - color.green) * 0.65f;
-	color.blue += (1.0f - color.blue) * 0.65f;
-	color.alpha = 1.0f;
-	/* (right justified: 1) */
-	draw_string_set_draw_mode(font_index, NONE, 1, 0, &color);
-	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, time_string);
-
 	return;
 }
 

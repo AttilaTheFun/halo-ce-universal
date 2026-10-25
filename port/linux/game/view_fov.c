@@ -1,8 +1,8 @@
 /*
 VIEW_FOV.C
 
-The first-person view's field of view (display.fov, display.viewmodel_fov)
-and whether the weapon is drawn (display.viewmodel_visible), the local
+The first-person view's field of view (display.fov) and whether the weapon
+is drawn (display.viewmodel_visible). The weapon keeps the default view. The local
 render view only: the observer, its transitions and what the network sends
 keep the game's own camera. Each angle is horizontal at 16:9 (the vertical
 angle is kept, so other shapes of window widen or narrow as the stock view
@@ -177,21 +177,9 @@ static struct render_frustum saved_render_frustum, saved_rasterizer_frustum;
 
 static real viewmodel_vertical(void)
 {
-	static boolean initialized;
-	static unsigned long read_at;
-	static real angle;
-	unsigned long changes = config_changes();
-
-	if (!initialized || read_at != changes)
-	{
-		double degrees = config_real("display.viewmodel_fov");
-
-		angle = degrees >= 20.0 && degrees <= 150.0 ?
-			(real)(2.0 * atan(tan(degrees * _pi / 360.0) * (9.0 / 16.0))) : 0.0f;
-		initialized = TRUE;
-		read_at = changes;
-	}
-	return angle;
+	/* the weapon keeps the default view, the one from before display.fov
+	widens the world. a chosen viewmodel angle is not offered */
+	return 0.0f;
 }
 
 void viewmodel_projection_begin(void)
@@ -202,9 +190,9 @@ void viewmodel_projection_begin(void)
 	if (projection_depth++ != 0)
 		return;
 	projection_applied = FALSE;
-	/* (display.viewmodel_fov's angle; by default the view's own, from before
-	display.fov widened it. a split keeps that pane's camera, so the gun
-	and the shot share one aim) */
+	/* (the weapon's default angle: the view's own, from before display.fov
+	widened it. a split keeps that pane's camera, so the gun and the shot
+	share one aim) */
 	angle = viewmodel_vertical();
 	if (!angle)
 		angle = render_fov_authored_vertical(render.local_player_index);

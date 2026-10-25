@@ -222,12 +222,6 @@ void mods_memory_give(
 	return;
 }
 
-char const *mods_map_name(
-	void)
-{
-	return mods_globals.map_name;
-}
-
 boolean mods_map_loaded(
 	void)
 {

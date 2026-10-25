@@ -35,6 +35,5 @@ int halo_metal_guest_patch_u32(struct halo_metal_guest_transport *, uint32_t com
 int halo_metal_guest_submit(struct halo_metal_guest_transport *);
 int halo_metal_guest_readback(struct halo_metal_guest_transport *, struct halo_metal_ref,
                              uint32_t plane, void *destination, uint32_t size);
-void halo_metal_guest_shutdown(struct halo_metal_guest_transport *);
 #endif
 #endif

@@ -369,6 +369,7 @@ static char const *const port_function_names[] =
 	"port pause end game", "port coop friendly fire",
 	"port coop begin", "port coop player 2 list initialize", "port coop player 2",
 	"port lobby open", "port lobby add player", "port lobby join", "port lobby leave",
+	"port lobby download", "port profile edit",
 	"port lobby player list initialize", "port lobby player choose",
 	"port lobby preview add", "port lobby preview leave",
 	/* (the gametype editor's: the Xbox's walk their rows by place, which the
@@ -410,7 +411,7 @@ static char const *const port_game_data_input_names[] =
 	"mp map list update", "gt select list update", "gt edit list update", "load game list update",
 	"direct ip connect update", "network settings update",
 	"port settings help", "color picker update", "3wide player profile list update", "port lobby update",
-	"port lobby preview update", "port lobby settings",
+	"port lobby preview update", "port lobby settings", "port profile rows",
 	/* (the gametype editor's: the Xbox's stops the game on the buttons'
 	row; the Xbox's read only player_ui's gametype, not Server Setup's) */
 	"game settings lists text update", "get edit game settings name", "mp edit profile set rule text",
@@ -1877,6 +1878,7 @@ static char const *const pause_settings_hidden_items[] =
 	PAUSE_NETWORK_ITEM,
 	"main_menu/settings_select/player_setup/player_profile_edit/color_profile_item",
 	"main_menu/settings_select/player_setup/player_profile_edit/about_item",
+	"main_menu/settings_select/player_setup/player_profile_edit/mods_profile_item",
 };
 
 /* the PC version's pause menu's row pitch (30 apart). The pause box's frames

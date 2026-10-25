@@ -77,6 +77,7 @@ mutes.
 #include "text/draw_string.h"
 #include "text/font_group.h"
 #include "text/text_group.h"
+#include "tag_files/tag_groups.h"
 #include "network_distributed.h"
 #include "network_voice.h"
 #include "network_chat.h"
@@ -902,23 +903,6 @@ static boolean chat_network_game(
 	return connection == _game_connection_network_client || connection == _game_connection_network_server;
 }
 
-/* whether this player shows the text chat (display.text_chat): hidden, no
-line shows and its keys open nothing */
-static boolean chat_shown(
-	void)
-{
-	static boolean shown = TRUE;
-	static unsigned long read_at = (unsigned long)-1;
-
-	/* (read again when Settings changes it) */
-	if (read_at != config_changes())
-	{
-		read_at = config_changes();
-		shown = config_boolean("display.text_chat");
-	}
-	return shown;
-}
-
 /* ---------- the host's chat settings */
 
 static boolean chat_host(
@@ -935,13 +919,10 @@ static byte chat_host_config_flags(
 	char const *setting = config_string("network.text_chat");
 	byte flags = 0;
 
-	/* (in either case: HALO_NET_TEXT_CHAT=OFF is off) */
+	/* on, or a saved "links", which counts as on. lines with links are
+	refused either way. off, and a listed public game, send nothing */
 	if (setting && !chat_names_equal(setting, "off") && !p2p_hosting_listed())
-	{
 		flags |= (byte)FLAG(_chat_config_allowed_bit);
-		if (chat_names_equal(setting, "links"))
-			flags |= (byte)FLAG(_chat_config_links_bit);
-	}
 	return flags;
 }
 
@@ -962,6 +943,20 @@ static byte chat_config_flags(
 	if (chat_host())
 		return chat_host_config_flags();
 	return chat_config.known && !chat_joined_listed() ? chat_config.flags : 0;
+}
+
+/* whether this player shows the text chat: the host's lobby switch, not a
+separate display setting. hidden, no line shows and its keys open nothing */
+static boolean chat_shown(
+	void)
+{
+	return TEST_FLAG(chat_config_flags(), _chat_config_allowed_bit) != 0;
+}
+
+boolean network_chat_allowed(
+	void)
+{
+	return chat_shown();
 }
 
 static void chat_send_to_clients(void *message, byte type, word size);
@@ -2323,7 +2318,11 @@ static void chat_keyboard_draw(
 void network_chat_draw(
 	short local_player_index)
 {
-	long font_index = hud_get_font_index();
+	/* the menu buttons' small font. names, the scoreboard and the other
+	HUD text stay on the HUD font. the keyboard under a typed line uses
+	this font too, so its rows match the lines */
+	long small_font = tag_loaded(FONT_GROUP_TAG, "ui\\small_ui");
+	long font_index = small_font != NONE ? small_font : hud_get_font_index();
 	unsigned long now = system_milliseconds();
 	boolean speaker = local_player_index == local_player_get_next(NONE);
 	boolean typing = speaker && chat_input.active && !console_is_active();
