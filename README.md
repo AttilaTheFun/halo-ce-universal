@@ -10,7 +10,7 @@
 
 **CoreCE** is an open source port of the Halo: Combat Evolved decompilation, from Xbox development build 2342 and [bnunu/halo-1](https://github.com/bnunu/halo-1). Windows, Linux, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows and Linux draw with OpenGL. The Mac build draws with Metal. Sound, input, and gamepads go through SDL3.
 
-You can play with up to 128 players, run campaign co-op online, load mod packs and Custom Edition maps, change the field of view, browse servers, host peer-to-peer, download missing maps, and use voice chat. With Smooth Motion on, the game draws a frame for every refresh of the display. The simulation stays at 30 ticks a second, as on the Xbox.
+You can play with up to 128 players, run campaign co-op online, load Custom Edition maps, change the field of view, browse servers, host peer-to-peer, download missing maps, and use voice chat. With Smooth Motion on, the game draws a frame for every refresh of the display. The simulation stays at 30 ticks a second, as on the Xbox.
 
 <p align="center">
   <img src="docs/images/main-menu.png" alt="Original Halo main menu running on Apple Silicon" width="512">
@@ -100,10 +100,6 @@ Put Halo Custom Edition maps in `custom_maps`, beside `maps`. That folder also n
 The Gearbox maps that shipped with Halo PC (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland, and Gephyrophobia) are a separate set. Copy them from a Halo Custom Edition install's `maps` folder into `custom_maps`. They then appear under Custom Singleplayer and Custom Multiplayer. A custom singleplayer map plays as a campaign level, alone or as online co-op. Maps that require OpenSauce will not load.
 
 The server browser and the LAN browser can download a missing custom map from the other players, including `bitmaps.map`, `sounds.map`, and `loc.map`. This works on a LAN, and on the internet when the host has map sharing on (the default). See [docs/custom_edition_caches.md](docs/custom_edition_caches.md).
-
-## Mods
-
-Mods are folders of Halo PC tag files, as the Halo Editing Kit and Invader write them, in `mods/` next to `maps`. Each has a `mod.toml`. Every mod in the folder starts on. The main menu's Mods turns them off and on and sets the load order, with the top mod winning. The game refuses mods that say they cannot be played together. Mods are drawn on your machine only. See [docs/mods.md](docs/mods.md).
 
 ## Community maps and competitive options
 

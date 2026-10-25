@@ -557,13 +557,13 @@ static struct widget_instance *named(struct widget_instance *widget, char const 
 static void visible_set(struct widget_instance *widget, boolean visible);
 
 /* "port profile rows": show one set, packed from the top. a game's pause
-menu settings keeps every row but the profile name and Mods, closed up. */
+menu settings keeps every row but the profile name, closed up. */
 static void profile_rows_apply(struct widget_instance *list)
 {
 	static char const *const machine[] =
 	{
 		"controller_setup_profile_item", "mouse_settings_profile_item", "audio_settings_profile_item",
-		"video_settings_profile_item", "network_settings_profile_item", "about_item", "mods_profile_item"
+		"video_settings_profile_item", "network_settings_profile_item", "about_item"
 	};
 	static char const *const profile[] =
 	{
@@ -585,14 +585,12 @@ static void profile_rows_apply(struct widget_instance *list)
 		{ "video_settings_profile_item", 243 },
 		{ "network_settings_profile_item", 276 },
 		{ "color_profile_item", 309 },
-		{ "about_item", 342 },
-		{ "mods_profile_item", 375 }
+		{ "about_item", 342 }
 	};
 	char const *const *show = profile_menu_machine ? machine : profile;
 	short show_count = profile_menu_machine ? (short)NUMBEROF(machine) : (short)NUMBEROF(profile);
 	short place = 0;
 	short index;
-	struct widget_instance *mods = named(list, "mods_profile_item", 0);
 
 	/* pause settings is the machine set. Profiles' EDIT keeps its name row
 	even if a match is running */
@@ -600,9 +598,6 @@ static void profile_rows_apply(struct widget_instance *list)
 	{
 		struct widget_instance *name = named(list, "name_profile_item", 0);
 
-		visible_set(mods, FALSE);
-		if (mods)
-			mods->disabled = TRUE;
 		visible_set(name, FALSE);
 		if (name)
 			name->disabled = TRUE;
@@ -611,7 +606,7 @@ static void profile_rows_apply(struct widget_instance *list)
 		{
 			struct widget_instance *row = named(list, all[index].name, 0);
 
-			if (!row || row == name || row == mods)
+			if (!row || row == name)
 				continue;
 			row->vertical_offset = -33;
 		}

@@ -78,7 +78,7 @@
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/network_setup/streamer_mode/help_strings">
 		<string text=""/>
-		<string text="Hide offensive words in names and text from\nother players, maps and mods, as stars."/>
+		<string text="Hide offensive words in names and text from\nother players and maps, as stars."/>
 		<string text="Slurs about race, sexuality, gender and\ndisability."/>
 		<string text="Swearing and sexual words (STRONG AND WORSE\nleaves the mildest showing)."/>
 		<string text="Name-calling and insults that are not slurs."/>

@@ -176,7 +176,6 @@ These files are in the data root:
 | --- | --- |
 | `debug.txt` | The log of the game. At start-up, the game shows the data root in the terminal. A crash writes its report (the faulting address and the calls that led to it) here as well; the `reference address` line at the top of each session places those addresses in the build. |
 | `init.txt` | Console commands that the game does at start-up. For example, `map_name levels\a10\a10` starts the first campaign level. |
-| `mods/` | Mods: folders of Halo PC tag files whose sounds, bitmaps, text and models play over the maps' on this machine, in the order of the main menu's Mods (`load_order.toml`). Refer to [docs/mods.md](../../docs/mods.md). |
 
 The settings are in `config.toml` next to the executable. Refer to
 "Settings". Internet play's MQTT brokers are in `brokers.txt` next to it
@@ -1157,25 +1156,6 @@ the invite with the invite button of Discord. When a person accepts it, that
 person joins the game. If the game does not operate, Discord starts it.
 The game sends the activity only to a Discord client of the same user.
 
-## Mods
-
-A mod is a folder in `mods/` in the data root with a `mod.toml` and a
-`tags` folder of Halo PC tag files, as the Halo Editing Kit and Invader write
-them: sounds, bitmaps, string lists and models that play over the maps' tags
-of the same names, on this machine only (a high-res audio or texture pack, a
-translation, higher-detail models that keep the map's nodes, markers and
-regions). Every mod in the folder is on, in alphabetical order moved as the
-mods ask (`load_after`, `load_before`); the main menu's Mods lists them as a
-resource pack list does, the mod at the top playing over those below it,
-turns them off and moves them, and keeps that in `mods/load_order.toml`.
-Mods that say they cannot be played together (`incompatible`) are asked
-about at startup. The console's `mods_list` lists them, `mods_reload` reads
-their files again and `mods_enable false` plays the maps' own tags. The game
-checks every file before it plays it, and leaves out (with a line in
-`debug.txt`) one it cannot trust or that does not fit the map's tag it
-replaces. A mod changes nothing that the machines of a
-network game agree on. Refer to [docs/mods.md](../../docs/mods.md).
-
 ## Streamer mode
 
 Streamer mode (Settings > Network Setup > Streamer Mode, `streamer.enabled`)
@@ -1183,8 +1163,8 @@ hides offensive words as stars wherever the game draws text that other
 people or files wrote: the text chat's lines, players' names over their
 heads, in the chat, in the kill feed, on
 the scoreboards and in the lobbies, the server browser's games, the host's
-notices in the console, map and mod names, and the text of a map's or mod's
-own string lists, as well as the message boxes about mods and maps. It
+notices in the console, map names, and the text of a map's own string
+lists, as well as the message boxes about maps. It
 changes only what this machine shows: the names others see, and what the
 machines send each other, stay as they are.
 

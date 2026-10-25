@@ -2302,8 +2302,6 @@ def multiplayer_files() -> dict:
         TEAMPLAY_EDIT.replace("/", ".") + ".port.xml": head + _teamplay_options_extras() + ["</menus>", ""],
         "main_menu/settings_select/multiplayer_setup/hardcore_options_edit".replace("/", ".") + ".xml":
             head + _hardcore_screen() + ["</menus>", ""],
-        MODS.replace("/", ".") + ".xml": [head[0], "<!-- The port's Mods screen, in the PC version's style "
-                                          "(tools/port_settings.py) -->", head[2]] + _mods() + ["</menus>", ""],
     }
 
 

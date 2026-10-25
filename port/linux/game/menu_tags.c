@@ -1878,7 +1878,6 @@ static char const *const pause_settings_hidden_items[] =
 	PAUSE_NETWORK_ITEM,
 	"main_menu/settings_select/player_setup/player_profile_edit/color_profile_item",
 	"main_menu/settings_select/player_setup/player_profile_edit/about_item",
-	"main_menu/settings_select/player_setup/player_profile_edit/mods_profile_item",
 };
 
 /* the PC version's pause menu's row pitch (30 apart). The pause box's frames

@@ -238,18 +238,10 @@ void mods_tags_loaded(
 	if (mods_globals.map_loaded)
 		mods_let_go(FALSE);
 	mods_globals.map_loaded = TRUE;
-	mods_globals.enabled = TRUE;
+	/* this tree does not play a mod's tags over the map's */
+	mods_globals.enabled = FALSE;
 	csstrncpy(mods_globals.map_name, map_name ? map_name : "", sizeof(mods_globals.map_name) - 1);
 	mods_globals.map_name[sizeof(mods_globals.map_name) - 1] = 0;
-	/* (found again, unless the menus of this map just found them: the
-	first map's, menu_tags.c) */
-	if (port_mods_scans() == mods_globals.scans)
-		port_mods_scan();
-	mods_globals.scans = port_mods_scans();
-	if (port_mods_played())
-	{
-		mods_update(FALSE, TRUE);
-	}
 
 	return;
 }
@@ -295,21 +287,6 @@ boolean mods_say(
 void mods_reload(
 	void)
 {
-	if (!mods_globals.map_loaded)
-	{
-		return;
-	}
-	if (!mods_globals.enabled)
-	{
-		console_warning("the mods are off until mods_enable true, or the map changes");
-		return;
-	}
-	console_printf(FALSE, "mods: %ld played", port_mods_scan());
-	mods_globals.scans = port_mods_scans();
-	mods_globals.say = TRUE;
-	mods_update(FALSE, FALSE);
-	mods_globals.say = FALSE;
-
 	return;
 }
 
@@ -318,18 +295,6 @@ on the map in their new order, quietly. */
 void mods_apply(
 	void)
 {
-	if (!mods_globals.map_loaded)
-	{
-		port_mods_scan();
-		return;
-	}
-	port_mods_scan();
-	mods_globals.scans = port_mods_scans();
-	if (mods_globals.enabled)
-	{
-		mods_update(FALSE, FALSE);
-	}
-
 	return;
 }
 
@@ -338,20 +303,7 @@ map's back, until the map changes. */
 void mods_enable(
 	boolean enabled)
 {
-	if (!mods_globals.map_loaded || enabled == mods_globals.enabled)
-	{
-		return;
-	}
-	mods_globals.enabled = enabled;
-	if (enabled)
-	{
-		port_mods_scan();
-		mods_globals.scans = port_mods_scans();
-	}
-	mods_globals.say = TRUE;
-	mods_update(!enabled, FALSE);
-	mods_globals.say = FALSE;
-
+	(void)enabled;
 	return;
 }
 
@@ -359,36 +311,5 @@ void mods_enable(
 void mods_list(
 	void)
 {
-	long count = port_mods_count();
-	long index;
-
-	if (!count)
-	{
-		console_printf(FALSE, "mods: none in the mods folder");
-	}
-	/* (in their load order) */
-	for (index = 0; index < count; index++)
-	{
-		char text[512];
-
-		if (port_mods_describe(port_mods_at(index), text, sizeof(text), mods_globals.map_name))
-		{
-			console_printf(FALSE, "%s", text);
-		}
-	}
-	if (mods_globals.map_loaded)
-	{
-		if (mods_globals.enabled)
-		{
-			console_printf(FALSE, "mods: on %s, %ld string lists, %ld bitmaps, %ld sounds and %ld models are theirs (%lu KB kept)",
-				mods_globals.map_name, mods_globals.string_count, mods_globals.bitmap_count, mods_globals.sound_count,
-				mods_globals.model_count, mods_globals.kept_bytes / 1024);
-		}
-		else
-		{
-			console_printf(FALSE, "mods: off on %s until mods_enable true", mods_globals.map_name);
-		}
-	}
-
 	return;
 }
