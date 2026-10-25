@@ -22,11 +22,11 @@ passes: balanced and nestable, the current local render view only */
 void viewmodel_projection_begin(void);
 void viewmodel_projection_end(void);
 
-/* whether the first-person weapon, hands and attached visuals are drawn
-(display.viewmodel_visible); its firing, sounds and lights go on either way */
+/* whether the first-person weapon, hands and attached visuals are drawn.
+this build always draws them */
 boolean viewmodel_is_visible(void);
-/* display.viewmodel_shield: the unit's energy shield flare drawn on the
-first-person arms too, as on its body */
+/* the unit's energy shield flare on the first-person arms. this build
+leaves that flare on the body */
 boolean viewmodel_shield_is_visible(void);
 /* whether a pass draws: not one of the first-person weapon's that is hidden */
 boolean viewmodel_draws_geometry(boolean first_person);

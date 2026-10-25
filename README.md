@@ -122,7 +122,7 @@ The game keeps the Xbox look until a setting says otherwise.
 | V-SYNC, FRAME RATE LIMIT | Wait for the display, or run free up to a frame cap | V-sync on |
 | SMOOTH MOTION | A frame for every refresh, blended between the game's 30 ticks a second | Off |
 | INSTANT AIM | In first person, the view turns the frame the mouse moves | Off |
-| FOV, VIEWMODEL FOV | Field of view of the view and of the weapon and hands, from 80 to 150 degrees | Stock |
+| FOV | On-foot field of view, from 80 to 150 degrees. The weapon and hands keep the original view | Stock |
 
 **Image quality**
 
@@ -140,8 +140,6 @@ The game keeps the Xbox look until a setting says otherwise.
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| LEGS | See your own legs when you look down in first person | Off |
-| ARM SHIELDS | The energy shield's flare on your first-person arms | Off |
 | SHIELD GLOW, GLOW INTENSITY | Energy shields light what is around them as they flare | Off |
 | SHIELD COLOR | Your own shield in a multiplayer armor color, as your machine draws it | Default |
 

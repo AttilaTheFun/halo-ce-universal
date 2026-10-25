@@ -36,7 +36,6 @@ enum
 };
 
 double config_real(const char *name);
-int config_boolean(const char *name);
 unsigned long config_changes(void);
 
 /* ---------- the world's field of view */
@@ -244,34 +243,16 @@ void viewmodel_projection_end(void)
 
 boolean viewmodel_is_visible(void)
 {
-	static boolean initialized, visible;
-	static unsigned long read_at;
-	unsigned long changes = config_changes();
-
-	if (!initialized || read_at != changes)
-	{
-		visible = config_boolean("display.viewmodel_visible") != 0;
-		initialized = TRUE;
-		read_at = changes;
-	}
-	return visible;
+	/* weapons and hands stay drawn. the menu no longer turns them off */
+	return TRUE;
 }
 
 /* ---------- whether the energy shield's flare is drawn on the arms */
 
 boolean viewmodel_shield_is_visible(void)
 {
-	static boolean initialized, visible;
-	static unsigned long read_at;
-	unsigned long changes = config_changes();
-
-	if (!initialized || read_at != changes)
-	{
-		visible = config_boolean("display.viewmodel_shield") != 0;
-		initialized = TRUE;
-		read_at = changes;
-	}
-	return visible;
+	/* the shield flare stays on the body, as in the stock game */
+	return FALSE;
 }
 
 boolean viewmodel_draws_geometry(boolean first_person)

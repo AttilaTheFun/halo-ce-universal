@@ -1,11 +1,9 @@
 /*
 FIRST_PERSON_LEGS.C
 
-Your own legs in first person (Video Setup > FOV and Viewmodels > Legs): the
-player's own body, which the game animates as everyone else sees it but does
-not draw for its own player, drawn from the waist down. Look down while
-standing, running, strafing or crouching and the legs move as the body's
-animation moves them.
+Your own legs in first person: the player's own body, which the game
+animates as everyone else sees it but does not draw for its own player,
+drawn from the waist down. This build leaves that body hidden.
 
 Only the drawing is changed: a copy of the body's pose, all but its hips and
 legs folded into a lid over the waist, the whole set back a little behind
@@ -28,10 +26,6 @@ keep their place and size at any field of view.
 
 
 #include <string.h>
-
-/* port/linux/src/port_config.c */
-int config_boolean(const char *name);
-unsigned long config_changes(void);
 
 enum
 {
@@ -56,15 +50,8 @@ static real_matrix4x3 first_person_legs_matrices[FIRST_PERSON_LEGS_MAXIMUM_NODES
 static boolean first_person_legs_enabled(
 	void)
 {
-	static unsigned long changes = (unsigned long)-1;
-	static boolean enabled = FALSE;
-
-	if (changes != config_changes())
-	{
-		changes = config_changes();
-		enabled = config_boolean("display.first_person_legs") != 0;
-	}
-	return enabled;
+	/* first person keeps the stock view: no body below the eye */
+	return FALSE;
 }
 
 /* the player's own unit, seen from inside it: its legs drawn (on foot,

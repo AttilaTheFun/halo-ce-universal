@@ -396,12 +396,12 @@ display. Firing, animation, sound and world lights continue.
 | `debug.gpu_flush_draws` | `-1` | `HALO_GPU_FLUSH_DRAWS` | Flush the GPU's pipeline every this many draws. `-1`: every 3 on Intel graphics with Mesa's driver, which can otherwise hang in the game's long runs of small draws and reset the desktop's graphics too. `0`: never. |
 | `display.interpolation` | `false` | `HALO_INTERPOLATION` | `true`: one frame for each refresh of the display. `false`: 30 frames each second, as on the Xbox. Refer to "Frame rate". |
 | `display.direct_camera` | `false` | `HALO_DIRECT_CAMERA` | `true`: in first person, on foot, the view points where the player aims in each frame, not where the last tick left it. Refer to "Frame rate". |
-| `display.fov` | `0.0` | `HALO_FOV` | On-foot first-person horizontal FOV at 16:9, 20 to 150 degrees. `0` keeps the authored view. Video Setup, FOV and Viewmodels, sets it. |
-| `display.viewmodel_fov` | `0.0` | `HALO_VIEWMODEL_FOV` | Weapon and hands horizontal FOV at 16:9, 20 to 150 degrees. `0` is Default and keeps the original weapon view. A chosen angle is that FOV. |
-| `display.viewmodel_visible` | `true` | `HALO_VIEWMODEL_VIS` | Show first-person weapons, hands and attached visuals. This does not change gameplay or other players' models. |
-| `display.viewmodel_shield` | `false` | `HALO_VIEWMODEL_SHIELD` | `true`: the energy shield's flare (its hits, its charging, its fall) is drawn on the first-person arms too, as on the body, with the unit's own shield shader, kept closer to the arms than to the body. The stock game draws it on the body only. |
-| `display.first_person_legs` | `false` | `HALO_FIRST_PERSON_LEGS` | `true`: your own body is drawn from the waist down in first person, so you see your legs when you look down, moving as the body's animation moves them. Refer to "Field of view". |
-| `display.shield_color` | `default` | `HALO_SHIELD_COLOR` | Your energy shield's flare as this machine draws it: `default` (the shield's own) or a multiplayer armor color (`white`, `black`, `red`, `blue`, `gray`, `yellow`, `green`, `pink`, `purple`, `cyan`, `cobalt`, `orange`, `teal`, `sage`, `brown`, `tan`, `maroon`, `salmon`), whatever the armor's, on the body and, with `display.viewmodel_shield`, on the first-person arms. The shield's own shader is drawn with its two colors replaced at their brightness; the flare is added to what is behind it, so `black` is drawn a faint grey. Only this machine sees it. |
+| `display.fov` | `0.0` | `HALO_FOV` | On-foot first-person horizontal FOV at 16:9, 20 to 150 degrees. `0` keeps the authored view. Video Setup sets it. |
+| `display.viewmodel_fov` | `0.0` | `HALO_VIEWMODEL_FOV` | Kept so an older `config.toml` still loads. The weapon and hands keep the original view. |
+| `display.viewmodel_visible` | `true` | `HALO_VIEWMODEL_VIS` | Kept so an older `config.toml` still loads. First-person weapons and hands stay drawn. |
+| `display.viewmodel_shield` | `false` | `HALO_VIEWMODEL_SHIELD` | Kept so an older `config.toml` still loads. The energy shield's flare stays on the body. |
+| `display.first_person_legs` | `false` | `HALO_FIRST_PERSON_LEGS` | Kept so an older `config.toml` still loads. First person does not draw your legs. |
+| `display.shield_color` | `default` | `HALO_SHIELD_COLOR` | Your energy shield's flare as this machine draws it: `default` (the shield's own) or a multiplayer armor color (`white`, `black`, `red`, `blue`, `gray`, `yellow`, `green`, `pink`, `purple`, `cyan`, `cobalt`, `orange`, `teal`, `sage`, `brown`, `tan`, `maroon`, `salmon`), whatever the armor's, on the body. The shield's own shader is drawn with its two colors replaced at their brightness; the flare is added to what is behind it, so `black` is drawn a faint grey. Only this machine sees it. |
 | `display.high_res_hud` | `true` | `HALO_HIGH_RES_HUD` | `true`: the HUD (meters, counters, panels and their outlines, the motion sensor, reticles, waypoints, scopes) is drawn from the high-res assets in `port/assets/hud`, 8x the size of the maps' bitmaps. The bitmaps with English text keep the maps' own. `false`: the maps' own bitmaps. |
 | `display.hud_button_style` | `"classic"` | `HALO_HUD_BUTTON_STYLE` | High-res gameplay controller buttons, when `display.high_res_hud` is on. `"classic"`: plain Xbox faces. `"gems"`: shaded Xbox faces. `"menu_gems"`: the menu's button artwork. |
 | `display.high_res_text` | `true` | `HALO_HIGH_RES_TEXT` | `true`: the menus' and HUD's text is drawn with the fonts in `port/assets/fonts` (Overpass, in place of the maps' Interstate) at the resolution the game draws at, laid out as before; the menus' titles are drawn from the high-res pictures in `port/assets/titles`, and the controller button icons from those in `port/assets/buttons`. `false`: the maps' bitmap fonts, titles and button icons. |
@@ -572,11 +572,10 @@ half a second.
 
 ## Field of view
 
-Video Setup's FOV AND VIEWMODELS screen sets the field of view of the
-first-person view (`display.fov`) and of the weapon and hands
-(`display.viewmodel_fov`), from 80 to 150 degrees in steps of 5, and can
-hide the weapon (`display.viewmodel_visible`). DEFAULT, the setting's `0`,
-keeps the stock view. `config.toml` takes any angle from 20 to 150.
+Video Setup sets the field of view of the first-person view
+(`display.fov`), from 80 to 150 degrees in steps of 5. DEFAULT, the
+setting's `0`, keeps the stock view. `config.toml` takes any angle from
+20 to 150. The weapon and hands keep that stock view.
 
 - An angle is across the screen at 16:9. Another shape keeps the same
   angle up and down, as the stock view does.
@@ -587,18 +586,8 @@ keeps the stock view. `config.toml` takes any angle from 20 to 150.
   too.
 - The reticles scale with the view, so that they stay on the aim. The
   scopes' pictures keep their place.
-- By default the weapon keeps its stock view when the world is wider:
+- The weapon keeps its stock view when the world is wider:
   arms and a gun right against the camera stretch at a wide angle.
-
-LEGS (`display.first_person_legs`) draws your own body in first person
-from the waist down, so you see your legs when you look down, walking,
-running and crouching as everyone else sees them. It is the body others
-see, posed as they see it: the upper body is folded away, and the body is
-set back behind the eye as far as keeps the open waist below the view
-(the way Halo 2 keeps its first-person body's open top out of sight), more
-the further down you look. It is drawn with the world's camera, so it keeps
-its place and size at any field of view. Hit boxes, markers and everything
-the game does with the body are unchanged.
 
 Only this machine's view changes. Nothing the machines send each other
 changes, so players with different settings play together.
@@ -1381,8 +1370,8 @@ Other changes:
 | `interface/hud.c` | In multiplayer, players' names are drawn above their heads (`display.player_names`, `display.player_name_scale`). |
 | `text/draw_string.c`, `interface/terminal.c`, `interface/virtual_keyboard.c` | Streamer mode's words are hidden in every string drawn or measured (`game/text_filter.c`), but in the console's line and the virtual keyboard's text being typed. |
 | `rasterizer/rasterizer_text.c`, `text/draw_string.c` | Text is drawn from an atlas of the fonts' glyphs, rasterized at the resolution the game draws at (`src/text_hires.c`), when the font has every character of the string. Text can be drawn scaled about a point (`rasterizer_text_set_scale`), as the players' names are. Each glyph's advance is centred on the font tag character's, so the layout is the same, and a glyph is cut at a text box only where the font tag's character visibly was. |
-| `interface/first_person_weapons.c` | The first-person hands are drawn with the unit's shield modifier shader, as its body is (`display.viewmodel_shield`). |
-| `render/render_objects.c`, `objects/objects.c` | In first person, your own body is drawn from the waist down with the pose `first_person_legs.c` makes (`display.first_person_legs`); the waist it found and the mesh `object_mesh.c` read are forgotten on a new map. |
+| `interface/first_person_weapons.c` | The first-person hands can be drawn with the unit's shield modifier shader. This build leaves that flare on the body. |
+| `render/render_objects.c`, `objects/objects.c` | In first person, your own body can be drawn from the waist down with the pose `first_person_legs.c` makes. This build leaves that body hidden. |
 | `objects/object_lights.c` | Glows the port lights itself (`shield_glow.c`): dynamic lights attached to an object's node, colored and sized each frame by their maker, drawn with a light definition the map has. |
 | `render/render_objects.c`, `interface/first_person_weapons.c`, `rasterizer/xbox/rasterizer_xbox_plasma_energy.c` | A local player's shield plasma is drawn in the chosen armor color (`display.shield_color`, `shield_color.c`), on the body and on the first-person arms. |
 | `rasterizer/xbox/rasterizer_xbox_text.c`, `rasterizer/rasterizer_text.c` | The characters of a string are one draw, not a draw each (and a second for the drop shadow). The batch is drawn early before a character is cached and before the high-res glyph atlas starts over (`src/text_hires.c`). |

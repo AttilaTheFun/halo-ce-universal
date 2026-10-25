@@ -222,24 +222,12 @@ SCREENS["video_settings/graphics"] = {
     ],
 }
 _video["rows"] = [row for row in _video["rows"] if row[1] not in _graphics | _extra_effects]
+_video["rows"].append(
+    ("FOV:", "display.fov", [("DEFAULT", "0")] + [(str(n), str(n)) for n in range(80, 151, 5)],
+     "On-foot horizontal FOV at 16:9, in degrees.\nDefault keeps the authored view and scopes.", None))
 _video["categories"] = [
     ("GRAPHICS:", "video_settings/graphics", "The HUD, the match clock, anti-aliasing,\nshadows, lighting and streamer mode."),
-    ("FOV AND VIEWMODELS:", "video_settings/fov_viewmodels",
-     "Optional field of view and first-person weapon\ndisplay settings. Defaults keep the original view."),
 ]
-SCREENS["video_settings/fov_viewmodels"] = {
-    "screen": "fov_viewmodel_settings_screen", "header": _video["header"], "spacing": 30,
-    "rows": [
-        ("FOV:", "display.fov", [("DEFAULT", "0")] + [(str(n), str(n)) for n in range(80, 151, 5)],
-         "On-foot horizontal FOV at 16:9, in degrees.\nDefault keeps the authored view and scopes.", None),
-        ("VIEWMODELS:", "display.viewmodel_visible", ON_OFF,
-         "Draw first-person weapons, hands and attached\nvisuals. Gameplay and sound continue when off.", None),
-        ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
-         "The energy shield's flare on your first-person\narms too, as on your body.", None),
-        ("LEGS:", "display.first_person_legs", ON_OFF,
-         "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
-    ],
-}
 
 # Audio Setup's sound processing (port/linux/src/dsound_sdl.c): the reverb
 # and the resampler, a screen of their own (a category, as Video Setup's);
