@@ -172,7 +172,7 @@ The experimental [iPhone port](port/ios/README.md) is a developer build. These r
 
 ## Credits
 
-The decompilation is of Xbox build 2342. CoreCE starts from [bnunu/halo-1](https://github.com/bnunu/halo-1), which is a fork of [punpckhdq/halo](https://github.com/punpckhdq/halo). High-res redraw artists are in [AUTHORS.md](AUTHORS.md). This tree reviews upstream changes one by one.
+The decompilation is of Xbox build 2342. CoreCE starts from [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) and [bnunu/halo-1](https://github.com/bnunu/halo-1), a fork of [punpckhdq/halo](https://github.com/punpckhdq/halo). High-res redraw artists are in [AUTHORS.md](AUTHORS.md). This tree reviews upstream changes one by one.
 
 ## Licence
 
