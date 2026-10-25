@@ -1296,11 +1296,15 @@ static void set_local_player_controls_from_player_profile(
 	return;
 }
 
+void port_server_name_follow_profile(wchar_t const *previous, wchar_t const *next);
+
 void player_ui_set_active_player_profile(
 	short local_player_index,
 	long profile_index,
 	struct player_profile *profile)
 {
+	wchar_t previous_name[MAXIMUM_PLAYER_PROFILE_NAME_LENGTH + 1];
+
 	match_assert(
 		"c:\\halo\\SOURCE\\interface\\player_ui.c",
 		0xE2,
@@ -1308,12 +1312,21 @@ void player_ui_set_active_player_profile(
 		(local_player_index<MAXIMUM_NUMBER_OF_LOCAL_PLAYERS) &&
 		(profile != NULL));
 
+	previous_name[0] = 0;
+	if (local_player_index == 0)
+	{
+		ustrncpy(previous_name, player_ui_globals.local_players[0].profile.player_name,
+			MAXIMUM_PLAYER_PROFILE_NAME_LENGTH);
+		previous_name[MAXIMUM_PLAYER_PROFILE_NAME_LENGTH] = 0;
+	}
 	player_ui_globals.local_players[local_player_index].active_profile_index = profile_index;
 	csmemcpy(
 		&player_ui_globals.local_players[local_player_index].profile,
 		profile,
 		sizeof(*profile));
 	set_local_player_controls_from_player_profile(local_player_index);
+	if (local_player_index == 0)
+		port_server_name_follow_profile(previous_name, profile->player_name);
 	return;
 }
 

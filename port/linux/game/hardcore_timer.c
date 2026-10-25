@@ -2,10 +2,11 @@
 HARDCORE_TIMER.C
 
 The match clock at the bottom right, from the game's own ticks, in any
-multiplayer game when Graphics' Match Timer is on. On with Voice forces a
-map's talking_timer on when that global exists. Off leaves the global as
-the map authored it. power_call is never forced. Team scores draw only when
-that match option is on.
+multiplayer game when Graphics' Match Timer is on. On with Voice plays
+this machine's countdown. A map that has talking_timer keeps that
+announcer instead, and Off leaves the global as the map authored it.
+power_call is never forced. Team scores draw only when that match option
+is on.
 */
 
 #include "cseries.h"
@@ -98,12 +99,14 @@ int hardcore_timer_mode(
 	return 1;
 }
 
+/* the map whose talking_timer was looked up, and that global when it is
+   a boolean announcer switch. NONE means this map has no such switch. */
+static long hardcore_timer_resolved_for = -1;
+static short hardcore_timer_talking = NONE;
+
 void hardcore_timer_after_scripts(
 	void)
 {
-	static long resolved_for = -1;
-	static short talking_timer = NONE;
-
 	/* off and on leave the map's global alone. voice forces it on */
 	if (hardcore_timer_mode()!=2 || !hs_global_data)
 		return;
@@ -111,15 +114,27 @@ void hardcore_timer_after_scripts(
 	/* resolved once a map, and again when the next one loads. the startup
 	   script sets it false on the first tick, so this runs after the
 	   scripts and every tick after that */
-	if (resolved_for!=global_scenario_index)
+	if (hardcore_timer_resolved_for!=global_scenario_index)
 	{
-		resolved_for = global_scenario_index;
-		talking_timer = hs_find_global_by_name("talking_timer");
+		short talking;
+
+		hardcore_timer_resolved_for = global_scenario_index;
+		talking = hs_find_global_by_name("talking_timer");
+		hardcore_timer_talking = talking>=0 &&
+			hs_global_get_type(talking)==_hs_type_boolean ? talking : NONE;
 	}
 
-	hardcore_timer_force(talking_timer, 1);
+	hardcore_timer_force(hardcore_timer_talking, 1);
 
 	return;
+}
+
+int hardcore_timer_map_announces(
+	void)
+{
+	return hardcore_timer_mode()==2 &&
+		hardcore_timer_resolved_for==global_scenario_index &&
+		hardcore_timer_talking!=NONE;
 }
 
 short hardcore_timer_top(

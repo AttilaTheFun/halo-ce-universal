@@ -162,12 +162,6 @@ SCREENS = {
              "Join the game of an invite link copied before\nswitching to the game.", None),
             ("CHECK FOR UPDATES:", "update.auto", ON_OFF,
              "Look for a new version when the game starts.", None),
-            ("PLAYER NAMES:", "display.player_names",
-             [("ALL", "all"), ("ALLIES", "allies"), ("ENEMIES", "enemies"), ("NONE", "none")],
-             "In multiplayer, whose names are drawn above their\nheads.", None),
-            ("PLAYER NAME SIZE:", "display.player_name_scale",
-             [(f"{value:g}x", f"{value:g}") for value in (0.5, 0.75, 1, 1.25, 1.5, 2)],
-             "How large the players' names are drawn.", None),
             ("SCOREBOARD LAYOUT:", "display.scoreboard_team_layout", [("TEAMS", "teams"), ("BY SCORE", "score")],
              "A team game's scoreboard: a column for each team,\nor every player in order of score.", None),
             ("SCOREBOARD PANEL:", "display.scoreboard_background", ON_OFF,
@@ -257,8 +251,7 @@ SEED_UPLOADS = (64, 128, 256, 512, 1024, 2048, 4096, 8192, 10240)
 _network = SCREENS["network_setup"]
 # (and the multiplayer HUD's rows, and streamer mode, screens of their own:
 # Network Setup has room for nine places)
-_hud_settings = ("display.player_names", "display.player_name_scale", "display.scoreboard_team_layout",
-                 "display.scoreboard_background")
+_hud_settings = ("display.scoreboard_team_layout", "display.scoreboard_background")
 _hud_rows = [row for row in _network["rows"] if row[1] in _hud_settings]
 _network["rows"] = [row for row in _network["rows"] if row[1] not in _hud_settings]
 # map download is the lobby's button. streamer mode is Graphics. names and
@@ -861,12 +854,15 @@ PORT_CARD_FRAMES = {
         ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 3, 0, 0, 0, 0),
     "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__1":
         (XBOX_CONTROLLER_PICTURES, 0, 279, 279, 0, 34),
+    # the mouse picture is 512 by 256 and its art runs a little past the 279
+    # box, so the whole picture is drawn into that box
     "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__3":
-        ("ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_options", 2, 0, 0, 0, 0),
+        ("ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_options", 2, 500, 250, 0, 0),
     "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__5":
         ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 0, 0, 0, 0, 0),
+    # the network picture likewise: its right-hand screen sits past 279
     "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__6":
-        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, 0, 0, 0, 0),
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, 483, 241, 0, 0),
     "shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__8":
         ("ui\\shell\\main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_options", 4, 0, 0, 0, 0),
 }
@@ -1373,14 +1369,15 @@ SETUP_OPTION_SCREENS = [
 ]
 
 
-def _lobby_local_row(base: str, key: str, label: str, setting: str, strings: str, values: str) -> list:
+def _lobby_local_row(base: str, key: str, label: str, setting: str, strings: str, values: str, row_events=None) -> list:
     """one row of this machine's config, laid out as a settings row."""
     wide = _choice_wide(strings)
     spin_x = 286 if wide else 320
     lines = _widget(f"{base}/{key}", [("width", 512), ("height", 28),
                                       ("flags", "pass_unhandled_to_focused_child"),
                                       ("bitmap", "bitmaps/option_bkds_short"), ("color", "#FF2896FF")],
-                    [f'<child widget="{base}/{key}_label"/>',
+                    [*(row_events or []),
+                     f'<child widget="{base}/{key}_label"/>',
                      f'<child widget="{base}/{key}_spinner" x="{spin_x}" y="1"/>'])
     lines += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1),
                                              ("width", spin_x + (-13 if wide else -6) - 8), ("height", 22),
@@ -1487,7 +1484,8 @@ def _lobby() -> list:
                       f'<child widget="{base}/lobby_download" x="54" y="103"/>',
                       f'<child widget="{base}/lobby_settings_buttons" y="414"/>'])
     lines += _lobby_local_row(base, "lobby_chat", "TEXT CHAT", "network.text_chat",
-                              "ON|OFF", "on|off")
+                              "ON|OFF", "on|off",
+                              ['<on event="left right" run="port lobby chat"/>'])
     lines += _widget(f"{base}/lobby_download", [("width", 512), ("height", 28),
                                                 ("flags", "pass_unhandled_to_focused_child"),
                                                 ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],

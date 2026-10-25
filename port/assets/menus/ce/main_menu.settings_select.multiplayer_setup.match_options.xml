@@ -15,6 +15,7 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/match_options/op_team_scores" x="54" y="163"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/match_options/op_pistol" x="54" y="193"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/match_options/op_shotgun" x="54" y="223"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/match_options/op_fov" x="54" y="253"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/match_options/match_buttons" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/match_options/op_move_sounds" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
@@ -69,6 +70,15 @@
 	<widget name="main_menu/settings_select/multiplayer_setup/match_options/shotgun_label" type="text" controller="1" width="300" height="22" text="SHOTGUN SPREAD" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="match_shotgun_spread" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="DEFAULT|TIGHT|WIDE|DOUBLE" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/match_options/op_fov" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/match_options/fov_label"/>
+		<child widget="match_fov" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/match_options/fov_label" type="text" controller="1" width="300" height="22" text="FIELD OF VIEW" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="match_fov" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="DEFAULT|80|85|90|95|100|105|110|115|120|125|130|135|140|145|150" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="left_mouse" run="mouse spinner 1wide click"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/match_options/match_buttons" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">

@@ -73,6 +73,7 @@ their handlers open opens.
 #include "interface/ui_widget_event_handler_functions.h"
 #include "main/main.h"
 #include "cache/cache_files.h"
+#include "game/game.h"
 #include "game/game_engine.h"
 #include "hardcore_rules.h"
 #include "map_share.h"
@@ -3469,6 +3470,27 @@ static void game_name_done(char const *text)
 	multiplayer.game_name[index] = 0;
 }
 
+/* A profile change or a renamed profile. The server name follows that
+profile while it still is the profile's name. A name typed on Server
+Setup stays. */
+void port_server_name_follow_profile(wchar_t const *previous, wchar_t const *next)
+{
+	void *server;
+	struct network_game *hosted;
+
+	if (!next || !next[0])
+		return;
+	if (multiplayer.game_name[0] &&
+		(!previous || !previous[0] || ustrcmp(multiplayer.game_name, previous)))
+		return;
+	ustrncpy(multiplayer.game_name, next, NUMBEROF(multiplayer.game_name) - 1);
+	multiplayer.game_name[NUMBEROF(multiplayer.game_name) - 1] = 0;
+	server = global_network_game_server_get();
+	hosted = server ? network_game_server_get_game(server) : NULL;
+	if (hosted)
+		network_game_server_port_set_settings(multiplayer.game_name, hosted->maximum_players);
+}
+
 /* Whether a network game is co-op: a campaign level or a Custom Edition
 campaign map, with no game engine (set up by
 ui_widget_port_cooperative_level_choose). A Custom Edition map this machine
@@ -5188,6 +5210,43 @@ static void lobby_settings_apply(struct widget_instance *list)
 		settings->animation.current_frame_index = list->focused_child == settings ? 1 : 0;
 }
 
+/* the machine hosting this lobby. the server pointer is set with the
+connection, and either one is enough: a client has neither. */
+static boolean lobby_chat_host(void)
+{
+	return global_network_game_server_get() != NULL ||
+		game_connection() == _game_connection_network_server;
+}
+
+/* a public internet game with the public lobby option on. a private game
+and a LAN game are not listed, so the host can set text chat for those. */
+static boolean lobby_chat_listed(void)
+{
+	if (!lobby_chat_host() || multiplayer.mode != _multiplayer_mode_host_internet ||
+		multiplayer.game_private)
+		return FALSE;
+	return config_boolean("network.public_lobby") != 0;
+}
+
+/* "port lobby chat": left or right on the text chat row. a listed public
+game stays off. a private host and a LAN host switch on and off. */
+static boolean lobby_chat_toggle(struct widget_instance *widget)
+{
+	struct widget_instance *spinner = named(widget, "lobby_chat_spinner", 0);
+
+	if (!spinner || !lobby_chat_host() || lobby_chat_listed())
+		return TRUE;
+	spinner->disabled = FALSE;
+	if (spinner->parent && spinner->parent->focused_child != spinner)
+		spinner->parent->focused_child = spinner;
+	if (spinner->parameters.list.number_of_items < 2)
+		return TRUE;
+	spinner->parameters.list.selected_index =
+		spinner->parameters.list.selected_index == 0 ? 1 : 0;
+	setting_save(spinner);
+	return TRUE;
+}
+
 /* "port lobby settings": the host's text chat, written as it changes, and
 Download Maps' words. a client sees the host's chat and cannot change it.
 a listed public game stays off. */
@@ -5196,10 +5255,17 @@ static void lobby_settings_save(struct widget_instance *list)
 	struct widget_instance *spinner = named(list, "lobby_chat_spinner", 0);
 	struct widget_instance *download = named(list, "lobby_download_label", 0);
 	struct widget_instance *help = named(list->parent, "lobby_settings_help", 0);
-	boolean host = global_network_game_server_get() != NULL;
+	boolean host = lobby_chat_host();
 	boolean sharing = config_boolean("network.map_share") != 0;
-	boolean locked = !host || p2p_hosting_listed();
+	boolean listed = lobby_chat_listed();
+	boolean locked = !host || listed;
 	static boolean chat_was_locked = TRUE;
+
+	/* a private game or a LAN game is not a public listing. the flag is what
+	chat reads, so a stale public flag would keep chat off after the host
+	set the game private. going public to private replaces the invite. */
+	if (host && (p2p_hosting_listed() != 0) != (listed != 0))
+		p2p_set_hosting_public(listed != 0);
 
 	if (spinner)
 	{
@@ -5214,10 +5280,17 @@ static void lobby_settings_save(struct widget_instance *list)
 		else
 		{
 			spinner->disabled = FALSE;
+			if (spinner->parent && spinner->parent->focused_child != spinner)
+				spinner->parent->focused_child = spinner;
+			/* the strings are not ready on the first pass. saving then would
+			write on over a stored off. */
 			if (chat_was_locked)
-				setting_load(spinner);
-			chat_was_locked = FALSE;
-			setting_save(spinner);
+			{
+				if (setting_load(spinner) && spinner->parameters.list.number_of_items > 1)
+					chat_was_locked = FALSE;
+			}
+			if (!chat_was_locked)
+				setting_save(spinner);
 		}
 	}
 	label_set(download, host ? (sharing ? L"SHARING MAPS" : L"NOT SHARING") : L"DOWNLOAD MAP");
@@ -5231,7 +5304,9 @@ static void lobby_settings_save(struct widget_instance *list)
 		else
 		{
 			lobby_download_note = NULL;
-			if (host && !p2p_hosting_listed())
+			if (host && listed)
+				text = L"Text chat is off while this game is public.";
+			else if (host)
 				text = L"Text chat for this game. Off in a public game.";
 		}
 		label_set(help, text);
@@ -5692,6 +5767,8 @@ static struct gametype_option const gametype_options[] =
 	{ "match_team_scores", _option_hardcore, RULES_FIELD(team_scores), 0, 2, { 0, 1 } },
 	{ "match_pistol_spread", _option_hardcore, RULES_FIELD(pistol_spread), 0, 4, { 0, 1, 2, 3 } },
 	{ "match_shotgun_spread", _option_hardcore, RULES_FIELD(shotgun_spread), 0, 4, { 0, 1, 2, 3 } },
+	{ "match_fov", _option_hardcore, RULES_FIELD(forced_fov), 0, 16,
+		{ 0, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150 } },
 };
 
 /* TEXT CHAT's (network.text_chat) OFF, which it shows while the game is
@@ -6404,7 +6481,15 @@ static boolean gametype_engine_set(struct widget_instance *item)
 		if (!strcmp(item->name, engine_items[index]))
 		{
 			if (variant->game_engine_index != engine_of_item[index])
+			{
 				csmemset(&variant->game_engine_variant, 0, sizeof(variant->game_engine_variant));
+				/* A new slayer starts with the death bonus and the kill penalty off. */
+				if (engine_of_item[index] == game_engine_slayer)
+				{
+					variant->game_engine_variant.slayer.no_death_bonus = TRUE;
+					variant->game_engine_variant.slayer.no_kill_penalty = TRUE;
+				}
+			}
 			variant->game_engine_index = engine_of_item[index];
 			return TRUE;
 		}
@@ -7513,6 +7598,10 @@ boolean pc_menu_event_function_invoke(
 		else if (!strcmp(name, "port lobby download"))
 		{
 			return lobby_download();
+		}
+		else if (!strcmp(name, "port lobby chat"))
+		{
+			return lobby_chat_toggle(widget);
 		}
 		else if (!strcmp(name, "port profile edit"))
 		{

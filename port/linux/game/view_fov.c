@@ -2,12 +2,13 @@
 VIEW_FOV.C
 
 The first-person view's field of view (display.fov) and whether the weapon
-is drawn (display.viewmodel_visible). The weapon keeps the default view. The local
-render view only: the observer, its transitions and what the network sends
-keep the game's own camera. Each angle is horizontal at 16:9 (the vertical
-angle is kept, so other shapes of window widen or narrow as the stock view
-does), and 0 keeps the stock view. Called from the game's camera
-(main.c's set_window_camera_values), its HUD (hud_draw.c) and the passes
+is drawn (display.viewmodel_visible). The weapon keeps the default view. A
+match can force one horizontal angle for every player; that does not write
+display.fov. The local render view only: the observer, its transitions and
+what the network sends keep the game's own camera. Each angle is horizontal
+at 16:9 (the vertical angle is kept, so other shapes of window widen or
+narrow as the stock view does), and 0 keeps the stock view. Called from the
+game's camera (main.c's set_window_camera_values), its HUD (hud_draw.c) and the passes
 that draw the first-person weapon (rasterizer and render sources).
 */
 
@@ -26,6 +27,7 @@ that draw the first-person weapon (rasterizer and render sources).
 #include "units/unit_definitions.h"
 #include "units/units.h"
 #include "hardcore_views.h"
+#include "hardcore_rules.h"
 
 #include <math.h>
 
@@ -43,6 +45,21 @@ unsigned long config_changes(void);
 static real reticle_scales[MAXIMUM_LOCAL_PLAYERS];
 static real authored_vertical[MAXIMUM_LOCAL_PLAYERS];
 
+/* 0 keeps each player's video setting. A host value is 80 to 150, step 5. */
+static double host_fov_degrees(void)
+{
+	const struct hardcore_rules *rules;
+	unsigned char fov;
+
+	if (!hardcore_rules_active())
+		return 0.0;
+	rules = hardcore_rules_live();
+	fov = rules ? rules->forced_fov : 0;
+	if (fov < 80 || fov > 150 || ((fov - 80) % 5) != 0)
+		return 0.0;
+	return (double)fov;
+}
+
 /* the view's vertical angle for display.fov: the game's own in a vehicle,
 dead, in a cinematic, a scripted camera or a view the director holds, and
 at a scope's full zoom; between, the zoom's own transition */
@@ -50,18 +67,21 @@ static real render_fov_adjust(short local_player_index, real native_vertical_fie
 {
 	static boolean initialized;
 	static unsigned long read_at;
+	static double host_seen;
 	static real requested_tangent;
 	unsigned long changes = config_changes();
+	double host = host_fov_degrees();
 	long unit_index, weapon_index;
 	struct unit_datum *unit;
 	real unzoomed_angle, unzoomed_tangent, native_tangent, adjusted_tangent;
 
-	if (!initialized || read_at != changes)
+	if (!initialized || read_at != changes || host_seen != host)
 	{
-		double degrees = config_real("display.fov");
+		double degrees = host != 0.0 ? host : config_real("display.fov");
 
 		initialized = TRUE;
 		read_at = changes;
+		host_seen = host;
 		requested_tangent = degrees >= 20.0 && degrees <= 150.0 ?
 			(real)(tan(degrees * _pi / 360.0) * (9.0 / 16.0)) : 0.0f;
 	}

@@ -304,10 +304,10 @@
 		<frame map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options" index="0"/>
 		<frame map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\controller_edit\config_controller" index="0" width="279" height="279" y="34"/>
 		<frame map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options" index="1"/>
-		<frame map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options" index="2"/>
+		<frame map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options" index="2" width="500" height="250"/>
 		<frame png="ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__4.png" width="512" height="256"/>
 		<frame map="ui\shell\main_menu\multiplayer_type_select\mp_options" index="0"/>
-		<frame map="ui\shell\main_menu\multiplayer_type_select\mp_options" index="2"/>
+		<frame map="ui\shell\main_menu\multiplayer_type_select\mp_options" index="2" width="483" height="241"/>
 		<frame map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options" index="3"/>
 		<frame map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options" index="4"/>
 		<frame map="ui\shell\main_menu\halo_logo" index="0" width="279" height="70" y="132"/>

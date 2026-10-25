@@ -39,7 +39,7 @@ struct hardcore_rules
 	unsigned char trig_delay;
 	unsigned char pistol_spread;    /* 0 the tag, 1 tight, 2 wide, 3 double */
 	unsigned char shotgun_spread;
-	unsigned char reserved_b;       /* unused, so the byte after it stays put */
+	unsigned char forced_fov;       /* 0 each player keeps display.fov; else 80 to 150, step 5 */
 	unsigned char random_areas;     /* training mode, with spawns_visible */
 };
 

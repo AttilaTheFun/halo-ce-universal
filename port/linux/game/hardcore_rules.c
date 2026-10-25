@@ -158,7 +158,7 @@ void hardcore_rules_store(long profile_index)
 	if (!file_reference_create_from_path(&file, path, FALSE) || !file_create(&file) ||
 		!file_open(&file, FLAG(_permission_write_bit)) || !file_set_position(&file, 0))
 		return;
-	/* The file keeps the six rules. A removed row must not come back on load. */
+	/* The file keeps the six rules and the host field of view. A removed row must not come back on load. */
 	hardcore_rules_kept_only(&hardcore_edit);
 	file_write(&file, sizeof(hardcore_edit), &hardcore_edit);
 	file_close(&file);
@@ -224,7 +224,8 @@ static void hardcore_training_pair(struct hardcore_rules *rules)
 /* The rows that left the menu. Their bytes stay in the message so its
    layout does not move, and they are the retail sheet: a zero used to
    mean manual pickup and ordered hills, which a match option must not
-   turn on. The six kept rules are the only ones a host enforces. */
+   turn on. The six kept rules and the host field of view are the only
+   ones a host enforces. */
 static void hardcore_rules_kept_only(struct hardcore_rules *rules)
 {
 	struct hardcore_rules stock;
@@ -234,6 +235,7 @@ static void hardcore_rules_kept_only(struct hardcore_rules *rules)
 	unsigned char scores;
 	unsigned char pistol;
 	unsigned char shotgun;
+	unsigned char fov;
 
 	if (!rules)
 		return;
@@ -243,6 +245,9 @@ static void hardcore_rules_kept_only(struct hardcore_rules *rules)
 	scores = rules->team_scores ? 1 : 0;
 	pistol = rules->pistol_spread > 3 ? 0 : rules->pistol_spread;
 	shotgun = rules->shotgun_spread > 3 ? 0 : rules->shotgun_spread;
+	fov = rules->forced_fov;
+	if (fov != 0 && (fov < 80 || fov > 150 || ((fov - 80) % 5) != 0))
+		fov = 0;
 	hardcore_rules_stock(&stock);
 	*rules = stock;
 	rules->movement_sounds = movement;
@@ -252,6 +257,7 @@ static void hardcore_rules_kept_only(struct hardcore_rules *rules)
 	rules->team_scores = scores;
 	rules->pistol_spread = pistol;
 	rules->shotgun_spread = shotgun;
+	rules->forced_fov = fov;
 	hardcore_training_pair(rules);
 }
 

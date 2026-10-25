@@ -369,7 +369,7 @@ static char const *const port_function_names[] =
 	"port pause end game", "port coop friendly fire",
 	"port coop begin", "port coop player 2 list initialize", "port coop player 2",
 	"port lobby open", "port lobby add player", "port lobby join", "port lobby leave",
-	"port lobby download", "port profile edit",
+	"port lobby download", "port lobby chat", "port profile edit",
 	"port lobby player list initialize", "port lobby player choose",
 	"port lobby preview add", "port lobby preview leave",
 	/* (the gametype editor's: the Xbox's walk their rows by place, which the

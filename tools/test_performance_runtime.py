@@ -167,6 +167,8 @@ static float cosine(float angle) { return cosf(angle); }
 static float sine(float angle) { return sinf(angle); }
 boolean hardcore_rules_active(void) { return FALSE; }
 void hardcore_rules_tick(void) {}
+int hardcore_timer_mode(void) { return 0; }
+int hardcore_timer_map_announces(void) { return 0; }
 void hardcore_rules_render(void) {}
 boolean performance_spawn_marker_ready(void) { return FALSE; }
 void performance_spawn_marker_render(const struct player_starting_location *starts, short count) {
@@ -260,12 +262,13 @@ int main(void) {
     local_ticks = 1859; assert(performance_options_timer_ticks() == 1859);
     client = 1; host_ticks = 1800; local_ticks = 99000;
     assert(performance_options_timer_ticks() == 1800);
+    /* The gametype flag does not draw a clock. Graphics' match timer does. */
     performance_options_apply_host_flags(1); performance_options_render();
-    assert(draw_count == 1 && !strcmp(drawn_text, "01:00"));
-    host_ticks = NONE; performance_options_render(); assert(draw_count == 1);
-    host_ticks = 3600; cinematic = 1; performance_options_render(); assert(draw_count == 1);
-    cinematic = 0; postgame = 1; performance_options_render(); assert(draw_count == 1);
-    postgame = 0; performance_options_apply_host_flags(0); performance_options_render(); assert(draw_count == 1);
+    assert(draw_count == 0);
+    host_ticks = NONE; performance_options_render(); assert(draw_count == 0);
+    host_ticks = 3600; cinematic = 1; performance_options_render(); assert(draw_count == 0);
+    cinematic = 0; postgame = 1; performance_options_render(); assert(draw_count == 0);
+    postgame = 0; performance_options_apply_host_flags(0); performance_options_render(); assert(draw_count == 0);
     initialized = 0; assert(performance_options_timer_ticks() == NONE);
     initialized = 1;
     test_spawn_fallback();
@@ -405,7 +408,7 @@ static void test_timer_audio_lifecycle(void) {
     /* Changing only HUD visibility does not reset the audio clock. */
     performance_options_apply_host_flags(5); host_ticks=1215; performance_options_update();
     assert(audio_plays==3 && !strcmp(audio_cue,"20_seconds"));
-    performance_options_render(); assert(draw_count==before_draw+1);
+    performance_options_render(); assert(draw_count==before_draw);
     performance_options_apply_host_flags(4); host_ticks=1499; performance_options_update();
     assert(audio_plays==3);
     host_ticks=1500; performance_options_update(); assert(audio_plays==4 && !strcmp(audio_cue,"10"));

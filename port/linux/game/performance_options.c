@@ -26,7 +26,6 @@
 #include "performance_audio.h"
 #include "performance_timer_schedule.h"
 #include "performance_timer_items.h"
-#include "performance_timer_render.h"
 #include "port_config.h"
 
 /* The glowing pads are loaded from the user's hardcore map. These stay
@@ -229,7 +228,7 @@ static void performance_timer_audio_play(char const *cue, boolean item, long tic
 	performance_audio_busy_until = ticks + halo_performance_audio_duration_ticks(cue);
 }
 
-static void performance_timer_audio_update(long ticks)
+static void performance_timer_audio_update(long ticks, boolean voice)
 {
 	static char const *const item_cues[3] = {"rocket", "camo", "overshield"};
 	unsigned preferences = (config_boolean("audio.timer_countdown") ? 1 : 0) |
@@ -239,6 +238,16 @@ static void performance_timer_audio_update(long ticks)
 	char const *cue;
 	short index;
 	unsigned due;
+
+	/* Match Timer voice plays the countdown on this machine. Item names
+	   stay with the host's timer sounds. */
+	if (voice)
+	{
+		preferences |= _performance_timer_countdown | _performance_timer_beeps |
+			_performance_timer_minutes;
+		if (!(performance_flags & _performance_option_timer_audio))
+			preferences &= ~8u;
+	}
 	if (preferences != performance_timer_statistics.preferences || ticks < performance_audio_previous_tick ||
 		(ticks > performance_audio_previous_tick && ticks - performance_audio_previous_tick > TICKS_PER_SECOND))
 	{
@@ -289,18 +298,23 @@ void performance_options_update(void)
 		return;
 	/* port: hardcore ammo rules, each tick, and only while that mode is on. */
 	hardcore_rules_tick();
-	/* port: timer sounds are the host's PB rule. a match option does not
-	   turn them on. the cue toggles still choose which lines play, and
-	   they stay quiet when the host's rule is off. a missing pack is silent. */
-	if ((performance_flags & _performance_option_timer_audio) &&
-		!cinematic_in_progress() && !game_engine_showing_postgame())
+	/* port: the host's timer sounds, and this machine's Match Timer voice.
+	   voice plays the countdown shipped with the game. a map that has
+	   talking_timer keeps its own announcer. a missing recording is silent. */
 	{
-		performance_timer_audio_update(performance_options_timer_ticks());
-	}
-	else
-	{
-		if (performance_audio_previous_tick != NONE) halo_performance_audio_stop();
-		performance_timer_audio_reset();
+		boolean host_audio = (performance_flags & _performance_option_timer_audio) != 0;
+		boolean voice = hardcore_timer_mode() == 2 && !hardcore_timer_map_announces();
+
+		if ((host_audio || voice) &&
+			!cinematic_in_progress() && !game_engine_showing_postgame())
+		{
+			performance_timer_audio_update(performance_options_timer_ticks(), voice);
+		}
+		else
+		{
+			if (performance_audio_previous_tick != NONE) halo_performance_audio_stop();
+			performance_timer_audio_reset();
+		}
 	}
 	enabled = (performance_flags & _performance_option_spawn_markers) != 0;
 	for (index = 0; index < performance_marker_count; index++)
@@ -424,9 +438,8 @@ void performance_options_render(void)
 	performance_options_render_spawn_points();
 	/* port: hardcore markers and the random-spawn estimate. */
 	hardcore_rules_render();
-	/* the client clock replaces this graphic while it is on */
-	if ((performance_flags & _performance_option_match_timer) && !hardcore_timer_mode())
-		performance_timer_render(performance_options_timer_ticks());
+	/* the match clock is this machine's Graphics setting. a gametype does
+	   not draw one of its own. */
 }
 
 void performance_options_render_world(void)

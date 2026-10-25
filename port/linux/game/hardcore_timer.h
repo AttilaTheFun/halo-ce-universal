@@ -1,8 +1,9 @@
 #ifndef HARDCORE_TIMER_H
 #define HARDCORE_TIMER_H
 
-/* The match clock, and a map announcer's talking_timer. Graphics' Match
-   Timer chooses off, on, or on with voice. */
+/* The match clock. Graphics' Match Timer chooses off, on, or on with
+   voice. Voice plays this machine's countdown. A map that has its own
+   talking_timer announcer keeps that, and power_call is never forced. */
 
 /* 0 off, 1 on, 2 on with voice. */
 int hardcore_timer_mode(void);
@@ -11,6 +12,10 @@ int hardcore_timer_mode(void);
    talking_timer on when that global exists. Off and On leave it as the
    map authored it, and this does not force power_call. */
 void hardcore_timer_after_scripts(void);
+
+/* The loaded map has a talking_timer announcer, and Voice turned it on.
+   Otherwise Voice plays the countdown shipped with the game. */
+int hardcore_timer_map_announces(void);
 
 /* The match clock, bottom right, as one time. Drawn in multiplayer when
    the client clock is on. Nothing is drawn over a menu. */

@@ -166,19 +166,17 @@ static const struct config_setting config_settings[] =
 		"whose loc.map is in custom_maps (as that edition shows them; English\n"
 		"without one), \"english\" for English. The port's own lines are English." },
 	{ "display.player_names", _config_string, "\"all\"", "HALO_PLAYER_NAMES", _environment_value, _platform_all,
-		"In multiplayer, whose names are drawn above their heads: \"all\",\n"
-		"\"allies\", \"enemies\" or \"none\". An enemy's shows only within the\n"
-		"motion sensor's reach, in sight and not camouflaged; none show if the\n"
-		"gametype's motion tracker shows no players, only allies' if it shows\n"
-		"only friends." },
+		"Kept so an older config file still loads. Names are not drawn above\n"
+		"players. Teammates use the game's marker." },
 	{ "display.player_name_scale", _config_real, "1.0", "HALO_PLAYER_NAME_SCALE", _environment_value, _platform_all,
-		"How large the players' names are drawn: 1.0 three quarters of the size of\n"
-		"the HUD's text, 0.25 to 4." },
+		"Kept so an older config file still loads. Names are not drawn above\n"
+		"players." },
 	{ "display.match_timer", _config_string, "\"off\"", "HALO_MATCH_TIMER", _environment_value, _platform_all,
 		"The match clock at the bottom right in multiplayer: \"off\", \"on\", or\n"
-		"\"voice\". On counts up from the game's first tick. Voice also lets this\n"
-		"machine hear a map's talking_timer. A file that still has true or false\n"
-		"is read as on or off, and true with the old timer voice becomes voice." },
+		"\"voice\". On counts up from the game's first tick. Voice plays this\n"
+		"machine's countdown. A map with talking_timer keeps its own announcer.\n"
+		"A file that still has true or false is read as on or off, and true with\n"
+		"the old timer voice becomes voice." },
 	{ "display.teammate_views", _config_boolean, "false", "HALO_TEAMMATE_VIEWS", _environment_value, _platform_all,
 		"In a team game, split this screen so one local player can see teammates\n"
 		"from their own eyes, up to four panes, for the whole match. A dead\n"
@@ -245,7 +243,7 @@ static const struct config_setting config_settings[] =
 		"host enables PB Timer Sounds. Off preserves the existing timer audio." },
 	{ "audio.hardcore_timer_voice", _config_boolean, "true", NULL, _environment_value, _platform_all,
 		"Kept so an old file can move onto display.match_timer. The match clock's\n"
-		"Voice choice is what lets this machine hear talking_timer now." },
+		"Voice choice plays this machine's countdown." },
 	{ "audio.menu_music", _config_boolean, "true", NULL, _environment_value, _platform_all,
 		"Play the main menu title music. False keeps menu effects and gameplay\n"
 		"audio enabled. In-game audio settings apply immediately when accepted." },
