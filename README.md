@@ -3,26 +3,24 @@
 <p align="center">
   <a href="https://discord.gg/4q7tpz7Gs"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
 </p>
-
 <p align="center">
   <img src="port/assets/icon/corece-icon.png" alt="CoreCE" width="384">
+</p>
+<p align="center">
+  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/build-42/CoreCE-macos-arm64.dmg"><img src="https://img.shields.io/badge/Mac-download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download CoreCE for Mac"></a>
+  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/build-10/halo-windows-release.zip"><img src="https://img.shields.io/badge/Windows-download-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download CoreCE for Windows"></a>
+  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/linux-net34-8/halo-linux-release.zip"><img src="https://img.shields.io/badge/Linux-download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download CoreCE for Linux"></a>
+</p>
+
+<p align="center">
+  <img src="docs/images/main-menu.png" alt="Original Halo main menu running on Apple Silicon" width="512">
 </p>
 
 **CoreCE** is an open source port of the Halo: Combat Evolved decompilation, from Xbox development build 2342 and [bnunu/halo-1](https://github.com/bnunu/halo-1). Windows, Linux, and Apple Silicon each run the game's own code, with a new layer in place of the Xbox hardware. Windows and Linux draw with OpenGL. The Mac build draws with Metal. Sound, input, and gamepads go through SDL3.
 
 You can play with up to 128 players, run campaign co-op online, load Custom Edition maps, change the field of view, browse servers, host peer-to-peer, download missing maps, and use voice chat. With Smooth Motion on, the game draws a frame for every refresh of the display. The simulation stays at 30 ticks a second, as on the Xbox.
 
-<p align="center">
-  <img src="docs/images/main-menu.png" alt="Original Halo main menu running on Apple Silicon" width="512">
-</p>
-
 ## Download
-
-<p align="center">
-  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/build-42/CoreCE-macos-arm64.dmg"><img src="https://img.shields.io/badge/Mac-download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download CoreCE for Mac"></a>
-  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/build-10/halo-windows-release.zip"><img src="https://img.shields.io/badge/Windows-download-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download CoreCE for Windows"></a>
-  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/linux-net34-8/halo-linux-release.zip"><img src="https://img.shields.io/badge/Linux-download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download CoreCE for Linux"></a>
-</p>
 
 The Mac button downloads build 42 (`CoreCE-macos-arm64.dmg`). The Windows button downloads build 10 (`halo-windows-release.zip`). The Linux button downloads `halo-linux-release.zip` from `linux-net34-8`. Each system is published on its own. Older builds are on the [releases page](https://github.com/mastercheese-dev/CoreCE/releases).
 
