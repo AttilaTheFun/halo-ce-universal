@@ -61,7 +61,7 @@ Arch Linux can install the [AUR package](https://aur.archlinux.org/packages/Core
 
 On a Steam Deck, do the setup in Desktop Mode. Unzip the release, then in Steam open the Games menu, choose Add a Game, and add `halo` as a non-Steam game. It then starts from Game Mode as well. If the Deck sleeps while it is hosting, the other players lose the host after 15 seconds.
 
-Settings live in `config.toml` next to `halo`. Saves go in `~/.local/share/halo-og`. The first launch copies an older `halo-linux` save folder into that location and leaves the old folder in place.
+Settings live in `config.toml` next to `halo`. Saves go in `~/.local/share/halo-og`. The first launch copies an older `~/.local/share/halo-linux` folder into that location and leaves the old folder in place.
 
 ### Updates
 
@@ -74,8 +74,8 @@ On Linux and Windows, download a newer zip from the same page and replace the pr
 Bring your own copy of the game. The download has no game data.
 
 1. Start the game (`CoreCE.app` on Mac, `halo.exe` on Windows, `halo` on Linux).
-2. The first time, choose your copy in the file picker. On Linux and Windows, a copy already sitting next to the executable is used and the picker stays closed.
-3. On Linux, if no file picker can be shown (no desktop portal and no `zenity`), the game tells you to put your copy next to the executable, then stops. Put it there and start again.
+2. The first time, choose your copy in the file picker. On Linux and Windows, a `maps` folder already sitting next to the program is used and the picker stays closed.
+3. On Linux and Windows, No on that question stops the game. Put a `maps` folder next to the program, or set `paths.data` in `config.toml`, and start again.
 4. On Mac, a folder of the game offers **Copy and Manage**, **Use This Folder**, or **Cancel**. Managed copies go under `~/Library/Application Support/CoreCE/Game Data/`. Saves, profiles, and `config.toml` stay in that Application Support directory.
 5. The game sets up `maps` from your copy, then starts.
 
@@ -109,9 +109,9 @@ The server browser and the LAN browser can download a missing custom map from th
 
 Mac Settings can download 40 approved community maps in the background after you opt in. The collection is about 863 MiB, built for Xbox v5 NTSC data. Verified downloads stay usable offline. Windows and Linux currently install matching maps by hand. See [community-map setup](docs/playtesting.md#community-maps).
 
-**PB Options** offers a match timer, spawn markers, timer announcements, and optional silent movement and weapon-ready sounds. Those modifications default off. The host chooses them. Use **Stock** for original-rule play. Timer announcements need a separate audio pack, which these builds do not include. See [PB Options](docs/performance-options.md).
+**PB Options** offers spawn markers, timer announcements, and optional silent movement and weapon-ready sounds. Those modifications default off. The host chooses them. Use **Stock** for original-rule play. The match clock is each machine's Graphics setting: Off, On, or On with Voice. On with Voice plays the countdown shipped with the game. See [PB Options](docs/performance-options.md).
 
-**Match Options**, on the game type, covers movement sounds, training, camouflage, team scores, and weapon spread. The host's choices apply to the game.
+**Match Options**, on the game type, covers movement sounds, training, camouflage, team scores, weapon spread, and field of view. The host's choices apply to the game. Default field of view leaves each player's Graphics setting.
 
 ## Graphics
 
@@ -138,7 +138,7 @@ The game keeps the Xbox look until a setting says otherwise.
 | MODEL DETAIL | Stock uses the Xbox's 480 lines. Native uses this display. Highest keeps the most detail. | Stock |
 | HIGH-RES HUD, BUTTON STYLE, HIGH-RES TEXT | Redrawn HUD art, button art, and text that stay sharp when scaled | On for the high-res HUD and text |
 | CAMPAIGN HUD | On a custom map, draw the campaign HUD. The reticle stays the map's. | Off |
-| MATCH TIMER | A clock at the bottom right in multiplayer | Off |
+| MATCH TIMER | A clock at the bottom right in multiplayer. On with Voice also plays the countdown | Off |
 
 **Extras**
 
@@ -159,7 +159,7 @@ You do not need the Xbox SDK. The port supplies the declarations the game uses. 
 | Target | Result |
 | --- | --- |
 | `ninja linux` | `build/linux/halo` |
-| `ninja windows` (on Windows, or on Linux after `configure.py --windows-cross`) | `build/windows/halo.exe` and `SDL3.dll` |
+| `ninja windows` (on Windows) | `build/windows/halo.exe` and `SDL3.dll` |
 | Mac | [Apple setup](docs/apple-build.md). The Mac build uses LLVM 22 and `tools/macos_build.py`. |
 
 ### Build options
