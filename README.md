@@ -18,7 +18,13 @@ You can play with up to 128 players, run campaign co-op online, load Custom Edit
 
 ## Download
 
-Get a build from the [releases page](https://github.com/mastercheese-dev/CoreCE/releases). Each system is published on its own, so pick the newest release that contains your file.
+<p align="center">
+  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/build-42/CoreCE-macos-arm64.dmg"><img src="https://img.shields.io/badge/Mac-download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download CoreCE for Mac"></a>
+  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/build-10/halo-windows-release.zip"><img src="https://img.shields.io/badge/Windows-download-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download CoreCE for Windows"></a>
+  <a href="https://github.com/mastercheese-dev/CoreCE/releases/download/linux-net34-8/halo-linux-release.zip"><img src="https://img.shields.io/badge/Linux-download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download CoreCE for Linux"></a>
+</p>
+
+The Mac button downloads build 42 (`CoreCE-macos-arm64.dmg`). The Windows button downloads build 10 (`halo-windows-release.zip`). The Linux button downloads `halo-linux-release.zip` from `linux-net34-8`. Each system is published on its own. Older builds are on the [releases page](https://github.com/mastercheese-dev/CoreCE/releases).
 
 | System | Download this | Then |
 | --- | --- | --- |

@@ -1,14 +1,14 @@
-# Files a Mac game uses
+# Files the Mac, Windows, and Linux builds use
 
-A running Mac app uses three places. The app bundle is what the disk image installs. Settings and Xbox save data live in Application Support. The game data folder is the one you chose, and it holds the maps plus the logs the game writes beside them.
+Each build uses an install folder, a save folder, and a game data folder. The install folder is the release. On Mac, settings and Xbox saves share Application Support. On Windows and Linux, settings sit beside the program and Xbox saves sit in the save folder named below. The game data folder holds the maps, and the logs the game writes beside them.
 
-Xbox paths are turned into those folders. `d:\` is the game data folder. Any other drive letter `X:\` is the folder `X` inside Application Support. The hard-drive saves are `z:\`, and the memory-unit saves are `u:\`. A Custom Edition install named by `paths.custom_edition` in `config.toml` is `h:\`. That path is absent unless you set it.
+Xbox paths are turned into those folders. `d:\` is the game data folder. Any other drive letter `X:\` is the folder `X` inside the save folder. The hard-drive saves are `z:\`, and the memory-unit saves are `u:\`. A Custom Edition install named by `paths.custom_edition` in `config.toml` is `h:\`. That path is absent unless you set it.
 
-`HALO_SAVE_ROOT` replaces Application Support for that launch, and the first-launch copy described below does not run. `HALO_DATA_ROOT` replaces the chosen game data folder for that launch. Starting the host with a guest image path, and without `HALO_SAVE_ROOT`, uses `build/macos/saves/` instead of Application Support. The installed app does not do that.
+`HALO_SAVE_ROOT` replaces the save folder for that launch, and the first-launch copy described below does not run. `HALO_DATA_ROOT` replaces the chosen game data folder for that launch.
 
 ## The installed app
 
-The disk image installs `/Applications/CoreCE.app`. The game does not write inside this bundle during play. An update replaces the whole bundle.
+The disk image installs `/Applications/CoreCE.app`. The game does not write inside this bundle during play. An update replaces the whole bundle. Starting the host with a guest image path, and without `HALO_SAVE_ROOT`, uses `build/macos/saves/` instead of Application Support. The installed app does not do that.
 
 ```text
 CoreCE.app/Contents/Info.plist
@@ -121,9 +121,68 @@ u/UDATA/<12 hex digits>/blam.lst
 
 The 12 hex digits are a hash of the save's display name. `SaveMeta.xbx` stores that name. A player profile is `blam.sav` plus `savegame.bin`, the checkpoint kept with that profile. A game variant you save is `blam.lst` and has no `savegame.bin`. More containers appear as you create profiles and variants.
 
+## Windows
+
+`halo-windows-release.zip` unpacks into one folder. The game writes settings beside the program. An update replaces program files there. The previous copies keep a `.old` name until the next start.
+
+```text
+halo.exe
+SDL3.dll
+brokers.txt
+opening_frames.bin
+expat-COPYING.txt
+lucide-LICENSE.txt
+mbedtls-LICENSE.txt
+miniupnpc-LICENSE.txt
+opus-COPYING.txt
+Overpass-OFL.txt
+```
+
+`halo.exe` is the game. `SDL3.dll` stays in that same folder. `opening_frames.bin` is the loading film for matches and campaign loads. The game also reads `maps/opening_frames.bin` when that copy is already there. `brokers.txt` is the list of internet-play brokers. The `COPYING`, `LICENSE`, and `OFL` files are the notices for libraries in the build.
+
+| Path | What it is |
+| --- | --- |
+| `config.toml` | Settings, key bindings, and comments, beside `halo.exe`. The first launch writes it. Quit before editing it |
+| `halo.log` | The port log, beside `halo.exe`. A release build has no console, so this file is that log |
+| `crashes\` | Crash reports waiting beside `halo.exe` |
+| `update.partial\` | The download of an update, removed when the update finishes |
+
+Saves are `%APPDATA%\Halo OG`, or `paths.saves` in `config.toml`. The first launch copies regular files and folders from `%APPDATA%\halo` and leaves that older folder in place. Files already in `Halo OG` stay. `paths.saves` or `HALO_SAVE_ROOT` keeps the folder you named and skips the copy. The `z\` and `u\` trees inside the save folder match the Mac save layout above.
+
+The game data folder is `paths.data` in `config.toml`. With that empty, a `maps` folder in the current directory is used, then a `maps` folder beside `halo.exe`. `debug.txt` and the other files in the game data section are written there.
+
+## Linux
+
+`halo-linux-release.zip` unpacks into one folder. The game writes settings in that folder. An update replaces program files there. The previous copies keep a `.old` name until the next start.
+
+```text
+halo
+libSDL3.so.0
+SDL3-LICENSE.txt
+brokers.txt
+opening_frames.bin
+expat-COPYING.txt
+lucide-LICENSE.txt
+mbedtls-LICENSE.txt
+miniupnpc-LICENSE.txt
+opus-COPYING.txt
+Overpass-OFL.txt
+```
+
+`halo` is the game. `libSDL3.so.0` stays in that same folder. `SDL3-LICENSE.txt` is the notice for that library. `opening_frames.bin`, `brokers.txt`, and the other notices match the Windows zip.
+
+| Path | What it is |
+| --- | --- |
+| `config.toml` | Settings, key bindings, and comments, beside `halo`. The first launch writes it. Quit before editing it |
+| `update.partial/` | The download of an update, removed when the update finishes |
+
+Saves are `paths.saves` in `config.toml`. With that empty, the save folder is `$XDG_DATA_HOME/halo-og`, usually `~/.local/share/halo-og`. The first launch copies regular files and folders from `$XDG_DATA_HOME/halo-linux`, usually `~/.local/share/halo-linux`, and leaves that older folder in place. Files already in `halo-og` stay. `paths.saves` or `HALO_SAVE_ROOT` keeps the folder you named and skips the copy. The `z/` and `u/` trees inside the save folder match the Mac save layout above.
+
+The game data folder is `paths.data` in `config.toml`. With that empty, a `maps` folder in the current directory is used, then a `maps` folder beside `halo`. `debug.txt` and the other files in the game data section are written there. A crash also writes its report to the terminal.
+
 ## The game data folder
 
-This is the folder in `macos-settings.json` `data_path`, or the folder you pick on first launch. It is `d:\`. You supply the disc files. The game adds the files in the second table.
+This folder is `d:\` on every build. On Mac it is `data_path` in `macos-settings.json`, or the folder you pick on first launch. On Windows and Linux it is `paths.data` in `config.toml`. With that empty, a `maps` folder in the current directory is used, then a `maps` folder beside the program. You supply the map files. The game adds the files in the second table.
 
 Supplied by the disc or by an extract of it:
 
