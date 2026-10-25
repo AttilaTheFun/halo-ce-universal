@@ -6165,8 +6165,8 @@ struct game_variant *build_game_variant_slayer(
 	result.universal_variant.suicide_penalty = 300;
 	result.universal_variant.teams = FALSE;
 	result.universal_variant.weapon_set = _game_engine_weapons_normal;
-	result.game_engine_variant.slayer.no_death_bonus = TRUE;
-	result.game_engine_variant.slayer.no_kill_penalty = TRUE;
+	result.game_engine_variant.slayer.no_death_bonus = FALSE;
+	result.game_engine_variant.slayer.no_kill_penalty = FALSE;
 	result.game_engine_variant.slayer.kill_in_order = FALSE;
 	result.flags = 1;
 
@@ -6199,8 +6199,8 @@ struct game_variant *build_game_variant_team_slayer(
 	result.universal_variant.respawn_time_growth = 0;
 	result.universal_variant.score_to_win = 50;
 	result.universal_variant.weapon_set = _game_engine_weapons_normal;
-	result.game_engine_variant.slayer.no_death_bonus = TRUE;
-	result.game_engine_variant.slayer.no_kill_penalty = TRUE;
+	result.game_engine_variant.slayer.no_death_bonus = FALSE;
+	result.game_engine_variant.slayer.no_kill_penalty = FALSE;
 	result.game_engine_variant.slayer.kill_in_order = FALSE;
 
 	*variant = result;
@@ -6232,8 +6232,8 @@ struct game_variant *build_game_variant_elimination(
 	result.universal_variant.suicide_penalty = 300;
 	result.universal_variant.teams = FALSE;
 	result.universal_variant.weapon_set = _game_engine_weapons_normal;
-	result.game_engine_variant.slayer.no_death_bonus = TRUE;
-	result.game_engine_variant.slayer.no_kill_penalty = TRUE;
+	result.game_engine_variant.slayer.no_death_bonus = FALSE;
+	result.game_engine_variant.slayer.no_kill_penalty = FALSE;
 	result.game_engine_variant.slayer.kill_in_order = FALSE;
 
 	*variant = result;
@@ -6298,8 +6298,8 @@ struct game_variant *build_game_variant_endurance(
 	result.universal_variant.score_to_win = 10;
 	result.universal_variant.teams = FALSE;
 	result.universal_variant.weapon_set = _game_engine_weapons_normal;
-	result.game_engine_variant.slayer.no_death_bonus = TRUE;
-	result.game_engine_variant.slayer.no_kill_penalty = TRUE;
+	result.game_engine_variant.slayer.no_death_bonus = FALSE;
+	result.game_engine_variant.slayer.no_kill_penalty = FALSE;
 	result.game_engine_variant.slayer.kill_in_order = FALSE;
 
 	*variant = result;
@@ -6331,8 +6331,8 @@ struct game_variant *build_game_variant_rockets(
 	result.universal_variant.suicide_penalty = 300;
 	result.universal_variant.teams = FALSE;
 	result.universal_variant.weapon_set = _game_engine_weapons_rocket_launchers;
-	result.game_engine_variant.slayer.no_death_bonus = TRUE;
-	result.game_engine_variant.slayer.no_kill_penalty = TRUE;
+	result.game_engine_variant.slayer.no_death_bonus = FALSE;
+	result.game_engine_variant.slayer.no_kill_penalty = FALSE;
 	result.game_engine_variant.slayer.kill_in_order = FALSE;
 
 	*variant = result;
@@ -6364,8 +6364,8 @@ struct game_variant *build_game_variant_snipers(
 	result.universal_variant.suicide_penalty = 300;
 	result.universal_variant.teams = FALSE;
 	result.universal_variant.weapon_set = _game_engine_weapons_sniping;
-	result.game_engine_variant.slayer.no_death_bonus = TRUE;
-	result.game_engine_variant.slayer.no_kill_penalty = TRUE;
+	result.game_engine_variant.slayer.no_death_bonus = FALSE;
+	result.game_engine_variant.slayer.no_kill_penalty = FALSE;
 	result.game_engine_variant.slayer.kill_in_order = FALSE;
 
 	*variant = result;
