@@ -67,3 +67,21 @@ that policy. Mainline's optional overshield rendering is absent in CoreCE;
 its shader/Metal dependencies require separate review before claiming visual
 parity for hosts selecting that effect. No default gameplay or local effect
 was changed. The full migration remains unpublished and unvalidated.
+
+1adbb588 full native Metal Mac build passed; installed signature and BuildInfo
+verified. 40 mode/kind/battery/shield cases pass on leased Linux (91 with the
+previous suites), plus the real lobby crypto/listing fixture (zero failures).
+The old broad test_performance_network fixture is stale against current CoreCE
+server functions (missing map-share/start-state stubs); it fails to compile.
+A focused real-code test_mainline_join test passes for vanilla versus extended
+host capability announcements. Preserve reliable-stream authorization; only
+advertised extension hosts get private pre-join messages or the CoreCE pregame
+hold. The legacy extension version cannot admit its older settings layout.
+
+c9f3d07e adopted: signed live listings older than an hour are ignored, retained
+ones retain the ten-minute window (including its independent restamping tests).
+Discovery now uses mainline's signed namespace, with version 38 set only after
+the generated wire manifest exactly equals OpenCE b09a3ea7's manifest. This is
+not proof of a successful join. Final Mac/iOS build, fresh discovery and actual
+join remain gates before publishing. The optional overshield visual parity gap
+noted above remains. No updated build has been published.

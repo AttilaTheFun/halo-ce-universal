@@ -815,6 +815,8 @@ network_game_client_link_down is set): network_game_client_network_lost */
 static unsigned long network_game_client_link_down_time;
 static unsigned long network_game_client_link_checked_time;
 static boolean network_game_client_link_down;
+/* Only send fork-specific controls to a host advertising that extension. */
+static boolean network_game_client_host_performance;
 
 /* each advertised game's host's network version and netcode, and the game's
 kind (game_modes_kind), by its place in the client's available_games
@@ -1785,7 +1787,7 @@ boolean network_game_client_game_has_started(
 					{
 						struct game_variant *held = game_engine_get_variant();
 
-						if (held && held->game_engine_index != game_engine_none)
+						if (network_game_client_host_performance && held && held->game_engine_index != game_engine_none)
 							hardcore_rules_hold_pregame();
 					}
 					game_time_start();
@@ -2116,6 +2118,11 @@ boolean network_game_client_initiate_join_game(
 		0x157,
 		client && (client->state == _network_game_client_state_searching) && game && join_parameters && client->connection && !network_connection_connected(client->connection) && (game->platform == network_game_get_local_platform()));
 
+	{
+		long index = game - client->available_games;
+		network_game_client_host_performance = VALID_INDEX(index, MAXIMUM_NETWORK_ADVERTISED_GAMES) &&
+			(network_game_client_advertised_versions[index].flags & NETWORK_PERFORMANCE_ADVERTISED_FLAG) != 0;
+	}
 	client->join_in_progress = TRUE;
 	client->connect_process = 0;
 	client->connection_attempt_time = system_milliseconds();
@@ -2933,21 +2940,24 @@ static boolean network_game_client_idle_joining(
 				if (halo_performance_audio_available()) supported |= _performance_option_timer_audio;
 #endif
 
-				/* Earlier hosts reject unknown capability bits. Announce each
-				 * supported generation first: timer/markers, then timer audio,
-				 * then event-specific sound rules. Each host retains the newest
-				 * capability it understands before the reliable join request. */
-				network_performance_encode((byte *)capability, NETWORK_PERFORMANCE_CAPABILITY, 3);
-				if (!network_game_client_write(client->connection, capability, sizeof(capability), NULL, 1))
-					return FALSE;
-				network_performance_encode((byte *)capability, NETWORK_PERFORMANCE_CAPABILITY,
-					supported & 7);
-				if (!network_game_client_write(client->connection, capability, sizeof(capability), NULL, 1))
-					return FALSE;
-				network_performance_encode((byte *)capability, NETWORK_PERFORMANCE_CAPABILITY,
-					supported);
-				if (!network_game_client_write(client->connection, capability, sizeof(capability), NULL, 1))
-					return FALSE;
+				if (network_game_client_host_performance)
+				{
+					/* Earlier hosts reject unknown capability bits. Announce each
+					 * supported generation first: timer/markers, then timer audio,
+					 * then event-specific sound rules. Each host retains the newest
+					 * capability it understands before the reliable join request. */
+					network_performance_encode((byte *)capability, NETWORK_PERFORMANCE_CAPABILITY, 3);
+					if (!network_game_client_write(client->connection, capability, sizeof(capability), NULL, 1))
+						return FALSE;
+					network_performance_encode((byte *)capability, NETWORK_PERFORMANCE_CAPABILITY,
+						supported & 7);
+					if (!network_game_client_write(client->connection, capability, sizeof(capability), NULL, 1))
+						return FALSE;
+					network_performance_encode((byte *)capability, NETWORK_PERFORMANCE_CAPABILITY,
+						supported);
+					if (!network_game_client_write(client->connection, capability, sizeof(capability), NULL, 1))
+						return FALSE;
+				}
 
 				csmemset(&join_game_request, 0, sizeof(join_game_request));
 				network_game_generate_local_machine_name(join_game_request.machine_name);

@@ -20,14 +20,14 @@ false details:
 	map and gametype (a length byte, then up to 32, 32 and 24 characters of
 	printable ASCII), a stamp (8: the game's kind, an OpenCE gametype's mode
 	and Hardcore, port/linux/game/game_modes.h's game_modes_kind; the rest
-	reserved, zero), and the signature (64) of "corece-lobby-1" and all before
+	reserved, zero), and the signature (64) of "hceu-lobby-1" and all before
 	it.
 
-Each host has a slot, corece/1/lobby/s/<its key's hash in hex>: its listing,
+Each host has a slot, hceu/3/lobby/s/<its key's hash in hex>: its listing,
 retained on every broker (and expiring there after LISTING_EXPIRY seconds
 on MQTT 5), and the broker's will (set at the connection, p2p_signal.c)
 clears it if the host vanishes. Browsers subscribe to every slot and ask the
-hosts to publish again (corece/1/lobby/q). Brokers are other people's: what
+hosts to publish again (hceu/3/lobby/q). Brokers are other people's: what
 one deletes or keeps is no authority, so
 - a host publishes every REPUBLISH_INTERVAL, and sooner (at most once each
   TRIGGER_INTERVAL) when its game changes, when asked, and when its slot is
@@ -37,8 +37,10 @@ one deletes or keeps is no authority, so
   keeps the newest of each host (by sequence), drops one not heard in
   GAME_EXPIRY (on its own clock; a retained copy is taken only if its time
   is within RETAINED_WINDOW of this machine's, from a host that died and
-  left it), takes a host's closing listing (a tombstone) as its end, and
-  ignores an emptied slot (a wipe is not a delete).
+  left it, and a live one only within LIVE_WINDOW, so an old listing
+  published again by someone else does not list a game long gone), takes
+  a host's closing listing (a tombstone) as its end, and ignores an
+  emptied slot (a wipe is not a delete).
 A host that stops publishes a tombstone, then clears its slot. Going private
 makes a new invite (p2p.c), so a listing seen before lets no one in.
 
@@ -101,9 +103,11 @@ enum
 	VERIFY_BUDGET = 2,
 	/* seconds */
 	RETAINED_WINDOW = 600,
+	/* (wide: a host whose clock is off is still listed) */
+	LIVE_WINDOW = 3600,
 };
 
-static const char signature_label[] = "corece-lobby-1";
+static const char signature_label[] = "hceu-lobby-1";
 
 /* (p2p.h's sizes of a locked listing's are p2p_internal.h's) */
 typedef char check_listing_sizes[P2P_LISTING_SIGNING_KEY_SIZE == P2P_KEY_SIZE &&
@@ -758,12 +762,13 @@ static void update_browsing(void)
 			continue;
 		}
 		/* a slot's retained copy: only one of about now (a host that died
-		left it, and nothing cleared it) */
-		if (queued.retained)
+		left it, and nothing cleared it); a live one: not one long gone,
+		published again by someone who kept it */
 		{
 			long difference = (long)(listing.time - (unsigned long)time(NULL));
+			long window = queued.retained ? RETAINED_WINDOW : LIVE_WINDOW;
 
-			if (difference > RETAINED_WINDOW || difference < -RETAINED_WINDOW)
+			if (difference > window || difference < -window)
 				continue;
 		}
 		/* (the work, without the lock: the game's threads need not wait) */

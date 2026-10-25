@@ -905,3 +905,13 @@ The host logs to `debug.txt` when a player on another machine presses the
 action button where the host has nothing for them to pick up, with where it
 has them and the nearest item: a client that sees a pickup the host does
 not.
+
+## Internal Apple mainline interoperability migration
+
+This branch targets OpenCE network version 38. Settings use 44-byte variant
+options; optional server-selected modes, scenery-shield damage, co-op ally
+fire, advertisement kinds and reliable host shield-policy messages are
+understood. Public discovery uses hceu/3/lobby and hceu-lobby-1 signatures.
+CoreCE-only practice capabilities are sent only to hosts advertising them;
+legacy extended version 0x800B is not compatible with this settings layout.
+See docs/apple-mainline-38-progress.md for implementation and validation limits.
