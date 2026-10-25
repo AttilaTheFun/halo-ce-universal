@@ -1553,7 +1553,8 @@ static struct native_resource *hud_texture_get(long asset) {
     entry->hud_asset=asset;
     entry->description=(struct xgpu_texture_description){.format=D3DFMT_A8R8G8B8,
         .width=width,.height=height,.depth=1,.levels=1,.hires=TRUE,
-        .hires_coverage=hud_hires_override_coverage(asset)};
+        .hires_coverage=hud_hires_override_coverage(asset),
+        .hires_point_threshold=hud_hires_override_point_threshold(asset)};
     for (unsigned long largest=width>height ? width:height;largest>1;largest>>=1)
         entry->description.levels++;
     entry->format=HALO_METAL_RGBA8;entry->usage=HALO_METAL_SHADER_READ;
@@ -2022,9 +2023,15 @@ static void draw_original(D3DPRIMITIVETYPE type,UINT first,UINT count,const WORD
         struct xgpu_texture_description original;
         xgpu_texture_describe(texture->Format,texture->Size,&original);
         struct xgpu_texture_description *d=&bound[stage]->description;
+        /* The replacement is a different resource. The map sheet's channel
+        order is read from the address the game registered, and only while
+        that sheet itself is drawn. */
+        uint32_t meter_channels=!d->hires && halo_custom_edition_meter_channels(
+            PLATFORM_PHYSICAL_TO_VIRTUAL(texture->Data));
         input.textures[stage]=(struct metal_draw_texture){1,bound[stage]->volume ? _xgpu_sampler_3d:
             d->cube_map ? _xgpu_sampler_cube:_xgpu_sampler_2d,
-            d->width,d->height,d->levels,original.linear,d->hires,d->hires_coverage};
+            d->width,d->height,d->levels,original.linear,d->hires,d->hires_coverage,
+            d->hires_point_threshold,meter_channels};
         input.texture_depth[stage]=bound[stage]->volume ? d->depth:0;
     }
     struct native_resource *color=target_get(device.render_target);

@@ -20,7 +20,7 @@ struct metal_draw_texture {
      * Dimensions/levels describe the effective bound resource, including
      * rendered aliases and optional hires replacements, not its old header. */
     uint32_t present, sampler_type, width, height, levels;
-    uint32_t linear, hires, hires_coverage;
+    uint32_t linear, hires, hires_coverage, hires_point_threshold, ce_meter_channels;
 };
 struct metal_draw_state_input {
     const uint32_t *render_state;                 /* [144] */

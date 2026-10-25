@@ -143,6 +143,10 @@ struct nv2a_pixel_shader_key
 	/* Discrete meter thresholds in texture 0's red are read at level zero,
 	without filtering. Coverage/brightness still use the filtered lookup. */
 	unsigned char point_threshold;
+	/* A Custom Edition sheet still stored in the Xbox channel order, read
+	while a meter is drawn: alpha is the fill threshold and red is the
+	shape. A sheet the texture upload already reordered stays as uploaded. */
+	unsigned char ce_meter_channels;
 	/* a model lighting program's draw lit for each pixel
 	(display.per_pixel_lighting): nv2a_vertex_lighting's lights, or 0 for
 	the diffuse color the vertex shader computed */
@@ -200,6 +204,9 @@ struct xgpu_texture_description
 	BOOL hires;         /* a high-res HUD texture drawn in the texture's place (hud_hires.h) */
 	BOOL hires_coverage; /* ... whose green is its coverage (a meter's) */
 	BOOL hires_point_threshold; /* ... whose red holds discrete segment data */
+	/* A Custom Edition meter draw of a sheet still in the Xbox channel
+	order (xbox_textures.c). Replacements leave this clear. */
+	BOOL ce_meter_channels;
 };
 
 void xgpu_texture_describe(DWORD format_word, DWORD size_word, struct xgpu_texture_description *description);

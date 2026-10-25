@@ -98,7 +98,7 @@ enum
 	host takes at most a few new players a minute: this is hours of them;
 	one is not forgotten while its host nonce lasts: USED_REQUEST_TIME) */
 	MAXIMUM_USED_REQUESTS = 1024,
-	/* (a slot's: hceu/3/lobby/s/ and a key hash in hex) */
+	/* (a slot's: corece/1/lobby/s/ and a key hash in hex) */
 	TOPIC_SIZE = 64,
 	NONCE_SIZE = 8,
 	/* an ACCEPT's or a proven JOIN's tag: the first half of an HMAC-SHA256 */
@@ -159,6 +159,10 @@ enum
 	tunnels a flood of them would otherwise starve */
 	MAXIMUM_BROKER_READS = 8,
 };
+
+/* the slot is the prefix plus the key hash in hex */
+typedef char lobby_slot_topic_fits[
+	sizeof(P2P_LOBBY_SLOT_PREFIX) - 1 + 2 * P2P_KEY_HASH_SIZE + 1 <= TOPIC_SIZE ? 1 : -1];
 
 enum
 {

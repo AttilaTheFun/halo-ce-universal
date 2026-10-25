@@ -229,18 +229,24 @@ int metal_draw_state_pack(const struct metal_draw_state_input *in,
             continue;
         }
         if(t->present!=1 || t->linear>1 || t->hires>1 || t->hires_coverage>1 ||
+            t->hires_point_threshold>1 || t->ce_meter_channels>1 ||
             !t->width || !t->height || !t->levels)
             TS_BAD(0,0,"invalid effective texture metadata");
         if(t->sampler_type!=_xgpu_sampler_2d && t->sampler_type!=_xgpu_sampler_cube && t->sampler_type!=_xgpu_sampler_3d)
             TS_BAD(0,t->sampler_type,"unknown native texture type");
         if(t->sampler_type==_xgpu_sampler_3d) {
             if(!in->native_volume || !in->texture_depth[stage] || in->texture_depth[stage]>512 ||
-                t->width>512 || t->height>512 || t->linear || t->hires || t->hires_coverage)
+                t->width>512 || t->height>512 || t->linear || t->hires || t->hires_coverage ||
+                t->hires_point_threshold || t->ce_meter_channels)
                 TS_BAD(0,in->texture_depth[stage],"volume requires explicit normalized native metadata within 512 texels");
         } else if(in->texture_depth[stage]>1)
             TS_BAD(0,in->texture_depth[stage],"nonvolume resource depth exceeds one");
         if(t->hires_coverage && !t->hires)
             TS_BAD(0,0,"HUD coverage requires a high-resolution replacement");
+        if(t->hires_point_threshold && !t->hires)
+            TS_BAD(0,0,"HUD meter thresholds require a high-resolution replacement");
+        if(t->ce_meter_channels && t->sampler_type!=_xgpu_sampler_2d)
+            TS_BAD(0,t->sampler_type,"Custom Edition meter channels require texture2d");
         if(t->hires && t->sampler_type!=_xgpu_sampler_2d)
             TS_BAD(0,t->sampler_type,"high-resolution HUD replacement requires texture2d");
         if(t->sampler_type==_xgpu_sampler_cube && t->width!=t->height)
@@ -258,7 +264,11 @@ int metal_draw_state_pack(const struct metal_draw_state_input *in,
             out.pixel.texture_scale[stage][0]=1.0f/(float)t->width;
             out.pixel.texture_scale[stage][1]=1.0f/(float)t->height;
         }
-        if(stage==0) k.coverage_alpha=(unsigned char)t->hires_coverage;
+        if(stage==0) {
+            k.coverage_alpha=(unsigned char)t->hires_coverage;
+            k.point_threshold=(unsigned char)t->hires_point_threshold;
+            k.ce_meter_channels=(unsigned char)t->ce_meter_channels;
+        }
         min_filter=t->hires?D3DTEXF_LINEAR:ts[D3DTSS_MINFILTER];
         mag_filter=t->hires?D3DTEXF_LINEAR:ts[D3DTSS_MAGFILTER];
         mip_filter=t->hires?D3DTEXF_LINEAR:ts[D3DTSS_MIPFILTER];
@@ -340,7 +350,10 @@ int metal_draw_state_pack(const struct metal_draw_state_input *in,
         }
 #undef TS_BAD
     }
-    if(!(rs[D3DRS_ALPHABLENDENABLE] && rs[D3DRS_SRCBLEND]==D3DBLEND_CONSTANTCOLOR && rs[D3DRS_DESTBLEND]==D3DBLEND_SRCALPHA)) k.coverage_alpha=0;
+    if(!(rs[D3DRS_ALPHABLENDENABLE] && rs[D3DRS_SRCBLEND]==D3DBLEND_CONSTANTCOLOR && rs[D3DRS_DESTBLEND]==D3DBLEND_SRCALPHA)) {
+        k.coverage_alpha=0;
+        k.point_threshold=0;
+    }
     /* nv2a_psh.c shares this meter correction across GLSL and MSL: green is
      * the replacement's coverage, while alpha remains the Xbox meter value.
      * Only the original CONSTANTCOLOR/SRCALPHA blend needs that correction. */

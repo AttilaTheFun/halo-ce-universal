@@ -56,10 +56,11 @@ enum
 
 typedef char p2p_listing_invite_size_assert[P2P_LISTING_INVITE_SIZE == P2P_LINK_SIZE ? 1 : -1];
 
-/* the prefix of a public game's slot (a key hash in hex follows), and the
-topic of queries (p2p_lobby.c) */
-#define P2P_LOBBY_SLOT_PREFIX "hceu/3/lobby/s/"
-#define P2P_LOBBY_QUERY_TOPIC "hceu/3/lobby/q"
+/* CoreCE's public lobby. A key hash in hex follows the slot prefix. The
+query topic asks hosts to publish again (p2p_lobby.c). Invite signalling
+stays on hceu/3/; this lobby does not. */
+#define P2P_LOBBY_SLOT_PREFIX "corece/1/lobby/s/"
+#define P2P_LOBBY_QUERY_TOPIC "corece/1/lobby/q"
 
 /* internet play's state (p2p.c), which the game's threads and the p2p
 thread share */

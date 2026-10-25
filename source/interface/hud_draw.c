@@ -1633,7 +1633,10 @@ static void hud_draw_bitmap_internal(
 		_shader_framebuffer_blend_function_alpha_multiply_add;
 	parameters.map[0] = (struct bitmap_data *)bitmap;
 
+	/* port: a shared Custom Edition sheet is a meter only for this draw */
+	halo_custom_edition_hud_meter(meter_parameters && custom_edition_cache_tags_loaded());
 	rasterizer_psuedo_dynamic_screen_quad_draw(&parameters, vertices);
+	halo_custom_edition_hud_meter(FALSE);
 
 	match_assert_stack_frame("c:\\halo\\SOURCE\\interface\\hud_draw.c", 985);
 
@@ -1977,6 +1980,11 @@ void hud_draw_meter(
 		meter_parameters.tint_color = real_alpha_intensity_to_pixel32(
 			PIN(meter->fade, 0.0f, 1.0f),
 			PIN(1.0f-meter->opacity, 0.0f, 1.0f));
+		/* port: a Custom Edition map that relies on Gearbox's meters keeps
+		this tint's color channels full, so the meter's own colors stay.
+		The fade and opacity remain in the alpha. */
+		if (custom_edition_cache_relies_on(_custom_edition_behaviour_gearbox_meters))
+			meter_parameters.tint_color |= 0x00FFFFFF;
 		meter_parameters.gradient = 1.0f;
 		meter_parameters.flash_color_is_negative = FALSE;
 		meter_parameters.tint_mode_2 = TRUE;

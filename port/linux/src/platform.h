@@ -177,6 +177,12 @@ void *halo_custom_edition_tag_cache(void);
 (xbox_textures.c; also declared for the game there) */
 void halo_custom_edition_texels_channels(const void *texels, unsigned char channel_order);
 void halo_custom_edition_texels_forget(void);
+/* A HUD meter draw is in progress (hud_draw.c). While it is, a Custom
+Edition sheet still in the Xbox channel order is sampled with alpha as the
+fill threshold and red as the shape. The address is the one
+halo_custom_edition_texels_channels was given. */
+void halo_custom_edition_hud_meter(int active);
+int halo_custom_edition_meter_channels(const void *texels);
 
 /* ---------- guest memory write tracking (memory_watch.c)
 

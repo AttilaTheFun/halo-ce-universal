@@ -76,6 +76,7 @@ symbols in this file:
 #include "tag_files/tag_groups.h"
 #include "units/unit_definitions.h"
 #include "units/units.h"
+#include "custom_edition_hud.h"
 
 #include <math.h>
 #include <string.h>
@@ -1304,10 +1305,23 @@ static void crosshairs_draw(
 										}
 										else
 										{
+											struct hud_placement_definition placement = item->placement;
+											short window_width = (short)PIN(
+												render.camera.window_bounds.x1 - render.camera.window_bounds.x0,
+												0, SHORT_MAX);
+											short window_height = (short)PIN(
+												render.camera.window_bounds.y1 - render.camera.window_bounds.y0,
+												0, SHORT_MAX);
+
+											/* port: a Custom Edition warning made for the old
+											widescreen fix keeps its tag offset on a wider
+											window, and is not scaled with display.fov */
+											custom_edition_hud_warning_placement(
+												state_index, window_width, window_height, &placement);
 											hud_draw_bitmap(
 												bitmap,
 												&absolute_placement,
-												&item->placement,
+												&placement,
 												sequence ?
 													&TAG_BLOCK_GET_ELEMENT(&sequence->sprites, frame_index, struct bitmap_group_sprite)->bounds :
 													NULL,
@@ -1318,8 +1332,9 @@ static void crosshairs_draw(
 												bitmap_group->type == _bitmap_group_type_interface_bitmaps,
 												/* port: a reticle, scaled with display.fov
 												(view_fov.c); a scope's picture keeps its
-												place */
-												state_index != _crosshair_state_zoom);
+												place, and so does a Custom Edition warning */
+												state_index != _crosshair_state_zoom &&
+													!custom_edition_hud_warning(state_index));
 										}
 									}
 								}

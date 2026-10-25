@@ -539,6 +539,43 @@ static void texture_stage(struct xgpu_text *text, const struct nv2a_pixel_shader
 		xgpu_text_append(text, "\tt%d = ", stage);
 		sample(text, key, stage, coordinates, language, alpha_border_mask, volume_border_mask);
 		xgpu_text_append(text, ";\n");
+		/* Stage 0 only. A Custom Edition meter sheet still in the Xbox
+		channel order is read as (alpha, alpha, alpha, red). A high-res
+		meter's red holds exact segment ids, so that channel is fetched at
+		the texel instead of averaged with its neighbors. */
+		if (stage == 0 && key->sampler_type[stage] == _xgpu_sampler_2d &&
+			(key->ce_meter_channels || key->point_threshold))
+		{
+			if (key->ce_meter_channels)
+				xgpu_text_append(text, "\tt0 = t0.aaar;\n");
+			if (key->point_threshold)
+			{
+				if (language == _shader_msl)
+				{
+					xgpu_text_append(text,
+						"\t{\n"
+						"\t\tfloat2 uv = (%s).xy * u.texture_scale[0].xy;\n"
+						"\t\tfloat2 size = float2(tex0.get_width(), tex0.get_height());\n"
+						"\t\tint2 pixel = clamp(int2(floor(uv * size)), int2(0), int2(size) - int2(1));\n"
+						"\t\tfloat threshold = tex0.sample(meter_nearest, (float2(pixel) + 0.5) / size, level(0.0)).r;\n"
+						"\t\tif (threshold > 0.0) t0.rb = float2(threshold);\n"
+						"\t}\n",
+						coordinates);
+				}
+				else
+				{
+					xgpu_text_append(text,
+						"\t{\n"
+						"\t\tvec2 uv = (%s).xy * texture_scale[0].xy;\n"
+						"\t\tivec2 size = textureSize(tex0, 0);\n"
+						"\t\tivec2 pixel = clamp(ivec2(floor(uv * vec2(size))), ivec2(0), size - ivec2(1));\n"
+						"\t\tfloat threshold = texelFetch(tex0, pixel, 0).r;\n"
+						"\t\tif (threshold > 0.0) t0.rb = vec2(threshold);\n"
+						"\t}\n",
+						coordinates);
+				}
+			}
+		}
 		break;
 	case _mode_cubemap:
 		snprintf(coordinates, sizeof(coordinates), "xT%d", stage);
@@ -1167,6 +1204,8 @@ char *nv2a_pixel_shader_to_msl_with_options(const struct nv2a_pixel_shader_key *
 			" !isfinite(u.depth_clip_max) || u.depth_clip_min < 0.0 ||"
 			" u.depth_clip_max > 1.0 || u.depth_clip_min > u.depth_clip_max) discard_fragment();\n"
 			"\tfloat replacement_depth = in.position.z;\n");
+	if (key->point_threshold)
+		xgpu_text_append(&text, "\tconstexpr sampler meter_nearest(filter::nearest, mip_filter::none);\n");
 	pixel_shader_body(&text, key, _shader_msl, alpha_border_mask, volume_border_mask);
 	if (depth_before_shader)
 		xgpu_text_append(&text, "\treturn XgpuFragmentResult { clamp(result, 0.0, 1.0) };\n}\n");
