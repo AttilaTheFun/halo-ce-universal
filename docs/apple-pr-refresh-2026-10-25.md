@@ -79,3 +79,20 @@ the previous resource, so ios_build.py now removes it before build/signing.
 The rebuilt simulator package no longer contains the film (33 MB versus 56 MB).
 Device build is running in /tmp/halo-pr-refresh-device.log. No personal device
 has been installed on or interacted with. The branch has not yet been pushed.
+
+## Public refresh build results
+
+At 8f4875b7, simulator and device builds passed. The native Metal Mac build
+passed, its installed CoreCE.app signature verified, and BuildInfo records the
+same source. Device metadata marks the dynamic arena and excludes the loading
+film. Controller/installer/DMG pytest run: 11 passed and 3 subtests passed.
+
+The branch is pushed and PR #1 now describes this smaller delta, attribution,
+compatibility limits and historical-versus-current validation. GitHub reports
+MERGEABLE, with no status checks reported. It remains draft.
+
+An attempted real-map simulator test has not reached the main menu: the service
+rejects install_app_data, and the attempted seed helper did not make the maps
+available to the game. The screenshot still shows the importer. Do not count
+this as settings or gameplay validation. The lease was released and temporary
+extracted data removed; the original ISO and user containers were unchanged.
