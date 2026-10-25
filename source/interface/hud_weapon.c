@@ -679,8 +679,7 @@ static void render_grenade_hud(
 			overlay_flags,
 			hud_state->last_grenade_flash_time,
 			draw_flags,
-			hud_split_screen(),
-			FALSE);
+			hud_split_screen());
 	}
 
 finished:
@@ -1257,20 +1256,6 @@ static void crosshairs_draw(
 									}
 									if (bitmap && _texture_cache_bitmap_get_hardware_format(bitmap, FALSE, TRUE))
 									{
-										struct hud_absolute_placement_definition anchor = absolute_placement;
-										struct hud_placement_definition shown = item->placement;
-
-										/* the reload word sits under the reticle.
-										on the pistol and the rifle the tag
-										draws it as the low-clip crosshair,
-										off to the side. the reload states
-										are that word on a weapon that uses
-										them. the reticle keeps its offset */
-										if (state_index == _crosshair_state_reload ||
-											state_index == _crosshair_state_secondary_reload ||
-											state_index == _crosshair_state_flash_ammo ||
-											state_index == _crosshair_state_flash_secondary_ammo)
-											hud_reload_word_place(&anchor, &shown);
 										if (TEST_FLAG(item->flags, _hud_crosshair_hide_outside_area_bit))
 										{
 											real texel_scale_u = 1.0f;
@@ -1306,8 +1291,8 @@ static void crosshairs_draw(
 											clip.y1 += expand_v;
 											hud_draw_bitmap(
 												bitmap,
-												&anchor,
-												&shown,
+												&absolute_placement,
+												&item->placement,
 												&clip,
 												scale,
 												0.0f,
@@ -1321,8 +1306,8 @@ static void crosshairs_draw(
 										{
 											hud_draw_bitmap(
 												bitmap,
-												&anchor,
-												&shown,
+												&absolute_placement,
+												&item->placement,
 												sequence ?
 													&TAG_BLOCK_GET_ELEMENT(&sequence->sprites, frame_index, struct bitmap_group_sprite)->bounds :
 													NULL,
@@ -1912,8 +1897,7 @@ static void render_weapon_hud(
 				overlay_flags[state_index],
 				hud_state->last_weapon_flash_time[state_index],
 				state_flags[state_index],
-				hud_split_screen(),
-				TRUE);
+				hud_split_screen());
 		}
 	}
 

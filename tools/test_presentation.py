@@ -11,6 +11,10 @@ HARNESS = r'''
 #include <stdio.h>
 #define HALO_ANDROID 1
 #define TRUE 1
+#define FALSE 0
+#define STREAM_BUFFER_SIZE 1
+#define INDEX_BUFFER_SIZE 1
+#define GL_RENDERBUFFER 11
 #define GL_FRAMEBUFFER 1
 #define GL_READ_FRAMEBUFFER 2
 #define GL_DRAW_FRAMEBUFFER 3
@@ -26,7 +30,7 @@ HARNESS = r'''
 #define STREAM_BUFFER_RING 8
 typedef unsigned GLuint, GLenum;
 typedef int GLint, BOOL;
-struct framebuffer_entry { GLuint color, depth, framebuffer; struct framebuffer_entry *next; };
+struct framebuffer_entry { struct framebuffer_entry *next; GLuint color, depth; BOOL renderbuffers; GLuint framebuffer; };
 static struct framebuffer_entry *framebuffers;
 struct surface { unsigned Data; };
 struct render_target_entry { struct { GLuint texture; unsigned long gl_width, gl_height; } target; };
@@ -44,6 +48,9 @@ static void glBindFramebuffer(GLenum target, GLuint framebuffer) {
     if (target == GL_FRAMEBUFFER || target == GL_READ_FRAMEBUFFER) read_target = framebuffer;
     if (target == GL_FRAMEBUFFER || target == GL_DRAW_FRAMEBUFFER) draw_target = framebuffer;
 }
+static void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum kind, GLuint object) {
+    (void)attachment; (void)kind; (void)object; assert(target == GL_FRAMEBUFFER);
+}
 static void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum texture, GLuint object, int level) {
     (void)attachment; (void)texture; (void)object; (void)level; assert(target == GL_FRAMEBUFFER);
 }
@@ -59,7 +66,12 @@ static struct render_target_entry *render_target_get(struct surface *surface) {
     return &target;
 }
 static int trace_frame(void) { return 0; }
+static void render_target_resolve(void *target) { (void)target; }
+static void visibility_copy_batch(void) {}
+static int platform_screenshot_take_request(void) { return 0; }
 static void write_screenshot(struct render_target_entry *target) { (void)target; assert(0); }
+static void write_key_screenshot(struct render_target_entry *target) { (void)target; assert(0); }
+static void memory_watch_begin_frame(void) {}
 static void platform_video_drawable_size(int *width, int *height) { *width = 640; *height = 480; }
 static void glDisable(GLenum target) { (void)target; }
 static void glColorMask(int r, int g, int b, int a) { (void)r; (void)g; (void)b; (void)a; }
@@ -69,7 +81,7 @@ static void glBlitFramebuffer(int a, int b, int c, int d, int e, int f, int g, i
     (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)mask; (void)filter;
     assert(read_target && draw_target == 0 && read_target != draw_target); blits++;
 }
-static void platform_video_swap(void) { swaps++; }
+static void platform_video_swap(void) { assert(read_target == 0 && draw_target == 0); swaps++; }
 static void gl_check_errors(const char *where) { (void)where; }
 static void xgpu_texture_cache_begin_frame(void) {}
 static void host_gl_fence_frame(unsigned slot) { assert(slot < STREAM_BUFFER_RING); }
@@ -97,8 +109,8 @@ int main(void) {
 class Presentation(unittest.TestCase):
     def test_first_frame_and_target_reuse(self):
         source = (ROOT / 'port/linux/src/d3d8_gl.c').read_text()
-        framebuffer = 'static GLuint framebuffer_get' + source.split('static GLuint framebuffer_get', 1)[1].split(
-            '/* the pixels per unit of the bound targets', 1)[0]
+        framebuffer = 'static GLuint framebuffer_find' + source.split('static GLuint framebuffer_find', 1)[1].split(
+            '/* ---------- multisampling', 1)[0]
         present = source.split('void WINAPI D3DDevice_Present', 1)[1]
         body = '\tif (device.gl_ready)' + present.split('\tif (device.gl_ready)', 1)[1].split('\tdevice.frame++;', 1)[0]
         with tempfile.TemporaryDirectory() as temporary:

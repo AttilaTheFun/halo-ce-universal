@@ -473,6 +473,8 @@ struct program_entry
 	GLint texture_border_color;
 	GLint texture_lod_bias;
 	GLint screen_offset;
+	/* world, view, and projection, four rows each, for SetVertexShader(0) */
+	GLint fixed_rows;
 	/* the lights of a draw lit for each pixel (XGPU_MODEL_LIGHT_COUNT), and
 	constants_serial at their last upload */
 	GLint model_lights;
@@ -586,6 +588,8 @@ struct gl_device
 	D3DSHADERCONSTANTMODE shader_constant_mode;
 
 	struct vertex_shader_object *vertex_shader;
+	/* SetVertexShader(0): the loading picture and the sweep, immediate only */
+	BOOL fixed_function_selected;
 	struct vertex_shader_object *program_slots[VERTEX_PROGRAM_SLOTS];
 	unsigned long program_address;
 	float constants[XGPU_VERTEX_CONSTANT_COUNT][4];
@@ -2736,13 +2740,22 @@ void WINAPI D3DDevice_DeleteVertexShader(DWORD handle)
 
 void WINAPI D3DDevice_SetVertexShader(DWORD handle)
 {
-	struct vertex_shader_object *object = vertex_shader_from_handle(handle);
+	struct vertex_shader_object *object;
 
+	/* The loading picture and the sweep draw with the fixed-function
+	   transform. A handle of zero selects it; a program replaces it. */
+	if (!handle)
+	{
+		device.fixed_function_selected = TRUE;
+		return;
+	}
+	object = vertex_shader_from_handle(handle);
 	if (object)
 	{
 		device.vertex_shader = object;
 		device.program_address = 0;
 		device.program_slots[0] = object;
+		device.fixed_function_selected = FALSE;
 	}
 }
 
@@ -2759,7 +2772,12 @@ void WINAPI D3DDevice_SelectVertexShader(DWORD handle, DWORD address)
 	if (object)
 		device.vertex_shader = object;
 	if (address < VERTEX_PROGRAM_SLOTS)
+	{
 		device.program_address = address;
+		/* The original runtime reselects a loaded slot with handle 0.
+		   That zero is not SetVertexShader(0)'s fixed-function selector. */
+		device.fixed_function_selected = FALSE;
+	}
 }
 
 void WINAPI D3DDevice_GetVertexShaderSize(DWORD handle, UINT *size)
@@ -2982,6 +3000,7 @@ static struct program_entry *program_get(GLuint vertex_shader, GLuint fragment_s
 	entry->texture_border_color = glGetUniformLocation(entry->program, "texture_border_color");
 	entry->texture_lod_bias = glGetUniformLocation(entry->program, "texture_lod_bias");
 	entry->screen_offset = glGetUniformLocation(entry->program, "screen_offset");
+	entry->fixed_rows = glGetUniformLocation(entry->program, "fixed_rows");
 	entry->model_lights = glGetUniformLocation(entry->program, "model_lights");
 	for (stage = 0; stage < D3DTSS_MAXSTAGES; stage++)
 	{
@@ -3810,6 +3829,102 @@ static unsigned long model_light_register(int light)
 	return (unsigned long)(XGPU_VERTEX_CONSTANT_BIAS + (light ? -80 + light : -82));
 }
 
+/* Same transform as metal_fixed_function_vertex_to_msl: world, then view,
+   then projection, then the half-pixel shift. Attribute 9 is the picture's
+   texture coordinate. Without it the loading draw clears to black and the
+   frame never appears. */
+static const char fixed_function_vertex_source[] =
+#ifdef HALO_ANDROID
+	"precision highp float;\n"
+	"precision highp int;\n"
+#else
+	"#version 450 core\n"
+#endif
+	"uniform vec4 fixed_rows[12];\n"
+	"uniform vec4 viewport_scale;\n"
+	"uniform float screen_offset;\n"
+	"layout(location = 0) in vec4 v0_in;\n"
+	"layout(location = 3) in vec4 v3_in;\n"
+	"layout(location = 4) in vec4 v4_in;\n"
+	"layout(location = 9) in vec4 v9_in;\n"
+	"layout(location = 10) in vec4 v10_in;\n"
+	"layout(location = 11) in vec4 v11_in;\n"
+	"layout(location = 12) in vec4 v12_in;\n"
+	"out vec4 xD0;\n"
+	"out vec4 xD1;\n"
+	"out vec4 xB0;\n"
+	"out vec4 xB1;\n"
+	"out vec4 xT0;\n"
+	"out vec4 xT1;\n"
+	"out vec4 xT2;\n"
+	"out vec4 xT3;\n"
+	"out float xFog;\n"
+	"invariant gl_Position;\n"
+	"vec4 fixed_transform(vec4 v, vec4 r0, vec4 r1, vec4 r2, vec4 r3)\n"
+	"{\n"
+	"	return v.x * r0 + v.y * r1 + v.z * r2 + v.w * r3;\n"
+	"}\n"
+	"void main()\n"
+	"{\n"
+	"	vec4 world_position = fixed_transform(v0_in, fixed_rows[0], fixed_rows[1], fixed_rows[2], fixed_rows[3]);\n"
+	"	vec4 view_position = fixed_transform(world_position, fixed_rows[4], fixed_rows[5], fixed_rows[6], fixed_rows[7]);\n"
+	"	vec4 clip_position = fixed_transform(view_position, fixed_rows[8], fixed_rows[9], fixed_rows[10], fixed_rows[11]);\n"
+	"	vec2 scale = vec2(viewport_scale.x != 0.0 ? viewport_scale.x : 1.0,\n"
+	"		viewport_scale.y != 0.0 ? viewport_scale.y : 1.0);\n"
+	"	vec2 pixel_offset = vec2(0.5 + screen_offset, 0.5);\n"
+	"	clip_position.xy += (pixel_offset * clip_position.w) / scale;\n"
+	"	gl_Position = clip_position;\n"
+#ifdef HALO_ANDROID
+	"	gl_Position.y = -gl_Position.y;\n"
+	"	gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;\n"
+#endif
+	"	xD0 = clamp(v3_in, 0.0, 1.0);\n"
+	"	xD1 = clamp(v4_in, 0.0, 1.0);\n"
+	"	xB0 = xD0;\n"
+	"	xB1 = xD1;\n"
+	"	xT0 = v9_in;\n"
+	"	xT1 = v10_in;\n"
+	"	xT2 = v11_in;\n"
+	"	xT3 = v12_in;\n"
+	"	xFog = 1.0;\n"
+	"}\n";
+
+static GLuint fixed_function_vertex_shader(void)
+{
+	static GLuint shader;
+	static BOOL tried;
+
+	if (!tried)
+	{
+		struct xgpu_text text = { 0 };
+
+		tried = TRUE;
+#ifdef HALO_ANDROID
+		xgpu_text_append(&text, "#version %s\n%s", xgpu_capabilities.shading_language,
+			fixed_function_vertex_source);
+#else
+		xgpu_text_append(&text, "%s", fixed_function_vertex_source);
+#endif
+		shader = xgpu_compile_shader(GL_VERTEX_SHADER, text.buffer ? text.buffer : "", "fixed-function vertex");
+		free(text.buffer);
+	}
+	return shader;
+}
+
+/* The matrices are the device transforms, not the vertex-constant file, so
+   they are sent on every one of these draws. */
+static void fixed_function_upload(struct program_entry *entry)
+{
+	float rows[12][4];
+
+	if (!device.fixed_function_selected || !entry || entry->fixed_rows < 0)
+		return;
+	memcpy(&rows[0][0], &device.transforms[D3DTS_WORLD], sizeof(rows[0]) * 4);
+	memcpy(&rows[4][0], &device.transforms[D3DTS_VIEW], sizeof(rows[0]) * 4);
+	memcpy(&rows[8][0], &device.transforms[D3DTS_PROJECTION], sizeof(rows[0]) * 4);
+	glUniform4fv(entry->fixed_rows, 12, &rows[0][0]);
+}
+
 static struct program_entry *prepare_draw(BOOL immediate)
 {
 	struct vertex_shader_object *program = current_program();
@@ -3819,11 +3934,14 @@ static struct program_entry *prepare_draw(BOOL immediate)
 	BOOL has_depth = FALSE;
 	int stage;
 
-	if (!device.gl_ready || !program || !device.vertex_shader || !program->instructions)
+	if (!device.gl_ready ||
+		(device.fixed_function_selected ? !immediate :
+			(!program || !device.vertex_shader || !program->instructions)))
 	{
 		stats.skipped_no_program++;
 		return NULL;
 	}
+	if (!device.fixed_function_selected)
 	{
 		const char *skip = debug_settings.skip_vertex_shaders;
 
@@ -3878,7 +3996,9 @@ static struct program_entry *prepare_draw(BOOL immediate)
 #endif
 
 	entry = NULL;
-	if (program->lighting.lights && !program->lighting_failed && per_pixel_lighting())
+	if (device.fixed_function_selected)
+		entry = program_get(fixed_function_vertex_shader(), fragment_shader_get(&key));
+	else if (program->lighting.lights && !program->lighting_failed && per_pixel_lighting())
 	{
 		key.per_pixel_lighting = (unsigned char)program->lighting.lights;
 		entry = program_get(vertex_shader_get(program, immediate, TRUE), fragment_shader_get(&key));
@@ -3892,7 +4012,7 @@ static struct program_entry *prepare_draw(BOOL immediate)
 			key.per_pixel_lighting = 0;
 		}
 	}
-	if (!entry)
+	if (!entry && !device.fixed_function_selected)
 		entry = program_get(vertex_shader_get(program, immediate, FALSE), fragment_shader_get(&key));
 	if (!entry)
 	{
@@ -4069,7 +4189,10 @@ static struct program_entry *prepare_draw(BOOL immediate)
 	}
 	/* and a program that has had them since needs none of them */
 	if (entry->uniforms_serial == draw_uniforms_serial)
+	{
+		fixed_function_upload(entry);
 		return entry;
+	}
 	entry->uniforms_serial = draw_uniforms_serial;
 	uniform_vec4(entry->viewport_scale, entry->uniforms.viewport_scale, draw_uniforms.viewport_scale, 1);
 	uniform_vec4(entry->viewport_offset, entry->uniforms.viewport_offset, draw_uniforms.viewport_offset, 1);
@@ -4087,6 +4210,7 @@ static struct program_entry *prepare_draw(BOOL immediate)
 	uniform_vec4(entry->texture_border_color, entry->uniforms.texture_border_color[0], draw_uniforms.texture_border_color[0], 4);
 	uniform_float(entry->screen_offset, &entry->uniforms.screen_offset, draw_uniforms.screen_offset);
 	uniform_vec4(entry->texture_lod_bias, entry->uniforms.texture_lod_bias, draw_uniforms.texture_lod_bias, 1);
+	fixed_function_upload(entry);
 	return entry;
 }
 
@@ -5853,6 +5977,8 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 		glBlitFramebuffer(0, 0, (GLint)back_buffer->target.gl_width, (GLint)back_buffer->target.gl_height,
 			x, y + height, x + width, y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		}
+		/* A capture hook copies the read framebuffer at the swap. The window is upright. */
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 		platform_video_swap();
 		gl_check_errors("present");
 		xgpu_gl_state_invalidate();
