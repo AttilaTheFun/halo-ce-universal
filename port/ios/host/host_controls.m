@@ -260,8 +260,13 @@ void host_ios_touch_attach(SDL_Window *window) {
     activeControls=controls;
     [controls becomeFirstResponder];
     [UIMenuSystem.mainSystem setNeedsRebuild];
-    if([NSProcessInfo.processInfo.environment[@"HALO_IOS_TEST_DEBUG_UI"] boolValue])
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC*3),dispatch_get_main_queue(),^{[native.rootViewController motionEnded:UIEventSubtypeMotionShake withEvent:nil];});
+    NSString *debugTest=NSProcessInfo.processInfo.environment[@"HALO_IOS_TEST_DEBUG_UI"];
+    if([debugTest boolValue] || [debugTest isEqualToString:@"button"])
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC*3),dispatch_get_main_queue(),^{
+            if([debugTest isEqualToString:@"button"])
+                [controls.settingsButton sendActionsForControlEvents:UIControlEventTouchUpInside];
+            else [native.rootViewController motionEnded:UIEventSubtypeMotionShake withEvent:nil];
+        });
     host_logf(HOST_LOG_INFO,"touch controls attached, %.0fx%.0f",root.bounds.size.width,root.bounds.size.height);
 }
 
