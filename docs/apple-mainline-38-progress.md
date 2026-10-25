@@ -85,3 +85,21 @@ the generated wire manifest exactly equals OpenCE b09a3ea7's manifest. This is
 not proof of a successful join. Final Mac/iOS build, fresh discovery and actual
 join remain gates before publishing. The optional overshield visual parity gap
 noted above remains. No updated build has been published.
+
+## Live discovery verification
+
+At 2f4d9a34, captured 357 real MQTT listing packets during a 22-second public
+broker subscription/query. The current production crypto/listing decoder,
+compiled for the game's 32-bit ABI in the leased Linux VM, accepted 38 signed
+current-protocol games advertising 80 players. A negative-control build changing
+only the signing namespace back to corece-lobby-1 accepted zero from the exact
+same capture. No invite, player name, or captured packet is committed. Two other
+public brokers timed out; HiveMQ answered. This verifies listing decoding and
+availability, not tunnel setup, game loading or a multiplayer match.
+
+The complete protocol-38 native Metal Mac build at 2f4d9a34 passed and was
+installed in /Applications/Halo.app as instructed; strict nested signature and
+BuildInfo verified. This is an ad-hoc local validation artifact with placeholder
+version 0.4.0 (1), NOT a release or published update. Logs:
+/tmp/halo-mainline38-mac-final.log. iOS simulator/device build is next; release
+numbering/signing/publication and actual join remain outstanding.
