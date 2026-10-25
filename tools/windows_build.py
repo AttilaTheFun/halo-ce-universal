@@ -546,5 +546,8 @@ def generate_windows_build(n: Writer, sln: Any) -> None:
     # internet play's MQTT brokers, a file beside the game (network.brokers_file)
     brokers = BUILD / "brokers.txt"
     n.build(outputs=brokers, rule="windows_copy", inputs=Path("port/assets/network/brokers.txt"))
-    n.build(outputs="windows", rule="phony", inputs=[output, sdl_dll, brokers])
+    # the match and campaign loading film, beside the game
+    film = BUILD / "opening_frames.bin"
+    n.build(outputs=film, rule="windows_copy", inputs=Path("port/assets/opening/opening_frames.bin"))
+    n.build(outputs="windows", rule="phony", inputs=[output, sdl_dll, brokers, film])
     n.newline()

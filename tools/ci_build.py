@@ -143,6 +143,8 @@ def main() -> int:
     # Android's APK has its own copy)
     if args.platform != "android":
         shutil.copy2(ROOT / "port/assets/network/brokers.txt", dist / "brokers.txt")
+        # the match and campaign loading film, beside the game
+        shutil.copy2(ROOT / "port/assets/opening/opening_frames.bin", dist / "opening_frames.bin")
     return 0
 
 

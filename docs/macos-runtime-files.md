@@ -20,6 +20,7 @@ CoreCE.app/Contents/Resources/AppIcon.icns
 CoreCE.app/Contents/Resources/BuildInfo.txt
 CoreCE.app/Contents/Resources/Helmet.pdf
 CoreCE.app/Contents/Resources/brokers.txt
+CoreCE.app/Contents/Resources/opening_frames.bin
 CoreCE.app/Contents/Resources/halo_guest.elf
 CoreCE.app/Contents/Resources/map-downloads.json
 CoreCE.app/Contents/Resources/Licenses/ANGLE.txt
@@ -35,7 +36,7 @@ CoreCE.app/Contents/Resources/Licenses/tomlc17.txt
 
 `Info.plist` names the app CoreCE. The bundle identifier is `local.halo.ce-universal`. The short version is the release version. `CFBundleVersion` is the bundle build. `CoreCEMacUpdateBuild` is the Mac release number the updater compares. Get Info shows the short version and the bundle build, and does not show the Mac release number.
 
-`MacOS/halo` is the host. `halo_guest.elf` is the game image it loads. `BuildInfo.txt` records the version, source revision, guest hash, and Mac release number. `brokers.txt` is the list of internet-play brokers, copied into Application Support on every launch. `map-downloads.json` is the community-map catalog configuration. `Helmet.pdf` is the menu icon artwork. `Licenses/` holds the license texts bundled with the app.
+`MacOS/halo` is the host. `halo_guest.elf` is the game image it loads. `BuildInfo.txt` records the version, source revision, guest hash, and Mac release number. `brokers.txt` is the list of internet-play brokers, copied into Application Support on every launch. `opening_frames.bin` is the loading film for matches and campaign loads. The game reads it from the bundle, or from `maps/opening_frames.bin` when that copy is already there. `map-downloads.json` is the community-map catalog configuration. `Helmet.pdf` is the menu icon artwork. `Licenses/` holds the license texts bundled with the app.
 
 `libSDL3.0.dylib` is the window and input library. `Sparkle.framework` is the bundled updater framework. Inside it, `Versions/B` holds `Updater.app`, `XPCServices/Downloader.xpc`, `XPCServices/Installer.xpc`, headers, modules, a code signature, and `Resources` with one `.lproj` folder per language. That is 85 files, all Sparkle's. The game does not add or change them. This fork's Mac updates download a release from the fork and swap the app. They do not write a Sparkle appcast into the bundle.
 

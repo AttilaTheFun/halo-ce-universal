@@ -133,6 +133,62 @@ const char *platform_data_root(void)
 	return root;
 }
 
+/* a file that exists and is not empty */
+static FILE *open_readable(const char *path)
+{
+	struct posix_file_information information;
+
+	if (!path || !path[0])
+		return NULL;
+	if (posix_stat(path, &information) != 0 || (information.size_low == 0 && information.size_high == 0))
+		return NULL;
+	return fopen(path, "rb");
+}
+
+FILE *platform_open_opening_film(void)
+{
+	char path[1024];
+	char executable[1024];
+	FILE *file;
+	const char *named;
+	ssize_t length;
+	char *slash;
+
+	/* a copy the player already has beside the maps */
+	platform_translate_path("d:\\maps\\opening_frames.bin", path, sizeof(path));
+	file = open_readable(path);
+	if (file)
+		return file;
+	/* the Mac and iOS bundles name this before the game starts */
+	named = getenv("HALO_OPENING_FILM");
+	file = open_readable(named);
+	if (file)
+		return file;
+	/* Windows and Linux ship it beside the executable */
+	length = readlink("/proc/self/exe", executable, sizeof(executable) - 1);
+	if (length > 0)
+	{
+		executable[length] = '\0';
+		slash = strrchr(executable, '/');
+		if (!slash)
+			slash = strrchr(executable, '\\');
+		if (slash)
+		{
+			*slash = '\0';
+			snprintf(path, sizeof(path), "%s/opening_frames.bin", executable);
+			file = open_readable(path);
+			if (file)
+				return file;
+			snprintf(path, sizeof(path), "%s/../Resources/opening_frames.bin", executable);
+			file = open_readable(path);
+			if (file)
+				return file;
+		}
+	}
+	platform_log("opening film: maps/opening_frames.bin is not there");
+	return NULL;
+}
+
 /* creates every missing directory along path */
 static void make_directories(const char *path)
 {

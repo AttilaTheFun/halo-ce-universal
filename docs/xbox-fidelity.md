@@ -29,7 +29,8 @@ wholesale; select focused changes and split mixed commits when necessary.
 Network version 34. A multiplayer match places the map's weapons and
 powerups once at game time 0, including while the opening holds the
 clock there. Later ticks at 0 do not place them again. The retail disc does not include loading.tga, so the opening
-plays maps/opening_frames.bin, a film of that loading screen. It runs for
+plays maps/opening_frames.bin, a film of that loading screen. The builds
+ship that film. A copy already in the maps folder is used when it is there. It runs for
 its own length, about 2.7 seconds, and the last frame stays if a player is
 still being placed or is still drawing a weapon. The screen stays at least
 3 seconds even when the map is already loaded. Those happen while it is up.

@@ -1,6 +1,7 @@
 /* The match opening plays a film of the original loading screen. The
 retail disc has no loading.tga, which is the only picture the sweep
-can draw, so the frames come from maps/opening_frames.bin. */
+can draw. The frames ship with the game, and a copy already in
+maps/opening_frames.bin is used when it is there. */
 #include "cseries.h"
 #include "cseries/cseries_windows.h"
 #include "interface/progress_bar.h"
@@ -77,12 +78,9 @@ static int film_load(void)
 	unsigned long index;
 	char magic[4];
 
-	file = fopen("d:\\maps\\opening_frames.bin", "rb");
+	file = platform_open_opening_film();
 	if (!file)
-	{
-		platform_log("opening film: maps/opening_frames.bin is not there");
 		return 0;
-	}
 	if (fread(magic, 1, 4, file) != 4 || memcmp(magic, "HLOF", 4) != 0 ||
 		!read_u32(file, &version) || version != 1 ||
 		!read_u32(file, &width) || !read_u32(file, &height) ||
