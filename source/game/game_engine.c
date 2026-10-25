@@ -7429,9 +7429,15 @@ void game_engine_initialize(
 	return;
 }
 
+/* The opening ring holds the match clock at 0 for many ticks. The map's
+weapons and powerups are placed on the first of those, and not again
+until the clock moves. */
+static boolean map_items_placed_at_start;
+
 void game_engine_initialize_for_new_map(
 	void)
 {
+	map_items_placed_at_start = FALSE;
 	if (game_engine)
 	{
 		game_engine_verify_current_map();
@@ -8893,11 +8899,22 @@ static void game_engine_update_item_spawn(
 	struct scenario *scenario = global_scenario_get();
 	/* port: a long counter, for a map's long count */
 	long equipment_index;
+	long now;
 
 	/* a client of the distributed netcode has the host's items
 	(port/linux/game/network_distributed.c) */
 	if (network_game_distributed_client())
 		return;
+
+	now = game_time_get();
+	/* time 0 is the map's initial weapons and powerups. the opening holds
+	the clock there, so only the first of those ticks places them */
+	if (now == 0)
+	{
+		if (map_items_placed_at_start)
+			return;
+		map_items_placed_at_start = TRUE;
+	}
 
 	for (equipment_index = 0;
 		equipment_index < scenario->netgame_equipment.count;
@@ -8908,7 +8925,7 @@ static void game_engine_update_item_spawn(
 				&scenario->netgame_equipment,
 				equipment_index,
 				struct scenario_netgame_equipment);
-		if (match_game_type(
+		if (equipment->item_collection.index != NONE && match_game_type(
 			game_engine_get_type(),
 			NUMBEROF(equipment->game_type),
 			equipment->game_type))
@@ -8936,10 +8953,10 @@ static void game_engine_update_item_spawn(
 
 			/* port: hardcore item timing. A classic game keeps the tag's period. */
 			respawn_period = hardcore_rules_item_period(respawn_period, respawn_time);
-			if (hardcore_rules_omit_spawn(game_time_get(), respawn_time))
+			if (respawn_period <= 0)
 				continue;
 
-			if (game_time_get() % respawn_period == 0)
+			if (now % respawn_period == 0)
 			{
 				long definition_index =
 					random_item(equipment->item_collection.index);

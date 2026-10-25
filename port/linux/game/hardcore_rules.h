@@ -96,7 +96,6 @@ real hardcore_rules_spread(long weapon_definition_index, real error);
 void hardcore_rules_skip_arm(long unit_index);
 boolean hardcore_rules_skip_consume(long unit_index);
 void hardcore_rules_on_kill(long killing_player_index, long dead_player_index);
-boolean hardcore_rules_omit_spawn(long game_time, long respawn_seconds);
 /* Fading is the stock drain. Constant holds whatever is left above full. */
 boolean hardcore_rules_overshield_fades(void);
 long hardcore_rules_item_period(long period_ticks, long authored_seconds);

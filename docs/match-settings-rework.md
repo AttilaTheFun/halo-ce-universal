@@ -62,10 +62,10 @@ explicitly asked for. Record the simulation changes in
 
 These are easy to get wrong from the menu labels alone.
 
-**Omit First Spawn is an item skip.** `hardcore_rules_omit_spawn` runs from
-`game_engine_update` item placement. At game time 0 it skips placing map
-items. Value 2 skips only items whose respawn is 30 seconds or more. It
-does not hold players. The player hold is a new behavior, described in
+**The first item pass stays.** `game_engine_update_item_spawn` places the
+map's weapons and powerups on the first tick at game time 0. The opening
+holds that clock for many ticks, and those later ticks do not place the
+items again. It does not hold players. The player hold is described in
 phase 3.
 
 **There are three clocks.**
@@ -258,9 +258,10 @@ Item skip and the first opening spawn raised it to 33, so a version 32
 build cannot join. The loading ring and the held match clock raised it
 to 34, so a version 33 build cannot join.
 
-**Item skip.** For every multiplayer match, skip map-item placement at
-game time 0. That is today's `omit_first == 1`. There is no row and no
-power-items-only mode. Campaign is unchanged.
+**Initial items.** For every multiplayer match, place map weapons and
+powerups once at game time 0. The opening holds the clock there, so
+later ticks at 0 do not place them again. There is no row that skips
+that first pass. Campaign is unchanged.
 
 **Opening screen.** A multiplayer match does not keep the lobby up.
 `pc_menus_screen` turns the pregame widget into the lobby, so the hold
@@ -275,8 +276,9 @@ does not advance until the picture has faded off the match. Co-op and campaign d
 take this hold. A game joined in progress keeps the host's clock.
 
 Done when a private match shows the ring instead of the lobby, the
-blue clock reads 00:00 as the world appears with the weapon in hand,
-time-0 items are absent, and a version 33 advertisement is refused.
+blue clock reads 00:00 as the world appears with the weapon in hand
+and the map's weapons and powerups already placed, and a version 33
+advertisement is refused.
 Update `docs/xbox-fidelity.md` with what changed and what was checked.
 
 ## Phase 4. This machine, the lobby, and split screen

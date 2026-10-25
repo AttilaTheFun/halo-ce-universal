@@ -867,14 +867,6 @@ boolean hardcore_rules_overshield_fades(void)
 	return TRUE;
 }
 
-boolean hardcore_rules_omit_spawn(long now, long respawn_seconds)
-{
-	(void)respawn_seconds;
-	/* Every multiplayer match skips the time-0 item placement. Campaign
-	   does not run this engine. */
-	return now == 0 && game_engine_running();
-}
-
 long hardcore_rules_item_period(long period_ticks, long authored_seconds)
 {
 	(void)authored_seconds;
