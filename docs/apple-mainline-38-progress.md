@@ -58,3 +58,12 @@ default playlists. Existing variants retain mode NONE and Hardcore OFF; old
 playlist options remain readable. Preserve CoreCE's flag-deletion protection,
 except Infection's disposable skull. This is still an intermediate migration;
 new mode tests and full build are pending, and no new build is published.
+
+The 21 mode harness cases pass. dc7feb1c's kind-byte advertisement/parser and
+browser labels are adapted; 8e8fa4d7 and 0a8584b2 fix/test battery weapons.
+63fd3677 and 68d80483's authenticated reliable host shield-policy messages
+are adapted, including PLAYERS' OWN. CoreCE's existing glow renderer consumes
+that policy. Mainline's optional overshield rendering is absent in CoreCE;
+its shader/Metal dependencies require separate review before claiming visual
+parity for hosts selecting that effect. No default gameplay or local effect
+was changed. The full migration remains unpublished and unvalidated.
