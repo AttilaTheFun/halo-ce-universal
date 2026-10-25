@@ -4,8 +4,10 @@
 int halo_fork_update_notice(char *out, size_t capacity);
 void halo_fork_update_set_notice(const char *text);
 
-/* The Mac release number in a fork tag such as test-v0.3.0-net28-mac16.
-   Zero when the tag is not one of those releases. An iOS tag is zero. */
+/* The Mac release number in a fork tag. build-40 is 40. An older tag such as
+   test-v0.3.0-net28-mac16 is 16. Zero when the tag is not one of those
+   releases. An iOS tag is zero. A Windows or Linux build-N tag has no Mac
+   disk image, so the release list skips it. */
 long HaloForkUpdateBuildFromTag(NSString *tag);
 NSString *HaloForkUpdateAssetName(NSString *tag);
 /* The download URL GitHub gives that tag's disk image, and no other host. */

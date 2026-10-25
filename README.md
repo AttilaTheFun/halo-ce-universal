@@ -26,7 +26,7 @@ Get a build from the [releases page](https://github.com/mastercheese-dev/CoreCE/
 | Windows | The newest `halo-windows-release.zip` | Unzip it and run `halo.exe` |
 | Linux | The newest `halo-linux-release.zip` | Unzip it and run `halo` |
 
-The number after `net` in the release name is the network protocol. Everyone in a game needs the same number. A game on the original rules can include another player whose build speaks that protocol. [PB Options](docs/performance-options.md) and Match Options need a build from these releases.
+The release title names the network protocol. Everyone in a game needs the same number. A game on the original rules can include another player whose build speaks that protocol. [PB Options](docs/performance-options.md) and Match Options need a build from these releases.
 
 ### Mac
 

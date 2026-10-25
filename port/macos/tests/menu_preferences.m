@@ -241,10 +241,15 @@ int main(int argc, const char **argv) {
         assert(HaloForkUpdateBuildFromTag(@"test-v0.3.0-net28-mac16") == 16);
         assert([HaloForkUpdateAssetName(@"test-v0.3.0-net28-mac16")
             isEqual:@"CoreCE-macos-arm64-net28-mac16.dmg"]);
-        assert(HaloForkUpdateBuildFromTag(@"build-70") == 0);
+        assert(HaloForkUpdateBuildFromTag(@"build-70") == 70);
+        assert([HaloForkUpdateAssetName(@"build-70") isEqual:@"CoreCE-macos-arm64.dmg"]);
+        assert(HaloForkUpdateBuildFromTag(@"build-70-extra") == 0);
         assert(HaloForkUpdateAssetName(@"test-v0.3.0-net28-mac16-extra") == nil);
         NSString *mac16 = @"https://github.com/mastercheese-dev/CoreCE/releases/download/test-v0.3.0-net28-mac16/CoreCE-macos-arm64-net28-mac16.dmg";
+        NSString *build70 = @"https://github.com/mastercheese-dev/CoreCE/releases/download/build-70/CoreCE-macos-arm64.dmg";
         assert(HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac16", mac16));
+        assert(HaloForkUpdateDownloadIsTrusted(@"build-70", build70));
+        assert(!HaloForkUpdateDownloadIsTrusted(@"build-70", mac16));
         assert(!HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac16",
             @"https://example.com/CoreCE-macos-arm64-net28-mac16.dmg"));
         assert(!HaloForkUpdateDownloadIsTrusted(@"test-v0.3.0-net28-mac17", mac16));
@@ -258,12 +263,16 @@ int main(int argc, const char **argv) {
               @"assets": @[@{@"name": @"CoreCE-macos-arm64-net28-mac17.dmg", @"browser_download_url": mac17}]},
             @{@"tag_name": @"test-v0.3.0-net28-mac16", @"draft": @NO, @"prerelease": @NO,
               @"assets": @[@{@"name": @"CoreCE-macos-arm64-net28-mac16.dmg", @"browser_download_url": mac16}]},
+            @{@"tag_name": @"build-3", @"draft": @NO, @"prerelease": @NO,
+              @"assets": @[@{@"name": @"halo-windows-release.zip", @"browser_download_url": @"https://github.com/mastercheese-dev/CoreCE/releases/download/build-3/halo-windows-release.zip"}]},
+            @{@"tag_name": @"build-70", @"draft": @NO, @"prerelease": @NO,
+              @"assets": @[@{@"name": @"CoreCE-macos-arm64.dmg", @"browser_download_url": build70}]},
         ];
         NSString *chosenTag = nil;
         NSString *chosenURL = nil;
-        assert(HaloForkNewestMacRelease(releases, &chosenTag, &chosenURL) == 16);
-        assert([chosenTag isEqual:@"test-v0.3.0-net28-mac16"]);
-        assert([chosenURL isEqual:mac16]);
+        assert(HaloForkNewestMacRelease(releases, &chosenTag, &chosenURL) == 70);
+        assert([chosenTag isEqual:@"build-70"]);
+        assert([chosenURL isEqual:build70]);
         assert(HaloForkNewestMacRelease(@[@{@"tag_name": @"test-v0.3.0-net28-ios9"}], nil, nil) == 0);
         NSURL *dataRoot = [test URLByAppendingPathComponent:@"game-data" isDirectory:YES];
         NSURL *history = HaloForkUpdateHistoryURL(dataRoot);

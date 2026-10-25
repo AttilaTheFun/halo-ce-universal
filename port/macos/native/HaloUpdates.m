@@ -73,19 +73,29 @@ static int configValue(NSString *text, const char *section, const char *key, cha
     return found;
 }
 
-static NSRegularExpression *tagPattern(void) {
+static NSRegularExpression *patternWith(NSString *expression) {
+    return [NSRegularExpression regularExpressionWithPattern:expression options:0 error:nil];
+}
+
+static NSRegularExpression *buildTagPattern(void) {
+    static NSRegularExpression *pattern;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ pattern = patternWith(@"^build-([0-9]+)$"); });
+    return pattern;
+}
+
+static NSRegularExpression *legacyTagPattern(void) {
     static NSRegularExpression *pattern;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        pattern = [NSRegularExpression regularExpressionWithPattern:
-            @"^test-v[0-9.]+-net([0-9]+)-mac([0-9]+)$" options:0 error:nil];
+        pattern = patternWith(@"^test-v[0-9.]+-net([0-9]+)-mac([0-9]+)$");
     });
     return pattern;
 }
 
-static NSTextCheckingResult *tagMatch(NSString *tag) {
-    if (![tag isKindOfClass:NSString.class] || !tag.length) return nil;
-    return [tagPattern() firstMatchInString:tag options:0 range:NSMakeRange(0, tag.length)];
+static NSTextCheckingResult *tagMatch(NSRegularExpression *pattern, NSString *tag) {
+    if (![tag isKindOfClass:NSString.class] || !tag.length || !pattern) return nil;
+    return [pattern firstMatchInString:tag options:0 range:NSMakeRange(0, tag.length)];
 }
 
 static NSString *tagGroup(NSString *tag, NSTextCheckingResult *match, NSUInteger index) {
@@ -95,16 +105,20 @@ static NSString *tagGroup(NSString *tag, NSTextCheckingResult *match, NSUInteger
 }
 
 long HaloForkUpdateBuildFromTag(NSString *tag) {
-    NSTextCheckingResult *match = tagMatch(tag);
-    if (!match) return 0;
-    return tagGroup(tag, match, 2).integerValue;
+    NSTextCheckingResult *build = tagMatch(buildTagPattern(), tag);
+    if (build) return tagGroup(tag, build, 1).integerValue;
+    NSTextCheckingResult *legacy = tagMatch(legacyTagPattern(), tag);
+    if (!legacy) return 0;
+    return tagGroup(tag, legacy, 2).integerValue;
 }
 
 NSString *HaloForkUpdateAssetName(NSString *tag) {
-    NSTextCheckingResult *match = tagMatch(tag);
-    if (!match) return nil;
+    if (tagMatch(buildTagPattern(), tag))
+        return @"CoreCE-macos-arm64.dmg";
+    NSTextCheckingResult *legacy = tagMatch(legacyTagPattern(), tag);
+    if (!legacy) return nil;
     return [NSString stringWithFormat:@"CoreCE-macos-arm64-net%@-mac%@.dmg",
-        tagGroup(tag, match, 1), tagGroup(tag, match, 2)];
+        tagGroup(tag, legacy, 1), tagGroup(tag, legacy, 2)];
 }
 
 BOOL HaloForkUpdateDownloadIsTrusted(NSString *tag, NSString *url) {
