@@ -143,7 +143,7 @@ def build_host(update_build):
 
 
 def package_icon(resources):
-    source = require(ROOT / "port/assets/icon/corece-icon.png")
+    source = require(ROOT / "port/ios/Assets.xcassets/AppIcon.appiconset/AppIcon.png")
     with tempfile.TemporaryDirectory(prefix="halo-macos-icon-") as temporary:
         iconset = Path(temporary) / "AppIcon.iconset"
         iconset.mkdir()
@@ -244,7 +244,6 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
     shutil.copy2(BUILD / "halo_guest.elf", resources / "halo_guest.elf")
     shutil.copy2(ROOT / "port/macos/map-downloads.json", resources / "map-downloads.json")
     shutil.copy2(ROOT / "port/assets/network/brokers.txt", resources / "brokers.txt")
-    shutil.copy2(ROOT / "port/assets/opening/opening_frames.bin", resources / "opening_frames.bin")
     sdl = frameworks / "libSDL3.0.dylib"
     if sdl.exists():
         sdl.unlink()
@@ -311,7 +310,7 @@ def package_into(app, data_root, *, sign_identity, release, version, build, cont
         info["HaloCloudContainer"] = cloud_container
         info["HaloCloudBackend"] = "GameSave"
     if update_build > 0 and not installer_managed:
-        info["OpenCEMacUpdateBuild"] = update_build
+        info["CoreCEMacUpdateBuild"] = update_build
     configuration = json.loads((ROOT / "port/macos/release-config.json").read_text())
     if release:
         updates = update_configuration(configuration)

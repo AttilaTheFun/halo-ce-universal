@@ -140,11 +140,6 @@ int main(int argc, char **argv) {
                                          options:NSDataWritingAtomic error:&brokerError])
             host_logf(HOST_LOG_ERROR, "Cannot install server discovery brokers: %s",
                       brokerError.localizedDescription.UTF8String ?: "bundled brokers.txt is missing");
-        NSURL *film = [NSBundle.mainBundle URLForResource:@"opening_frames" withExtension:@"bin"];
-        if (film)
-            setenv("HALO_OPENING_FILM", film.fileSystemRepresentation, 1);
-        else
-            host_logf(HOST_LOG_ERROR, "bundled opening film is missing");
         // A sandbox-relative shortcut for opt-in device frame profiling.
         const char *profile = getenv("HALO_PERF_LOG");
         if (profile && !strcmp(profile, "1"))
