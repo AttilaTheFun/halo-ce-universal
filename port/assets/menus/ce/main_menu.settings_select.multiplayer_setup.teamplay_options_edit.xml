@@ -22,6 +22,15 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/autobalance_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/autobalance_spinner" x="320" y="1"/>
 	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_training" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/training_label"/>
+		<child widget="teamplay_training" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/training_label" type="text" controller="1" width="300" height="22" text="TRAINING MODE" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="teamplay_training" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO|YES" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_friendly_fire" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/friendly_fire_label"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/friendly_fire_spinner" x="286" y="1"/>
@@ -48,10 +57,11 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_friendly_fire" x="54" y="73"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_friendly_fire_penalty" x="54" y="103"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_autobalance" x="54" y="133"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_voice_lobby" x="54" y="163"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_voice_kbps" x="54" y="193"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_voice_proximity" x="54" y="223"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_votekick" x="54" y="253"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_training" x="54" y="163"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_voice_lobby" x="54" y="193"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_voice_kbps" x="54" y="223"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_voice_proximity" x="54" y="253"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/op_votekick" x="54" y="283"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/teamplay_button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/teamplay_options_edit/teamplay_options_screen" width="640" height="480" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/gradient">

@@ -1026,6 +1026,8 @@
 		<string text="Players who kill a teammate will be assessed\na fifteen-second respawn penalty the next time\nthey die." map="7"/>
 		<string text="Team autobalancing will be disabled.  Players will\nbe free to change teams as they wish." map="8"/>
 		<string text="Team autobalancing will be enabled.  Players will\nnot be able to change to a more full team." map="9"/>
+		<string text="Training mode is off. Spawn markers and\nrandom areas stay hidden."/>
+		<string text="Training mode is on. Spawn markers,\nrandom areas and the percent are shown."/>
 		<string text="Everyone hears everyone in the lobby, before and\nafter the game."/>
 		<string text="No voice chat in the lobby."/>
 		<string text="Voices at 8 kilobits a second, in the lobby\nand in the game."/>

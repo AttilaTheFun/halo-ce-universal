@@ -817,7 +817,7 @@ WIDGET_PATCHES = {
     # Server Setup's only, _teamplay_options_extras)
     f"{TEAMPLAY_EDIT}/teamplay_options_menu": {"insert_before": {
         f"{TEAMPLAY_EDIT}/teamplay_button_bar": [
-            f'<child widget="{TEAMPLAY_EDIT}/op_{key}" x="54" y="{163 + 30 * index}"/>'
+            f'<child widget="{TEAMPLAY_EDIT}/op_{key}" x="54" y="{193 + 30 * index}"/>'
             for index, (key, *_) in enumerate(TEAMPLAY_ROWS)]}},
     # (the PC's Vehicles row's Start opened Item Options)
     "main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_vehicles_list_item": {"handlers": [

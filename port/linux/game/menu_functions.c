@@ -5692,6 +5692,7 @@ static struct gametype_option const gametype_options[] =
 	/* Match Options on a normal game type. The same bytes as the hardcore rows. */
 	{ "match_move_sounds", _option_hardcore, RULES_FIELD(movement_sounds), 0, 2, { 1, 0 } },
 	{ "match_training", _option_hardcore, RULES_FIELD(random_areas), 0, 2, { 0, 1 } },
+	{ "teamplay_training", _option_hardcore, RULES_FIELD(random_areas), 0, 2, { 0, 1 } },
 	{ "match_camo", _option_hardcore, RULES_FIELD(camo), 0, 3, { 0, 1, 2 } },
 	{ "match_team_scores", _option_hardcore, RULES_FIELD(team_scores), 0, 2, { 0, 1 } },
 	{ "match_pistol_spread", _option_hardcore, RULES_FIELD(pistol_spread), 0, 4, { 0, 1, 2, 3 } },
