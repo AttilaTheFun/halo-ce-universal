@@ -96,3 +96,25 @@ rejects install_app_data, and the attempted seed helper did not make the maps
 available to the game. The screenshot still shows the importer. Do not count
 this as settings or gameplay validation. The lease was released and temporary
 extracted data removed; the original ISO and user containers were unchanged.
+
+## In-game rendering and settings verified
+
+The test setup is now resolved: the importer requires all eleven stock campaign
+and UI maps, and reinstalling the simulator app changes its container path.
+After supplying complete user-owned maps to the current container, the settings
+button action opened Graphics & Diagnostics in landscape.
+
+The ordinary game view exposed a separate real regression: host_gl_bridge.c
+lacked the selected-renderer dispatch header, sending texture-allocation and
+blit calls to a different GL driver from the active context. Restoring the
+header rendered the main menu successfully. The new production-bridge probe
+checks selected-driver resolution, texture arguments and framebuffer-blit stack
+arguments; a negative control removing the header fails to link as expected.
+The final runtime log loads 1,277 menu widgets and has no incomplete-framebuffer
+report. Screenshots remain local: /tmp/halo-pr-settings-final.png and
+/tmp/halo-pr-render-fixed.png. They are not bundled game content or evidence of
+a full campaign/multiplayer match.
+
+Targeted suite: 12 tests and 3 subtests passed. The device rebuild after the GL
+fix is in progress. The leased simulator has been released and extracted test
+maps removed. No personal devices or existing saves were changed.
