@@ -462,8 +462,16 @@ void game_time_update(
 			{
 				long final_local_time;
 				long maximum_possible_server_time;
+				/* port: the opening ring freezes the match clock (local_time)
+				while these ticks still run, and each one takes an update.
+				server_time is that update cursor. Counting the freeze against
+				it left the cursor behind the queue, and leaving the match
+				(the host stops queueing updates) tried to play the opening's
+				ticks again with none left (players.c halt 779). */
+				long tick_limit;
 
 				final_local_time = game_time_globals->local_time + ticks_elapsed;
+				tick_limit = game_time_globals->server_time + ticks_elapsed;
 				switch (game_connection())
 				{
 				case _game_connection_local:
@@ -487,13 +495,13 @@ void game_time_update(
 				else if (game_connection() == _game_connection_network_client)
 				{
 					maximum_possible_server_time = game_time_held() ?
-						game_time_globals->server_time : final_local_time;
+						game_time_globals->server_time : tick_limit;
 				}
 				else
 					maximum_possible_server_time = update_client_get_maximum_possible_server_time();
 				if (maximum_possible_server_time > game_time_globals->server_time)
 				{
-					long final_server_time = MIN(maximum_possible_server_time, final_local_time);
+					long final_server_time = MIN(maximum_possible_server_time, tick_limit);
 					long server_updates = final_server_time - game_time_globals->server_time;
 					long update_index;
 					long advanced = 0;
@@ -505,9 +513,9 @@ void game_time_update(
 						hardcore_rules_opening_before_tick();
 						game_tick();
 						profile_scope(game_time_render_interpolation_tick_section, render_interpolation_tick();)
+						game_time_globals->server_time++;
 						if (!hardcore_rules_opening_hold())
 						{
-							game_time_globals->server_time++;
 							game_time_globals->local_time++;
 							advanced++;
 						}
