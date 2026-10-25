@@ -103,3 +103,15 @@ BuildInfo verified. This is an ad-hoc local validation artifact with placeholder
 version 0.4.0 (1), NOT a release or published update. Logs:
 /tmp/halo-mainline38-mac-final.log. iOS simulator/device build is next; release
 numbering/signing/publication and actual join remain outstanding.
+
+## Completed native match and iOS builds
+
+The native Metal Mac app joined an ongoing public retail Chill Out match on an
+oss-leased Mac. Gameplay rendered, the local player entered the active simulation,
+and live positions from the other players arrived. The test sent no chat or
+automatic firing. The app was stopped and the lease released after verification.
+This closes the native tunnel/settings/live-state gate; it does not establish
+full custom-mode visual parity or an iOS on-device match.
+
+iOS simulator and device builds both passed at 1904518d. The release retains
+local saves by default and includes no game image, maps or opening movie.
