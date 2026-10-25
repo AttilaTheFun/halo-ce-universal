@@ -36,8 +36,11 @@ def build_app(platform, args):
         settings += ['CODE_SIGNING_ALLOWED=NO']
     else:
         settings += ['-allowProvisioningUpdates']
-    run(cmake, '--build', directory, '--config', 'Release', '--target', 'Halo', '--', *settings)
     app = directory / f'Release-{sdk}' / 'Halo.app'
+    # Xcode retains removed resources in incremental products. Remove the old
+    # bundled film before the build/sign phase, including automatically signed builds.
+    (app / 'opening_frames.bin').unlink(missing_ok=True)
+    run(cmake, '--build', directory, '--config', 'Release', '--target', 'Halo', '--', *settings)
     if platform == 'simulator':
         for framework in sorted((app / 'Frameworks').glob('*.framework')):
             run('codesign', '--force', '--sign', '-', framework)
