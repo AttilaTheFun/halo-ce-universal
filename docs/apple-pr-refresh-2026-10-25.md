@@ -12,8 +12,8 @@ The remaining changes currently carried are the dynamic iOS guest arena, which
 removes the Extended Virtual Addressing requirement, the player-one touch routing
 correction, and a visible settings entry so a player does not have to discover
 the shake gesture. The upstream names, icons and bundle defaults are preserved.
-Both controller-routing probes passed. The simulator build is in progress; no
-ready-for-review claim is made yet.
+Both controller-routing probes passed. The simulator build and signed-runtime
+probe at three arena addresses passed; no ready-for-review claim is made yet.
 
 ## Compatibility gate
 
@@ -66,3 +66,16 @@ implementation has been copied in this refresh.
 - Build and test final Mac/iOS artifacts; test settings in a leased simulator.
 - Rewrite PR description around final changes, attribution and current evidence;
   push the reviewed branch, inspect checks and mark ready only after validation.
+
+## Validation follow-up
+
+The refreshed simulator app launched in landscape to the ISO importer on a
+leased simulator; screenshot /tmp/halo-pr-refresh-startup.png. The lease was
+released. This does not verify the in-game settings button or multiplayer.
+Mac private-ISO retention, rollback, persistent preferences and legacy migration
+probes passed. CoreCE storage naming is preserved in the public change.
+Removed loading-film packaging; an incremental-build check found Xcode retained
+the previous resource, so ios_build.py now removes it before build/signing.
+The rebuilt simulator package no longer contains the film (33 MB versus 56 MB).
+Device build is running in /tmp/halo-pr-refresh-device.log. No personal device
+has been installed on or interacted with. The branch has not yet been pushed.
